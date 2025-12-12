@@ -3,403 +3,959 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Загрузка...</title>
+  <title>Мероприятие - Афиша</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-      background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0f0f23 100%);
-      min-height: 100vh;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #fff;
+      color: #1a1a1a;
+      line-height: 1.5;
+    }
+    
+    .header {
+      background: #fff;
+      border-bottom: 1px solid #e5e5e5;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .header-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+    
+    .logo-section {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: #e53935;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 20px;
+    }
+    
+    .logo-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.1;
+    }
+    
+    .logo-name {
+      font-weight: 600;
+      font-size: 16px;
+      color: #1a1a1a;
+    }
+    
+    .logo-city {
+      font-size: 10px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .header-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .search-btn {
+      font-size: 20px;
+      cursor: pointer;
+      color: #666;
+    }
+    
+    .login-btn {
+      padding: 8px 16px;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      color: #1a1a1a;
+    }
+    
+    .category-nav {
+      background: #fff;
+      border-bottom: 1px solid #e5e5e5;
+      overflow-x: auto;
+    }
+    
+    .category-nav::-webkit-scrollbar {
+      display: none;
+    }
+    
+    .category-nav-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      gap: 8px;
+      height: 48px;
+      align-items: center;
+    }
+    
+    .category-tab {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #1a1a1a;
+      background: #f5f5f5;
+      cursor: pointer;
+      white-space: nowrap;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+    
+    .category-tab:hover {
+      background: #e8e8e8;
+    }
+    
+    .category-tab.active {
+      background: #1a1a1a;
       color: #fff;
     }
+    
+    .category-more {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #f5f5f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      color: #666;
+    }
+    
+    .main-content {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    
+    .hero-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 40px;
+      border-radius: 16px;
+      overflow: hidden;
+      height: 400px;
+    }
+    
+    .hero-main {
+      position: relative;
+      background: #333;
+      overflow: hidden;
+    }
+    
+    .hero-main img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.2) 50%, transparent 100%);
+    }
+    
+    .hero-rating {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      width: 40px;
+      height: 40px;
+      background: #4caf50;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    
+    .hero-content {
+      position: absolute;
+      bottom: 24px;
+      left: 24px;
+      right: 24px;
+      color: white;
+    }
+    
+    .hero-category {
+      font-size: 12px;
+      text-transform: uppercase;
+      opacity: 0.8;
+      margin-bottom: 8px;
+    }
+    
+    .hero-title {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      line-height: 1.2;
+    }
+    
+    .hero-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: #fff;
+      color: #1a1a1a;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .hero-btn:hover {
+      background: #f5f5f5;
+    }
+    
+    .hero-gallery {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 8px;
+    }
+    
+    .hero-gallery-item {
+      background: #eee;
+      overflow: hidden;
+    }
+    
+    .hero-gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .section {
+      margin-bottom: 40px;
+    }
+    
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    
+    .section-title {
+      font-size: 24px;
+      font-weight: 600;
+    }
+    
+    .section-link {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 16px;
+      border: 1px solid #e5e5e5;
+      border-radius: 20px;
+      font-size: 13px;
+      color: #1a1a1a;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    
+    .section-link:hover {
+      background: #f5f5f5;
+    }
+    
+    .sessions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    
+    .session-card {
+      padding: 16px;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    
+    .session-card:hover {
+      border-color: #4caf50;
+      box-shadow: 0 2px 8px rgba(76,175,80,0.15);
+    }
+    
+    .session-price {
+      font-size: 12px;
+      color: #4caf50;
+      margin-bottom: 8px;
+    }
+    
+    .session-time {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .session-address {
+      font-size: 13px;
+      color: #666;
+    }
+    
+    .about-section {
+      margin-bottom: 40px;
+    }
+    
+    .about-label {
+      font-size: 12px;
+      color: #666;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    
+    .about-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    
+    .about-text {
+      font-size: 15px;
+      color: #333;
+      line-height: 1.7;
+      max-width: 800px;
+    }
+    
+    .age-section {
+      margin-bottom: 40px;
+    }
+    
+    .age-label {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+    
+    .age-value {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .recommendations-section {
+      margin-bottom: 40px;
+    }
+    
+    .recs-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    
+    .recs-scroll {
+      display: flex;
+      gap: 16px;
+      overflow-x: auto;
+      padding-bottom: 16px;
+    }
+    
+    .recs-scroll::-webkit-scrollbar {
+      height: 6px;
+    }
+    
+    .recs-scroll::-webkit-scrollbar-track {
+      background: #f5f5f5;
+      border-radius: 3px;
+    }
+    
+    .recs-scroll::-webkit-scrollbar-thumb {
+      background: #ccc;
+      border-radius: 3px;
+    }
+    
+    .rec-card {
+      flex: 0 0 180px;
+      cursor: pointer;
+    }
+    
+    .rec-card-image {
+      position: relative;
+      width: 180px;
+      height: 240px;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    
+    .rec-card-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    
+    .rec-card-rating {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      padding: 4px 10px;
+      background: #4caf50;
+      border-radius: 12px;
+      color: white;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .rec-card-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: #1a1a1a;
+    }
+    
+    .footer {
+      background: #f5f5f5;
+      padding: 40px 0;
+      margin-top: 40px;
+    }
+    
+    .footer-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+    
+    .footer-links {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    
+    .footer-column a {
+      display: block;
+      color: #666;
+      text-decoration: none;
+      font-size: 14px;
+      margin-bottom: 12px;
+    }
+    
+    .footer-column a:hover {
+      color: #1a1a1a;
+    }
+    
+    .footer-copy {
+      font-size: 12px;
+      color: #999;
+      padding-top: 24px;
+      border-top: 1px solid #e5e5e5;
+    }
+    
+    .order-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .order-modal.active {
+      display: flex;
+    }
+    
+    .order-modal-content {
+      background: #fff;
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 480px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    
+    .order-title {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+    
+    .order-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    
+    .form-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+    }
+    
+    .form-input {
+      padding: 12px 16px;
+      border: 1px solid #e5e5e5;
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: inherit;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #4caf50;
+    }
+    
+    .order-submit {
+      padding: 14px 24px;
+      background: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    
+    .order-submit:hover {
+      background: #43a047;
+    }
+    
+    .order-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    .selected-session {
+      padding: 16px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .selected-session-time {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .selected-session-price {
+      color: #4caf50;
+      font-size: 14px;
+    }
+    
     .loading {
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
-      font-size: 18px;
-    }
-    .error-page {
-      display: none;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      text-align: center;
-      padding: 20px;
-    }
-    .error-page h1 { font-size: 48px; margin-bottom: 20px; }
-    .error-page p { color: rgba(255,255,255,0.7); margin-bottom: 30px; }
-    .event-page { display: none; }
-    .hero {
-      position: relative;
-      min-height: 50vh;
-      display: flex;
-      align-items: flex-end;
-      padding: 40px 20px;
-      background: linear-gradient(to top, rgba(15,15,35,1) 0%, rgba(15,15,35,0.8) 50%, rgba(15,15,35,0.4) 100%),
-                  var(--cover-image, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
-      background-size: cover;
-      background-position: center;
-    }
-    .hero-content { max-width: 800px; margin: 0 auto; width: 100%; }
-    .category-badge {
-      display: inline-block;
-      background: rgba(102, 126, 234, 0.3);
-      color: #a5b4fc;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 15px;
-    }
-    .hero h1 { font-size: 36px; margin-bottom: 15px; line-height: 1.2; }
-    .hero-meta {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      color: rgba(255,255,255,0.8);
+      min-height: 400px;
       font-size: 16px;
+      color: #666;
     }
-    .hero-meta span { display: flex; align-items: center; gap: 8px; }
-    .content { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
-    .info-cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 15px;
-      margin-bottom: 40px;
-    }
-    .info-card {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 15px;
-      padding: 20px;
-      text-align: center;
-    }
-    .info-card .icon { font-size: 24px; margin-bottom: 10px; }
-    .info-card .label { color: rgba(255,255,255,0.6); font-size: 12px; margin-bottom: 5px; }
-    .info-card .value { font-size: 18px; font-weight: 600; }
-    .info-card .value.price { color: #4ade80; font-size: 24px; }
-    .description {
-      background: rgba(255,255,255,0.05);
-      border-radius: 15px;
-      padding: 25px;
-      margin-bottom: 40px;
-      line-height: 1.7;
-      color: rgba(255,255,255,0.85);
-    }
-    .description h2 { margin-bottom: 15px; font-size: 20px; }
-    .order-section {
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
-      border: 1px solid rgba(102, 126, 234, 0.3);
-      border-radius: 20px;
-      padding: 30px;
-    }
-    .order-section h2 { margin-bottom: 25px; font-size: 22px; text-align: center; }
-    .form-group { margin-bottom: 20px; }
-    .form-group label { display: block; margin-bottom: 8px; color: rgba(255,255,255,0.8); font-size: 14px; }
-    .form-group input, .form-group select {
-      width: 100%;
-      padding: 15px;
-      border: none;
-      border-radius: 12px;
-      background: rgba(255,255,255,0.1);
-      color: #fff;
-      font-size: 16px;
-      transition: all 0.2s;
-    }
-    .form-group input:focus, .form-group select:focus {
-      outline: none;
-      background: rgba(255,255,255,0.15);
-      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.5);
-    }
-    .form-group input::placeholder { color: rgba(255,255,255,0.4); }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-    .total-line {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px;
-      background: rgba(0,0,0,0.2);
-      border-radius: 12px;
-      margin-bottom: 20px;
-    }
-    .total-line .label { color: rgba(255,255,255,0.7); }
-    .total-line .amount { font-size: 28px; font-weight: bold; color: #4ade80; }
-    .submit-btn {
-      width: 100%;
-      padding: 18px;
-      border: none;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #fff;
-      font-size: 18px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4); }
-    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    .success-message {
-      display: none;
-      text-align: center;
-      padding: 40px;
-    }
-    .success-message .icon { font-size: 64px; margin-bottom: 20px; }
-    .success-message h2 { color: #4ade80; margin-bottom: 15px; }
-    .success-message .order-code {
-      background: rgba(74, 222, 128, 0.2);
-      padding: 15px 30px;
-      border-radius: 10px;
-      font-size: 24px;
-      font-family: monospace;
-      letter-spacing: 2px;
-      display: inline-block;
-      margin: 20px 0;
-    }
-    .sold-out {
-      text-align: center;
-      padding: 40px;
-      background: rgba(239, 68, 68, 0.2);
-      border-radius: 15px;
-    }
-    .sold-out h2 { color: #ef4444; margin-bottom: 10px; }
-    @media (max-width: 600px) {
-      .hero h1 { font-size: 28px; }
-      .form-row { grid-template-columns: 1fr; }
-      .info-cards { grid-template-columns: 1fr 1fr; }
+    
+    @media (max-width: 768px) {
+      .hero-section {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+      
+      .hero-main {
+        height: 300px;
+      }
+      
+      .hero-gallery {
+        display: none;
+      }
+      
+      .hero-title {
+        font-size: 24px;
+      }
+      
+      .sessions-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      
+      .category-nav-inner {
+        padding: 0 16px;
+      }
     }
   </style>
 </head>
 <body>
-  <div class="loading" id="loading">Загрузка...</div>
-  
-  <div class="error-page" id="errorPage">
-    <h1>404</h1>
-    <p>Мероприятие не найдено</p>
-    <a href="/" style="color: #667eea;">На главную</a>
-  </div>
-
-  <div class="event-page" id="eventPage">
-    <div class="hero" id="heroSection">
-      <div class="hero-content">
-        <span class="category-badge" id="categoryBadge"></span>
-        <h1 id="eventTitle"></h1>
-        <div class="hero-meta">
-          <span id="metaCity"></span>
-          <span id="metaDate"></span>
-          <span id="metaTime"></span>
+  <header class="header">
+    <div class="header-inner">
+      <a href="/" class="logo-section">
+        <div class="logo-icon">a</div>
+        <div class="logo-text">
+          <span class="logo-name">афиша</span>
+          <span class="logo-city" id="cityName">МОСКВА</span>
         </div>
+      </a>
+      
+      <div class="header-actions">
+        <div class="search-btn">🔍</div>
+        <div class="login-btn">ВОЙТИ</div>
       </div>
     </div>
+  </header>
 
-    <div class="content">
-      <div class="info-cards">
-        <div class="info-card">
-          <div class="icon">📅</div>
-          <div class="label">Дата</div>
-          <div class="value" id="cardDate"></div>
+  <nav class="category-nav">
+    <div class="category-nav-inner" id="categoryNav">
+    </div>
+  </nav>
+
+  <main class="main-content" id="mainContent">
+    <div class="loading" id="loadingState">Загрузка...</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-links">
+        <div class="footer-column">
+          <a href="#">Выставки</a>
+          <a href="#">Музеи</a>
+          <a href="#">Квест комната</a>
+          <a href="#">Экстрим</a>
+          <a href="#">Daily</a>
         </div>
-        <div class="info-card">
-          <div class="icon">⏰</div>
-          <div class="label">Время</div>
-          <div class="value" id="cardTime"></div>
-        </div>
-        <div class="info-card">
-          <div class="icon">🎟️</div>
-          <div class="label">Осталось мест</div>
-          <div class="value" id="cardSeats"></div>
-        </div>
-        <div class="info-card">
-          <div class="icon">💰</div>
-          <div class="label">Цена</div>
-          <div class="value price" id="cardPrice"></div>
+        <div class="footer-column">
+          <a href="#">Комната гнева</a>
+          <a href="#">Бильярд</a>
+          <a href="#">Боулинг</a>
+          <a href="/">На главную</a>
+          <a href="/admin">Админ</a>
         </div>
       </div>
+      <div class="footer-copy">© 1999-2025 ООО «Компания Афиша». Все права защищены. Для лиц старше 18 лет.</div>
+    </div>
+  </footer>
 
-      <div class="description" id="descriptionSection">
-        <h2>Описание</h2>
-        <p id="eventDescription"></p>
+  <div class="order-modal" id="orderModal" onclick="closeOrderModal(event)">
+    <div class="order-modal-content" onclick="event.stopPropagation()">
+      <h2 class="order-title">Оформление заказа</h2>
+      <div class="selected-session" id="selectedSession">
+        <div class="selected-session-time" id="selectedTime">Пятница 17:00</div>
+        <div class="selected-session-price" id="selectedPrice">от 2490 ₽</div>
       </div>
-
-      <div class="order-section" id="orderSection">
-        <h2>Оформить заказ</h2>
-        <form id="orderForm" onsubmit="submitOrder(event)">
-          <div class="form-group">
-            <label>Ваше имя *</label>
-            <input type="text" id="customerName" required placeholder="Иван Иванов" minlength="2">
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Телефон *</label>
-              <input type="tel" id="customerPhone" required placeholder="+7 999 123 4567">
-            </div>
-            <div class="form-group">
-              <label>Email</label>
-              <input type="email" id="customerEmail" placeholder="email@example.com">
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Количество билетов</label>
-            <select id="seatsCount" onchange="updateTotal()"></select>
-          </div>
-          <div class="total-line">
-            <span class="label">Итого к оплате:</span>
-            <span class="amount" id="totalAmount">0 ₽</span>
-          </div>
-          <button type="submit" class="submit-btn" id="submitBtn">Оформить заказ</button>
-        </form>
-      </div>
-
-      <div class="sold-out" id="soldOut" style="display: none;">
-        <h2>Билеты распроданы</h2>
-        <p>К сожалению, все места на это мероприятие уже заняты</p>
-      </div>
-
-      <div class="success-message" id="successMessage">
-        <div class="icon">🎉</div>
-        <h2>Заказ успешно создан!</h2>
-        <p>Ваш код заказа:</p>
-        <div class="order-code" id="orderCode"></div>
-        <p style="color: rgba(255,255,255,0.7); margin-top: 20px;">
-          Мы свяжемся с вами для подтверждения оплаты
-        </p>
-      </div>
+      <form class="order-form" id="orderForm" onsubmit="submitOrder(event)">
+        <div class="form-group">
+          <label class="form-label">Имя</label>
+          <input type="text" class="form-input" id="customerName" required placeholder="Введите ваше имя">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="customerEmail" required placeholder="email@example.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Телефон</label>
+          <input type="tel" class="form-input" id="customerPhone" required placeholder="+7 (999) 123-45-67">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Количество билетов</label>
+          <input type="number" class="form-input" id="ticketCount" min="1" max="10" value="1" required>
+        </div>
+        <button type="submit" class="order-submit" id="submitBtn">Оформить заказ</button>
+      </form>
     </div>
   </div>
 
   <script>
-    let eventData = null;
-    let eventId = null;
-
-    async function init() {
-      const pathParts = window.location.pathname.split('/');
-      eventId = pathParts[pathParts.length - 1];
+    let event = null;
+    let events = [];
+    let categories = [];
+    let selectedSessionData = null;
+    
+    const defaultImages = [
+      'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80',
+      'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=800&q=80',
+      'https://images.unsplash.com/photo-1544928147-79a2dbc1f389?w=800&q=80',
+      'https://images.unsplash.com/photo-1518834107812-67b0b7c58434?w=800&q=80',
+      'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&q=80',
+      'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80'
+    ];
+    
+    const categoryTabs = [
+      'ВЫСТАВКИ', 'МУЗЕИ', 'КВЕСТ КОМНАТА', 'ЭКСТРИМ', 
+      'DAILY', 'КОМНАТА ГНЕВА', 'БИЛЬЯРД', 'БОУЛИНГ'
+    ];
+    
+    function getEventId() {
+      const path = window.location.pathname;
+      const match = path.match(/\/event\/(\d+)/);
+      return match ? parseInt(match[1]) : 1;
+    }
+    
+    async function loadData() {
+      const eventId = getEventId();
       
-      if (!eventId || isNaN(eventId)) {
-        showError();
-        return;
-      }
-
       try {
-        const res = await fetch(`/api/event/${eventId}`);
-        if (!res.ok) {
-          showError();
-          return;
+        const [eventRes, dataRes] = await Promise.all([
+          fetch(`/api/event/${eventId}`),
+          fetch('/api/ticket-data')
+        ]);
+        
+        if (eventRes.ok) {
+          const eventData = await eventRes.json();
+          if (eventData && !eventData.error) {
+            event = eventData;
+          }
         }
-        eventData = await res.json();
-        if (!eventData || eventData.error) {
-          showError();
-          return;
+        
+        if (dataRes.ok) {
+          const data = await dataRes.json();
+          events = data.events || [];
+          categories = data.categories || [];
         }
-        renderEvent();
+        
+        if (!event) {
+          event = events.find(e => e.id === eventId) || getDemoEvent();
+        }
       } catch (err) {
-        console.error('Error loading event:', err);
-        showError();
+        console.error('Error loading data:', err);
+        event = getDemoEvent();
+        events = [event, ...getDemoRecommendations()];
+      }
+      
+      renderPage();
+    }
+    
+    function getDemoEvent() {
+      return {
+        id: 1,
+        name: 'Профессиональный Тир',
+        description: 'Добро пожаловать в тир, где атмосфера наполнена ароматом пороха, а удовлетворение от меткости — в центре внимания. Ощутите мощь и контроль, держа в руках реальное оружие, исследуя точность и мастерство стрельбы. Это мероприятие предоставляет уникальную возможность испытать волнение от выстрела, соблюдая все правила безопасности. Тир — это не только тренировка навыков стрельбы, но и встреча с энергией, которую приносит в себе каждый выстрел. Готовьтесь к захватывающему опыту, где меткость и концентрация приводят к непередаваемому удовлетворению.',
+        price: 2490,
+        categoryName: 'ЭКСТРИМ',
+        cityName: 'Москва',
+        venue: 'ул. Маркова, 12',
+        date: new Date().toISOString(),
+        availableSeats: 50
+      };
+    }
+    
+    function getDemoRecommendations() {
+      return [
+        { id: 2, name: 'Прогулка на квадроциклах', categoryName: 'ЭКСТРИМ', price: 3500 },
+        { id: 3, name: 'Прогулка на лошадях', categoryName: 'ЭКСТРИМ', price: 2000 },
+        { id: 4, name: 'Пейнтбол', categoryName: 'ЭКСТРИМ', price: 1500 },
+        { id: 5, name: 'Аэротруба', categoryName: 'ЭКСТРИМ', price: 4000 },
+        { id: 6, name: 'Стрелковый клуб «Громовержец»', categoryName: 'ЭКСТРИМ', price: 3000 }
+      ];
+    }
+    
+    function renderPage() {
+      renderCategoryNav();
+      renderMainContent();
+      document.title = `${event.name} - Афиша`;
+    }
+    
+    function renderCategoryNav() {
+      const nav = document.getElementById('categoryNav');
+      nav.innerHTML = categoryTabs.map((tab, i) => `
+        <a href="#" class="category-tab ${event.categoryName?.toUpperCase() === tab ? 'active' : ''}">${tab}</a>
+      `).join('') + '<div class="category-more">•••</div>';
+    }
+    
+    function renderMainContent() {
+      const main = document.getElementById('mainContent');
+      const rating = (7.5 + Math.random() * 2).toFixed(1);
+      const price = event.price || 2490;
+      const venue = event.venue || 'ул. Маркова, 12';
+      const city = event.cityName || 'Москва';
+      const heroImage = event.coverImageUrl || defaultImages[0];
+      
+      const sessions = [
+        { day: 'Пятница', time: '17:00' },
+        { day: 'Суббота', time: '11:00' },
+        { day: 'Суббота', time: '14:00' },
+        { day: 'Суббота', time: '17:00' }
+      ];
+      
+      const recs = events.filter(e => e.id !== event.id).slice(0, 6);
+      const recommendations = recs.length > 0 ? recs : getDemoRecommendations();
+      
+      main.innerHTML = `
+        <section class="hero-section">
+          <div class="hero-main">
+            <img src="${heroImage}" alt="${event.name}">
+            <div class="hero-overlay"></div>
+            <div class="hero-rating">${rating}</div>
+            <div class="hero-content">
+              <div class="hero-category">${(event.categoryName?.toUpperCase() || 'СОБЫТИЕ')} В ГОРОДЕ ${city.toUpperCase()}</div>
+              <h1 class="hero-title">${event.name}</h1>
+              <button class="hero-btn" onclick="scrollToSessions()">Расписание и карты</button>
+            </div>
+          </div>
+          <div class="hero-gallery">
+            ${[1, 2, 3, 4].map(i => `
+              <div class="hero-gallery-item">
+                <img src="${defaultImages[i % defaultImages.length]}" alt="">
+              </div>
+            `).join('')}
+          </div>
+        </section>
+
+        <section class="section" id="sessionsSection">
+          <div class="section-header">
+            <h2 class="section-title">Расписание сеансов</h2>
+            <a href="#" class="section-link">Полное расписание →</a>
+          </div>
+          <div class="sessions-grid">
+            ${sessions.map((s, i) => `
+              <div class="session-card" onclick="selectSession('${s.day} ${s.time}', ${price})">
+                <div class="session-price">От ${formatPrice(price)} ₽</div>
+                <div class="session-time">${s.day} ${s.time}</div>
+                <div class="session-address">${city}, ${venue}</div>
+              </div>
+            `).join('')}
+          </div>
+        </section>
+
+        <section class="about-section">
+          <div class="about-label">Описание организатора</div>
+          <h2 class="about-title">О ${event.name}</h2>
+          <p class="about-text">${event.description || 'Описание мероприятия появится здесь. Это увлекательное событие, которое подарит вам незабываемые впечатления и эмоции.'}</p>
+        </section>
+
+        <section class="age-section">
+          <div class="age-label">Возраст</div>
+          <div class="age-value">18+</div>
+        </section>
+
+        <section class="recommendations-section">
+          <h2 class="recs-title">Рекомендации для вас</h2>
+          <div class="recs-scroll">
+            ${recommendations.map((r, i) => {
+              const recRating = (8 + Math.random() * 1.5).toFixed(1);
+              const image = defaultImages[(i + 2) % defaultImages.length];
+              return `
+                <div class="rec-card" onclick="openEvent(${r.id})">
+                  <div class="rec-card-image">
+                    <img src="${image}" alt="${r.name}">
+                    <div class="rec-card-rating">${recRating}</div>
+                  </div>
+                  <div class="rec-card-title">${r.name}</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </section>
+      `;
+      
+      document.getElementById('cityName').textContent = city.toUpperCase();
+    }
+    
+    function formatPrice(price) {
+      return price?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') || '0';
+    }
+    
+    function scrollToSessions() {
+      document.getElementById('sessionsSection').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    function selectSession(time, price) {
+      selectedSessionData = { time, price };
+      document.getElementById('selectedTime').textContent = time;
+      document.getElementById('selectedPrice').textContent = `от ${formatPrice(price)} ₽`;
+      document.getElementById('orderModal').classList.add('active');
+    }
+    
+    function closeOrderModal(e) {
+      if (e.target === document.getElementById('orderModal')) {
+        document.getElementById('orderModal').classList.remove('active');
       }
     }
-
-    function showError() {
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('errorPage').style.display = 'flex';
-    }
-
-    function renderEvent() {
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('eventPage').style.display = 'block';
-      document.title = eventData.name + ' | Билеты';
-
-      if (eventData.coverImageUrl) {
-        document.getElementById('heroSection').style.setProperty('--cover-image', `url(${eventData.coverImageUrl})`);
-      }
-
-      document.getElementById('categoryBadge').textContent = eventData.categoryName;
-      document.getElementById('eventTitle').textContent = eventData.name;
-      document.getElementById('metaCity').innerHTML = `📍 ${eventData.cityName}`;
-      document.getElementById('metaDate').innerHTML = `📅 ${formatDate(eventData.date)}`;
-      document.getElementById('metaTime').innerHTML = `⏰ ${eventData.time ? eventData.time.slice(0,5) : ''}`;
-
-      document.getElementById('cardDate').textContent = formatDateShort(eventData.date);
-      document.getElementById('cardTime').textContent = eventData.time ? eventData.time.slice(0,5) : '-';
-      document.getElementById('cardSeats').textContent = eventData.availableSeats;
-      document.getElementById('cardPrice').textContent = eventData.price.toLocaleString() + ' ₽';
-
-      if (eventData.description) {
-        document.getElementById('eventDescription').textContent = eventData.description;
-      } else {
-        document.getElementById('descriptionSection').style.display = 'none';
-      }
-
-      if (eventData.availableSeats <= 0) {
-        document.getElementById('orderSection').style.display = 'none';
-        document.getElementById('soldOut').style.display = 'block';
-      } else {
-        const seatsSelect = document.getElementById('seatsCount');
-        const maxSeats = Math.min(eventData.availableSeats, 10);
-        seatsSelect.innerHTML = '';
-        for (let i = 1; i <= maxSeats; i++) {
-          seatsSelect.innerHTML += `<option value="${i}">${i}</option>`;
-        }
-        updateTotal();
-      }
-    }
-
-    function formatDate(dateStr) {
-      if (!dateStr) return '';
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-    }
-
-    function formatDateShort(dateStr) {
-      if (!dateStr) return '-';
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
-    }
-
-    function updateTotal() {
-      const seats = parseInt(document.getElementById('seatsCount').value) || 1;
-      const total = seats * eventData.price;
-      document.getElementById('totalAmount').textContent = total.toLocaleString() + ' ₽';
-    }
-
+    
     async function submitOrder(e) {
       e.preventDefault();
+      
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
       btn.textContent = 'Оформление...';
-
-      const data = {
-        eventId: parseInt(eventId),
+      
+      const orderData = {
+        eventId: event.id,
+        eventName: event.name,
         customerName: document.getElementById('customerName').value,
+        customerEmail: document.getElementById('customerEmail').value,
         customerPhone: document.getElementById('customerPhone').value,
-        customerEmail: document.getElementById('customerEmail').value || undefined,
-        seatsCount: parseInt(document.getElementById('seatsCount').value)
+        seatsCount: parseInt(document.getElementById('ticketCount').value),
+        sessionTime: selectedSessionData?.time,
+        price: selectedSessionData?.price
       };
-
+      
       try {
         const res = await fetch('/api/create-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
+          body: JSON.stringify(orderData)
         });
+        
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Ошибка сервера. Попробуйте позже.');
+        }
+        
         const result = await res.json();
         
-        if (result.success) {
+        if (result.success && result.orderCode) {
           window.location.href = '/payment?order=' + result.orderCode;
+        } else if (result.success) {
+          alert('Заказ успешно оформлен! Мы свяжемся с вами для подтверждения.');
+          document.getElementById('orderModal').classList.remove('active');
+          document.getElementById('orderForm').reset();
         } else {
-          alert(result.message || 'Ошибка оформления заказа');
-          btn.disabled = false;
-          btn.textContent = 'Оформить заказ';
+          throw new Error(result.message || 'Ошибка оформления заказа');
         }
       } catch (err) {
-        alert('Ошибка соединения');
-        btn.disabled = false;
-        btn.textContent = 'Оформить заказ';
+        alert(err.message || 'Произошла ошибка. Попробуйте ещё раз.');
       }
+      
+      btn.disabled = false;
+      btn.textContent = 'Оформить заказ';
     }
-
-    init();
+    
+    function openEvent(id) {
+      window.location.href = `/event/${id}`;
+    }
+    
+    loadData();
   </script>
 </body>
 </html>
