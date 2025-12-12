@@ -1357,11 +1357,28 @@ export const mastra = new Mastra({
             const pg = await import("pg");
             const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
             const result = await pool.query(
-              "SELECT id, name, description, image_url, is_active FROM event_templates WHERE category_id = $1 ORDER BY name",
+              "SELECT id, name, description, is_active FROM event_templates WHERE category_id = $1 ORDER BY name",
               [categoryId]
             );
+            
+            // Get first image for each template from images table
+            const templates = [];
+            for (const row of result.rows) {
+              const imgRes = await pool.query(
+                "SELECT image_url FROM event_template_images WHERE event_template_id = $1 ORDER BY sort_order LIMIT 1",
+                [row.id]
+              );
+              templates.push({
+                id: row.id,
+                name: row.name,
+                description: row.description,
+                is_active: row.is_active,
+                image_url: imgRes.rows[0]?.image_url || null
+              });
+            }
+            
             await pool.end();
-            return c.json({ templates: result.rows });
+            return c.json({ templates });
           } catch (error) {
             console.error("Error fetching event templates:", error);
             return c.json({ templates: [] });
