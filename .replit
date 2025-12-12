@@ -7,8 +7,8 @@ packages = ["unzip"]
 expertMode = true
 
 [deployment]
-build = ["bash", "-c", "cd Site-Mirror && npm install && npm run build"]
-run = ["bash", "-c", "cd Site-Mirror && npm run start"]
+build = ["npm", "run", "build"]
+run = ["npm", "run", "start"]
 deploymentTarget = "autoscale"
 
 [workflows]
@@ -27,13 +27,13 @@ args = "Mastra Dev"
 name = "Mastra Dev"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd Site-Mirror && npm run dev"
-waitForPort = 5000
-
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+waitForPort = 5000
 
 [[ports]]
 localPort = 5000
