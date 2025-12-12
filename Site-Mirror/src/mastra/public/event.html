@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Загрузка...</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0f0f23 100%);
+      min-height: 100vh;
+      color: #fff;
+    }
+    .loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-size: 18px;
+    }
+    .error-page {
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      text-align: center;
+      padding: 20px;
+    }
+    .error-page h1 { font-size: 48px; margin-bottom: 20px; }
+    .error-page p { color: rgba(255,255,255,0.7); margin-bottom: 30px; }
+    .event-page { display: none; }
+    .hero {
+      position: relative;
+      min-height: 50vh;
+      display: flex;
+      align-items: flex-end;
+      padding: 40px 20px;
+      background: linear-gradient(to top, rgba(15,15,35,1) 0%, rgba(15,15,35,0.8) 50%, rgba(15,15,35,0.4) 100%),
+                  var(--cover-image, linear-gradient(135deg, #667eea 0%, #764ba2 100%));
+      background-size: cover;
+      background-position: center;
+    }
+    .hero-content { max-width: 800px; margin: 0 auto; width: 100%; }
+    .category-badge {
+      display: inline-block;
+      background: rgba(102, 126, 234, 0.3);
+      color: #a5b4fc;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 15px;
+    }
+    .hero h1 { font-size: 36px; margin-bottom: 15px; line-height: 1.2; }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      color: rgba(255,255,255,0.8);
+      font-size: 16px;
+    }
+    .hero-meta span { display: flex; align-items: center; gap: 8px; }
+    .content { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+    .info-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-bottom: 40px;
+    }
+    .info-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 15px;
+      padding: 20px;
+      text-align: center;
+    }
+    .info-card .icon { font-size: 24px; margin-bottom: 10px; }
+    .info-card .label { color: rgba(255,255,255,0.6); font-size: 12px; margin-bottom: 5px; }
+    .info-card .value { font-size: 18px; font-weight: 600; }
+    .info-card .value.price { color: #4ade80; font-size: 24px; }
+    .description {
+      background: rgba(255,255,255,0.05);
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 40px;
+      line-height: 1.7;
+      color: rgba(255,255,255,0.85);
+    }
+    .description h2 { margin-bottom: 15px; font-size: 20px; }
+    .order-section {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+      border: 1px solid rgba(102, 126, 234, 0.3);
+      border-radius: 20px;
+      padding: 30px;
+    }
+    .order-section h2 { margin-bottom: 25px; font-size: 22px; text-align: center; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 8px; color: rgba(255,255,255,0.8); font-size: 14px; }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      background: rgba(255,255,255,0.15);
+      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.5);
+    }
+    .form-group input::placeholder { color: rgba(255,255,255,0.4); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+    .total-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+    .total-line .label { color: rgba(255,255,255,0.7); }
+    .total-line .amount { font-size: 28px; font-weight: bold; color: #4ade80; }
+    .submit-btn {
+      width: 100%;
+      padding: 18px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4); }
+    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .success-message {
+      display: none;
+      text-align: center;
+      padding: 40px;
+    }
+    .success-message .icon { font-size: 64px; margin-bottom: 20px; }
+    .success-message h2 { color: #4ade80; margin-bottom: 15px; }
+    .success-message .order-code {
+      background: rgba(74, 222, 128, 0.2);
+      padding: 15px 30px;
+      border-radius: 10px;
+      font-size: 24px;
+      font-family: monospace;
+      letter-spacing: 2px;
+      display: inline-block;
+      margin: 20px 0;
+    }
+    .sold-out {
+      text-align: center;
+      padding: 40px;
+      background: rgba(239, 68, 68, 0.2);
+      border-radius: 15px;
+    }
+    .sold-out h2 { color: #ef4444; margin-bottom: 10px; }
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 28px; }
+      .form-row { grid-template-columns: 1fr; }
+      .info-cards { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading">Загрузка...</div>
+  
+  <div class="error-page" id="errorPage">
+    <h1>404</h1>
+    <p>Мероприятие не найдено</p>
+    <a href="/" style="color: #667eea;">На главную</a>
+  </div>
+
+  <div class="event-page" id="eventPage">
+    <div class="hero" id="heroSection">
+      <div class="hero-content">
+        <span class="category-badge" id="categoryBadge"></span>
+        <h1 id="eventTitle"></h1>
+        <div class="hero-meta">
+          <span id="metaCity"></span>
+          <span id="metaDate"></span>
+          <span id="metaTime"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="info-cards">
+        <div class="info-card">
+          <div class="icon">📅</div>
+          <div class="label">Дата</div>
+          <div class="value" id="cardDate"></div>
+        </div>
+        <div class="info-card">
+          <div class="icon">⏰</div>
+          <div class="label">Время</div>
+          <div class="value" id="cardTime"></div>
+        </div>
+        <div class="info-card">
+          <div class="icon">🎟️</div>
+          <div class="label">Осталось мест</div>
+          <div class="value" id="cardSeats"></div>
+        </div>
+        <div class="info-card">
+          <div class="icon">💰</div>
+          <div class="label">Цена</div>
+          <div class="value price" id="cardPrice"></div>
+        </div>
+      </div>
+
+      <div class="description" id="descriptionSection">
+        <h2>Описание</h2>
+        <p id="eventDescription"></p>
+      </div>
+
+      <div class="order-section" id="orderSection">
+        <h2>Оформить заказ</h2>
+        <form id="orderForm" onsubmit="submitOrder(event)">
+          <div class="form-group">
+            <label>Ваше имя *</label>
+            <input type="text" id="customerName" required placeholder="Иван Иванов" minlength="2">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Телефон *</label>
+              <input type="tel" id="customerPhone" required placeholder="+7 999 123 4567">
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="customerEmail" placeholder="email@example.com">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Количество билетов</label>
+            <select id="seatsCount" onchange="updateTotal()"></select>
+          </div>
+          <div class="total-line">
+            <span class="label">Итого к оплате:</span>
+            <span class="amount" id="totalAmount">0 ₽</span>
+          </div>
+          <button type="submit" class="submit-btn" id="submitBtn">Оформить заказ</button>
+        </form>
+      </div>
+
+      <div class="sold-out" id="soldOut" style="display: none;">
+        <h2>Билеты распроданы</h2>
+        <p>К сожалению, все места на это мероприятие уже заняты</p>
+      </div>
+
+      <div class="success-message" id="successMessage">
+        <div class="icon">🎉</div>
+        <h2>Заказ успешно создан!</h2>
+        <p>Ваш код заказа:</p>
+        <div class="order-code" id="orderCode"></div>
+        <p style="color: rgba(255,255,255,0.7); margin-top: 20px;">
+          Мы свяжемся с вами для подтверждения оплаты
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let eventData = null;
+    let eventId = null;
+
+    async function init() {
+      const pathParts = window.location.pathname.split('/');
+      eventId = pathParts[pathParts.length - 1];
+      
+      if (!eventId || isNaN(eventId)) {
+        showError();
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/event/${eventId}`);
+        if (!res.ok) {
+          showError();
+          return;
+        }
+        eventData = await res.json();
+        if (!eventData || eventData.error) {
+          showError();
+          return;
+        }
+        renderEvent();
+      } catch (err) {
+        console.error('Error loading event:', err);
+        showError();
+      }
+    }
+
+    function showError() {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('errorPage').style.display = 'flex';
+    }
+
+    function renderEvent() {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('eventPage').style.display = 'block';
+      document.title = eventData.name + ' | Билеты';
+
+      if (eventData.coverImageUrl) {
+        document.getElementById('heroSection').style.setProperty('--cover-image', `url(${eventData.coverImageUrl})`);
+      }
+
+      document.getElementById('categoryBadge').textContent = eventData.categoryName;
+      document.getElementById('eventTitle').textContent = eventData.name;
+      document.getElementById('metaCity').innerHTML = `📍 ${eventData.cityName}`;
+      document.getElementById('metaDate').innerHTML = `📅 ${formatDate(eventData.date)}`;
+      document.getElementById('metaTime').innerHTML = `⏰ ${eventData.time ? eventData.time.slice(0,5) : ''}`;
+
+      document.getElementById('cardDate').textContent = formatDateShort(eventData.date);
+      document.getElementById('cardTime').textContent = eventData.time ? eventData.time.slice(0,5) : '-';
+      document.getElementById('cardSeats').textContent = eventData.availableSeats;
+      document.getElementById('cardPrice').textContent = eventData.price.toLocaleString() + ' ₽';
+
+      if (eventData.description) {
+        document.getElementById('eventDescription').textContent = eventData.description;
+      } else {
+        document.getElementById('descriptionSection').style.display = 'none';
+      }
+
+      if (eventData.availableSeats <= 0) {
+        document.getElementById('orderSection').style.display = 'none';
+        document.getElementById('soldOut').style.display = 'block';
+      } else {
+        const seatsSelect = document.getElementById('seatsCount');
+        const maxSeats = Math.min(eventData.availableSeats, 10);
+        seatsSelect.innerHTML = '';
+        for (let i = 1; i <= maxSeats; i++) {
+          seatsSelect.innerHTML += `<option value="${i}">${i}</option>`;
+        }
+        updateTotal();
+      }
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function formatDateShort(dateStr) {
+      if (!dateStr) return '-';
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    }
+
+    function updateTotal() {
+      const seats = parseInt(document.getElementById('seatsCount').value) || 1;
+      const total = seats * eventData.price;
+      document.getElementById('totalAmount').textContent = total.toLocaleString() + ' ₽';
+    }
+
+    async function submitOrder(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Оформление...';
+
+      const data = {
+        eventId: parseInt(eventId),
+        customerName: document.getElementById('customerName').value,
+        customerPhone: document.getElementById('customerPhone').value,
+        customerEmail: document.getElementById('customerEmail').value || undefined,
+        seatsCount: parseInt(document.getElementById('seatsCount').value)
+      };
+
+      try {
+        const res = await fetch('/api/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        
+        if (result.success) {
+          window.location.href = '/payment?order=' + result.orderCode;
+        } else {
+          alert(result.message || 'Ошибка оформления заказа');
+          btn.disabled = false;
+          btn.textContent = 'Оформить заказ';
+        }
+      } catch (err) {
+        alert('Ошибка соединения');
+        btn.disabled = false;
+        btn.textContent = 'Оформить заказ';
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

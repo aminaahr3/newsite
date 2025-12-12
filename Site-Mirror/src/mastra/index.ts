@@ -1,0 +1,1166 @@
+import { Mastra } from "@mastra/core";
+import { MastraError } from "@mastra/core/error";
+import { PinoLogger } from "@mastra/loggers";
+import { LogLevel, MastraLogger } from "@mastra/core/logger";
+import pino from "pino";
+import { MCPServer } from "@mastra/mcp";
+import { NonRetriableError } from "inngest";
+import { z } from "zod";
+
+import { sharedPostgresStorage } from "./storage";
+import { inngest, inngestServe } from "./inngest";
+
+// Import tools for MCP server and API
+import { getEventsTool } from "./tools/getEventsTool";
+import { createOrderTool } from "./tools/createOrderTool";
+import { manageOrderTool } from "./tools/manageOrderTool";
+import { sendTelegramNotificationTool } from "./tools/sendTelegramNotificationTool";
+
+// Import Telegram admin service for notifications
+import { 
+  sendOrderNotificationToAdmin, 
+  updateOrderMessageStatus,
+  answerCallbackQuery 
+} from "./services/telegramAdminService";
+
+class ProductionPinoLogger extends MastraLogger {
+  protected logger: pino.Logger;
+
+  constructor(
+    options: {
+      name?: string;
+      level?: LogLevel;
+    } = {},
+  ) {
+    super(options);
+
+    this.logger = pino({
+      name: options.name || "app",
+      level: options.level || LogLevel.INFO,
+      base: {},
+      formatters: {
+        level: (label: string, _number: number) => ({
+          level: label,
+        }),
+      },
+      timestamp: () => `,"time":"${new Date(Date.now()).toISOString()}"`,
+    });
+  }
+
+  debug(message: string, args: Record<string, any> = {}): void {
+    this.logger.debug(args, message);
+  }
+
+  info(message: string, args: Record<string, any> = {}): void {
+    this.logger.info(args, message);
+  }
+
+  warn(message: string, args: Record<string, any> = {}): void {
+    this.logger.warn(args, message);
+  }
+
+  error(message: string, args: Record<string, any> = {}): void {
+    this.logger.error(args, message);
+  }
+}
+
+export const mastra = new Mastra({
+  storage: sharedPostgresStorage,
+  // No workflows or agents - using simple Telegram admin notifications
+  workflows: {},
+  agents: {},
+  mcpServers: {
+    allTools: new MCPServer({
+      name: "allTools",
+      version: "1.0.0",
+      tools: {
+        getEventsTool,
+        createOrderTool,
+        manageOrderTool,
+        sendTelegramNotificationTool,
+      },
+    }),
+  },
+  bundler: {
+    externals: [
+      "@slack/web-api",
+      "inngest",
+      "inngest/hono",
+      "hono",
+      "hono/streaming",
+      "pg",
+    ],
+    sourcemap: true,
+  },
+  server: {
+    host: "0.0.0.0",
+    port: 5000,
+    middleware: [
+      async (c, next) => {
+        const mastra = c.get("mastra");
+        const logger = mastra?.getLogger();
+        logger?.debug("[Request]", { method: c.req.method, url: c.req.url });
+        try {
+          await next();
+        } catch (error) {
+          logger?.error("[Response]", {
+            method: c.req.method,
+            url: c.req.url,
+            error,
+          });
+          if (error instanceof MastraError) {
+            if (error.id === "AGENT_MEMORY_MISSING_RESOURCE_ID") {
+              throw new NonRetriableError(error.message, { cause: error });
+            }
+          } else if (error instanceof z.ZodError) {
+            throw new NonRetriableError(error.message, { cause: error });
+          }
+
+          throw error;
+        }
+      },
+    ],
+    apiRoutes: [
+      // Inngest Integration Endpoint
+      {
+        path: "/api/inngest",
+        method: "ALL",
+        createHandler: async ({ mastra }) => inngestServe({ mastra, inngest }),
+      },
+
+      // Serve the main HTML page
+      {
+        path: "/",
+        method: "GET",
+        handler: async (c) => {
+          const { readFile } = await import("fs/promises");
+          try {
+            // Use absolute path to workspace root since Mastra bundler changes cwd
+            const htmlPath = "/home/runner/workspace/src/mastra/public/index.html";
+            const html = await readFile(htmlPath, "utf-8");
+            return c.html(html);
+          } catch (error) {
+            console.error("Error serving HTML:", error);
+            return c.text("Page not found", 404);
+          }
+        },
+      },
+
+      // API endpoint for fetching ticket data (events, categories, cities)
+      {
+        path: "/api/ticket-data",
+        method: "GET",
+        handler: async (c) => {
+          const mastra = c.get("mastra");
+          const logger = mastra?.getLogger();
+          logger?.info("📝 [API] Fetching ticket data...");
+          
+          try {
+            const result = await getEventsTool.execute({
+              context: { includeCategories: true, includeCities: true },
+              mastra,
+              runtimeContext: {} as any,
+            });
+            
+            logger?.info(`✅ [API] Returning ${result.events.length} events`);
+            return c.json(result);
+          } catch (error) {
+            logger?.error("❌ [API] Error fetching ticket data:", error);
+            return c.json({ error: "Failed to fetch data" }, 500);
+          }
+        },
+      },
+
+      // API endpoint for creating orders
+      {
+        path: "/api/create-order",
+        method: "POST",
+        handler: async (c) => {
+          const mastra = c.get("mastra");
+          const logger = mastra?.getLogger();
+          
+          try {
+            const body = await c.req.json();
+            logger?.info("📝 [API] Creating order:", body);
+            
+            // Input validation
+            if (!body.eventId || typeof body.eventId !== "number") {
+              return c.json({ success: false, message: "Не указано мероприятие" }, 400);
+            }
+            if (!body.customerName || typeof body.customerName !== "string" || body.customerName.trim().length < 2) {
+              return c.json({ success: false, message: "Укажите ваше имя" }, 400);
+            }
+            if (!body.customerPhone || typeof body.customerPhone !== "string" || body.customerPhone.trim().length < 5) {
+              return c.json({ success: false, message: "Укажите номер телефона" }, 400);
+            }
+            
+            const seatsCount = parseInt(body.seatsCount);
+            if (isNaN(seatsCount) || seatsCount < 1 || seatsCount > 10) {
+              return c.json({ success: false, message: "Количество мест должно быть от 1 до 10" }, 400);
+            }
+            
+            const result = await createOrderTool.execute({
+              context: {
+                eventId: body.eventId,
+                customerName: body.customerName.trim(),
+                customerPhone: body.customerPhone.trim(),
+                customerEmail: body.customerEmail?.trim() || undefined,
+                seatsCount: seatsCount,
+              },
+              mastra,
+              runtimeContext: {} as any,
+            });
+            
+            logger?.info("✅ [API] Order result:", result);
+            
+            // Send notification to admin if order was created successfully
+            if (result.success && result.orderId && result.orderCode) {
+              try {
+                await sendOrderNotificationToAdmin({
+                  orderId: result.orderId,
+                  orderCode: result.orderCode,
+                  eventName: result.eventName || "Мероприятие",
+                  eventDate: result.eventDate || "",
+                  eventTime: result.eventTime || "",
+                  cityName: result.cityName || "",
+                  customerName: result.customerName || "",
+                  customerPhone: result.customerPhone || "",
+                  customerEmail: result.customerEmail,
+                  seatsCount: result.seatsCount || 1,
+                  totalPrice: result.totalPrice || 0,
+                });
+                logger?.info("📤 [API] Admin notification sent");
+              } catch (notifyError) {
+                logger?.error("⚠️ [API] Failed to send admin notification:", notifyError);
+                // Don't fail the order if notification fails
+              }
+            }
+            
+            return c.json(result);
+          } catch (error) {
+            logger?.error("❌ [API] Error creating order:", error);
+            return c.json({ success: false, message: "Ошибка при создании заказа" }, 500);
+          }
+        },
+      },
+
+      // Telegram webhook for admin callbacks (confirm/reject buttons)
+      {
+        path: "/webhooks/telegram/action",
+        method: "POST",
+        handler: async (c) => {
+          const mastra = c.get("mastra");
+          const logger = mastra?.getLogger();
+          
+          try {
+            const payload = await c.req.json();
+            logger?.info("📥 [TelegramWebhook] Received payload:", payload);
+            
+            // Handle callback queries (button presses)
+            if (payload.callback_query) {
+              const callbackQuery = payload.callback_query;
+              const data = callbackQuery.data as string;
+              const messageId = callbackQuery.message?.message_id;
+              const chatId = callbackQuery.message?.chat?.id;
+              const adminUsername = callbackQuery.from?.username;
+              
+              logger?.info("🔘 [TelegramWebhook] Callback:", { data, messageId, chatId });
+              
+              // Parse callback data: confirm_123 or reject_123
+              const [action, orderIdStr] = data.split("_");
+              const orderId = parseInt(orderIdStr);
+              
+              if (isNaN(orderId)) {
+                await answerCallbackQuery(callbackQuery.id, "❌ Ошибка: неверный ID заказа");
+                return c.text("OK", 200);
+              }
+              
+              let result;
+              if (action === "confirm") {
+                result = await manageOrderTool.execute({
+                  context: { action: "confirm_payment", orderId },
+                  mastra,
+                  runtimeContext: {} as any,
+                });
+              } else if (action === "reject") {
+                result = await manageOrderTool.execute({
+                  context: { action: "reject_payment", orderId },
+                  mastra,
+                  runtimeContext: {} as any,
+                });
+              } else {
+                await answerCallbackQuery(callbackQuery.id, "❌ Неизвестное действие");
+                return c.text("OK", 200);
+              }
+              
+              if (result.success && result.order) {
+                const status = action === "confirm" ? "confirmed" : "rejected";
+                await updateOrderMessageStatus(
+                  chatId,
+                  messageId,
+                  result.order.orderCode,
+                  status,
+                  adminUsername
+                );
+                await answerCallbackQuery(
+                  callbackQuery.id, 
+                  action === "confirm" ? "✅ Оплата подтверждена!" : "❌ Заказ отклонён"
+                );
+              } else {
+                await answerCallbackQuery(callbackQuery.id, result.message || "❌ Ошибка");
+              }
+              
+              return c.text("OK", 200);
+            }
+            
+            // For regular messages, just acknowledge (admin bot doesn't need to respond)
+            return c.text("OK", 200);
+          } catch (error) {
+            logger?.error("❌ [TelegramWebhook] Error:", error);
+            return c.text("OK", 200);
+          }
+        },
+      },
+
+      // Admin panel page
+      {
+        path: "/admin",
+        method: "GET",
+        handler: async (c) => {
+          const { readFile } = await import("fs/promises");
+          try {
+            const htmlPath = "/home/runner/workspace/src/mastra/public/admin.html";
+            const html = await readFile(htmlPath, "utf-8");
+            return c.html(html);
+          } catch (error) {
+            return c.text("Page not found", 404);
+          }
+        },
+      },
+
+      // Public event page
+      {
+        path: "/event/:id",
+        method: "GET",
+        handler: async (c) => {
+          const { readFile } = await import("fs/promises");
+          try {
+            const htmlPath = "/home/runner/workspace/src/mastra/public/event.html";
+            const html = await readFile(htmlPath, "utf-8");
+            return c.html(html);
+          } catch (error) {
+            return c.text("Page not found", 404);
+          }
+        },
+      },
+
+      // API to get single event details
+      {
+        path: "/api/event/:id",
+        method: "GET",
+        handler: async (c) => {
+          const mastra = c.get("mastra");
+          const logger = mastra?.getLogger();
+          const eventId = parseInt(c.req.param("id"));
+          
+          if (isNaN(eventId)) {
+            return c.json({ error: "Invalid event ID" }, 400);
+          }
+
+          try {
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            const result = await pool.query(
+              `SELECT e.*, c.name_ru as category_name, ci.name as city_name 
+               FROM events e 
+               JOIN categories c ON e.category_id = c.id 
+               JOIN cities ci ON e.city_id = ci.id 
+               WHERE e.id = $1`,
+              [eventId]
+            );
+            await pool.end();
+
+            if (result.rows.length === 0) {
+              return c.json({ error: "Event not found" }, 404);
+            }
+
+            const event = result.rows[0];
+            return c.json({
+              id: event.id,
+              name: event.name,
+              description: event.description,
+              categoryName: event.category_name,
+              cityName: event.city_name,
+              date: event.date?.toISOString?.()?.split("T")[0] || event.date,
+              time: event.time,
+              price: parseFloat(event.price) || 0,
+              availableSeats: event.available_seats,
+              coverImageUrl: event.cover_image_url,
+              slug: event.slug,
+            });
+          } catch (error) {
+            logger?.error("❌ [API] Error fetching event:", error);
+            return c.json({ error: "Failed to fetch event" }, 500);
+          }
+        },
+      },
+
+      // Admin API: Verify password
+      {
+        path: "/api/admin/verify",
+        method: "POST",
+        handler: async (c) => {
+          const body = await c.req.json();
+          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          if (body.password === adminPassword) {
+            return c.json({ success: true });
+          }
+          return c.json({ success: false, message: "Неверный пароль" }, 401);
+        },
+      },
+
+      // Admin API: Create event
+      {
+        path: "/api/admin/events",
+        method: "POST",
+        handler: async (c) => {
+          const mastra = c.get("mastra");
+          const logger = mastra?.getLogger();
+
+          // Check admin auth header
+          const authPassword = c.req.header("X-Admin-Password");
+          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          if (authPassword !== adminPassword) {
+            return c.json({ success: false, message: "Unauthorized" }, 401);
+          }
+
+          try {
+            const body = await c.req.json();
+            logger?.info("📝 [Admin API] Creating event:", body);
+
+            const slug = body.name.toLowerCase()
+              .replace(/[^\w\sа-яё-]/gi, '')
+              .replace(/\s+/g, '-')
+              .replace(/--+/g, '-');
+
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            const result = await pool.query(
+              `INSERT INTO events (name, description, category_id, city_id, date, time, price, available_seats, cover_image_url, slug, is_published)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true)
+               RETURNING id`,
+              [body.name, body.description, body.categoryId, body.cityId, body.date, body.time, body.price, body.availableSeats, body.coverImageUrl, slug]
+            );
+            await pool.end();
+
+            logger?.info("✅ [Admin API] Event created:", result.rows[0].id);
+            return c.json({ success: true, eventId: result.rows[0].id, slug });
+          } catch (error) {
+            logger?.error("❌ [Admin API] Error creating event:", error);
+            return c.json({ success: false, message: "Ошибка создания мероприятия" }, 500);
+          }
+        },
+      },
+
+      // Admin API: Update event
+      {
+        path: "/api/admin/events/:id",
+        method: "PUT",
+        handler: async (c) => {
+          const mastra = c.get("mastra");
+          const logger = mastra?.getLogger();
+          const eventId = parseInt(c.req.param("id"));
+
+          // Check admin auth header
+          const authPassword = c.req.header("X-Admin-Password");
+          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          if (authPassword !== adminPassword) {
+            return c.json({ success: false, message: "Unauthorized" }, 401);
+          }
+
+          try {
+            const body = await c.req.json();
+            logger?.info("📝 [Admin API] Updating event:", eventId, body);
+
+            const slug = body.name.toLowerCase()
+              .replace(/[^\w\sа-яё-]/gi, '')
+              .replace(/\s+/g, '-')
+              .replace(/--+/g, '-');
+
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            await pool.query(
+              `UPDATE events SET name=$1, description=$2, category_id=$3, city_id=$4, date=$5, time=$6, price=$7, available_seats=$8, cover_image_url=$9, slug=$10
+               WHERE id=$11`,
+              [body.name, body.description, body.categoryId, body.cityId, body.date, body.time, body.price, body.availableSeats, body.coverImageUrl, slug, eventId]
+            );
+            await pool.end();
+
+            logger?.info("✅ [Admin API] Event updated:", eventId);
+            return c.json({ success: true });
+          } catch (error) {
+            logger?.error("❌ [Admin API] Error updating event:", error);
+            return c.json({ success: false, message: "Ошибка обновления мероприятия" }, 500);
+          }
+        },
+      },
+
+      // Admin API: Delete event
+      {
+        path: "/api/admin/events/:id",
+        method: "DELETE",
+        handler: async (c) => {
+          const mastra = c.get("mastra");
+          const logger = mastra?.getLogger();
+          const eventId = parseInt(c.req.param("id"));
+
+          // Check admin auth header
+          const authPassword = c.req.header("X-Admin-Password");
+          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          if (authPassword !== adminPassword) {
+            return c.json({ success: false, message: "Unauthorized" }, 401);
+          }
+
+          try {
+            logger?.info("📝 [Admin API] Deleting event:", eventId);
+
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            await pool.query("DELETE FROM events WHERE id=$1", [eventId]);
+            await pool.end();
+
+            logger?.info("✅ [Admin API] Event deleted:", eventId);
+            return c.json({ success: true });
+          } catch (error) {
+            logger?.error("❌ [Admin API] Error deleting event:", error);
+            return c.json({ success: false, message: "Ошибка удаления мероприятия" }, 500);
+          }
+        },
+      },
+
+      // Payment Settings API: Get settings
+      {
+        path: "/api/payment-settings",
+        method: "GET",
+        handler: async (c) => {
+          try {
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            const result = await pool.query("SELECT * FROM payment_settings ORDER BY id DESC LIMIT 1");
+            await pool.end();
+            
+            if (result.rows.length === 0) {
+              return c.json({ cardNumber: "", cardHolderName: "", bankName: "" });
+            }
+            
+            const row = result.rows[0];
+            return c.json({
+              cardNumber: row.card_number,
+              cardHolderName: row.card_holder_name,
+              bankName: row.bank_name
+            });
+          } catch (error) {
+            return c.json({ cardNumber: "", cardHolderName: "", bankName: "" });
+          }
+        },
+      },
+
+      // Payment Settings API: Update settings (admin only)
+      {
+        path: "/api/admin/payment-settings",
+        method: "POST",
+        handler: async (c) => {
+          const authPassword = c.req.header("X-Admin-Password");
+          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          if (authPassword !== adminPassword) {
+            return c.json({ success: false, message: "Unauthorized" }, 401);
+          }
+
+          try {
+            const body = await c.req.json();
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            await pool.query(
+              `UPDATE payment_settings SET card_number=$1, card_holder_name=$2, bank_name=$3, updated_at=CURRENT_TIMESTAMP WHERE id=1`,
+              [body.cardNumber, body.cardHolderName, body.bankName]
+            );
+            await pool.end();
+            
+            return c.json({ success: true });
+          } catch (error) {
+            return c.json({ success: false, message: "Ошибка сохранения" }, 500);
+          }
+        },
+      },
+
+      // Order API: Get order by code
+      {
+        path: "/api/order/:code",
+        method: "GET",
+        handler: async (c) => {
+          const orderCode = c.req.param("code");
+          try {
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            const result = await pool.query(
+              `SELECT o.*, e.name as event_name, e.price 
+               FROM orders o 
+               JOIN events e ON o.event_id = e.id 
+               WHERE o.order_code = $1`,
+              [orderCode]
+            );
+            await pool.end();
+            
+            if (result.rows.length === 0) {
+              return c.json({ error: "Order not found" }, 404);
+            }
+            
+            const order = result.rows[0];
+            return c.json({
+              id: order.id,
+              orderCode: order.order_code,
+              eventName: order.event_name,
+              customerName: order.customer_name,
+              seatsCount: order.seats_count,
+              totalPrice: parseFloat(order.total_price) || order.seats_count * parseFloat(order.price),
+              status: order.status
+            });
+          } catch (error) {
+            return c.json({ error: "Failed to fetch order" }, 500);
+          }
+        },
+      },
+
+      // Payment page
+      {
+        path: "/payment",
+        method: "GET",
+        handler: async (c) => {
+          const fs = await import("fs");
+          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/payment.html", "utf-8");
+          return c.html(html);
+        },
+      },
+
+      // Generator page
+      {
+        path: "/generator",
+        method: "GET",
+        handler: async (c) => {
+          const fs = await import("fs");
+          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/generator.html", "utf-8");
+          return c.html(html);
+        },
+      },
+
+      // Admin Register
+      {
+        path: "/api/admin/register",
+        method: "POST",
+        handler: async (c) => {
+          try {
+            const body = await c.req.json();
+            const { username, displayName, password } = body;
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            const existing = await pool.query("SELECT id FROM admins WHERE username=$1", [username]);
+            if (existing.rows.length > 0) {
+              await pool.end();
+              return c.json({ success: false, message: "Логин уже занят" });
+            }
+            
+            const result = await pool.query(
+              "INSERT INTO admins (username, password_hash, display_name) VALUES ($1, $2, $3) RETURNING id, username, display_name",
+              [username, password, displayName]
+            );
+            await pool.end();
+            
+            const admin = result.rows[0];
+            const token = `${admin.id}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+            
+            return c.json({
+              success: true,
+              token,
+              admin: { id: admin.id, username: admin.username, displayName: admin.display_name }
+            });
+          } catch (error) {
+            console.error("Register error:", error);
+            return c.json({ success: false, message: "Ошибка регистрации" }, 500);
+          }
+        },
+      },
+
+      // Admin Login
+      {
+        path: "/api/admin/login",
+        method: "POST",
+        handler: async (c) => {
+          try {
+            const body = await c.req.json();
+            const { username, password } = body;
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            const result = await pool.query(
+              "SELECT id, username, display_name, password_hash FROM admins WHERE username=$1",
+              [username]
+            );
+            await pool.end();
+            
+            if (result.rows.length === 0 || result.rows[0].password_hash !== password) {
+              return c.json({ success: false, message: "Неверный логин или пароль" });
+            }
+            
+            const admin = result.rows[0];
+            const token = `${admin.id}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+            
+            return c.json({
+              success: true,
+              token,
+              admin: { id: admin.id, username: admin.username, displayName: admin.display_name }
+            });
+          } catch (error) {
+            console.error("Login error:", error);
+            return c.json({ success: false, message: "Ошибка входа" }, 500);
+          }
+        },
+      },
+
+      // Generate Event (multi-admin)
+      {
+        path: "/api/admin/generate-event",
+        method: "POST",
+        handler: async (c) => {
+          try {
+            const authHeader = c.req.header("Authorization");
+            if (!authHeader?.startsWith("Bearer ")) {
+              return c.json({ success: false, message: "Unauthorized" }, 401);
+            }
+            
+            const token = authHeader.split(" ")[1];
+            const adminId = parseInt(token.split("_")[0]);
+            if (!adminId) {
+              return c.json({ success: false, message: "Invalid token" }, 401);
+            }
+            
+            const body = await c.req.json();
+            const slug = `${body.name.toLowerCase()
+              .replace(/[^\w\sа-яё-]/gi, '')
+              .replace(/\s+/g, '-')
+              .replace(/--+/g, '-')}-${Math.random().toString(36).slice(2, 8)}`;
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            await pool.query(
+              `INSERT INTO events (name, description, category_id, city_id, date, time, price, available_seats, cover_image_url, slug, is_published, admin_id)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, $11)`,
+              [body.name, body.description, body.categoryId, body.cityId, body.date, body.time, body.price, body.availableSeats, body.coverImageUrl, slug, adminId]
+            );
+            await pool.end();
+            
+            return c.json({ success: true, slug });
+          } catch (error) {
+            console.error("Generate event error:", error);
+            return c.json({ success: false, message: "Ошибка генерации" }, 500);
+          }
+        },
+      },
+
+      // My Events (admin-specific)
+      {
+        path: "/api/admin/my-events",
+        method: "GET",
+        handler: async (c) => {
+          try {
+            const authHeader = c.req.header("Authorization");
+            if (!authHeader?.startsWith("Bearer ")) {
+              return c.json({ events: [] });
+            }
+            
+            const token = authHeader.split(" ")[1];
+            const adminId = parseInt(token.split("_")[0]);
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            const result = await pool.query(
+              `SELECT e.*, c.name as city_name, cat.name_ru as category_name
+               FROM events e
+               LEFT JOIN cities c ON e.city_id = c.id
+               LEFT JOIN categories cat ON e.category_id = cat.id
+               WHERE e.admin_id = $1
+               ORDER BY e.created_at DESC`,
+              [adminId]
+            );
+            await pool.end();
+            
+            const events = result.rows.map(e => ({
+              id: e.id,
+              name: e.name,
+              slug: e.slug,
+              cityName: e.city_name,
+              categoryName: e.category_name,
+              date: e.date?.toISOString?.()?.split("T")[0] || e.date,
+              time: e.time,
+              price: parseFloat(e.price) || 0,
+              availableSeats: e.available_seats
+            }));
+            
+            return c.json({ events });
+          } catch (error) {
+            console.error("My events error:", error);
+            return c.json({ events: [] });
+          }
+        },
+      },
+
+      // My Payment Settings (get)
+      {
+        path: "/api/admin/my-payment-settings",
+        method: "GET",
+        handler: async (c) => {
+          try {
+            const authHeader = c.req.header("Authorization");
+            if (!authHeader?.startsWith("Bearer ")) {
+              return c.json({ cardNumber: "", cardHolderName: "", bankName: "" });
+            }
+            
+            const token = authHeader.split(" ")[1];
+            const adminId = parseInt(token.split("_")[0]);
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            const result = await pool.query(
+              "SELECT * FROM admin_payment_settings WHERE admin_id=$1",
+              [adminId]
+            );
+            await pool.end();
+            
+            if (result.rows.length === 0) {
+              return c.json({ cardNumber: "", cardHolderName: "", bankName: "" });
+            }
+            
+            const row = result.rows[0];
+            return c.json({
+              cardNumber: row.card_number,
+              cardHolderName: row.card_holder_name,
+              bankName: row.bank_name
+            });
+          } catch (error) {
+            return c.json({ cardNumber: "", cardHolderName: "", bankName: "" });
+          }
+        },
+      },
+
+      // My Payment Settings (save)
+      {
+        path: "/api/admin/my-payment-settings",
+        method: "POST",
+        handler: async (c) => {
+          try {
+            const authHeader = c.req.header("Authorization");
+            if (!authHeader?.startsWith("Bearer ")) {
+              return c.json({ success: false, message: "Unauthorized" }, 401);
+            }
+            
+            const token = authHeader.split(" ")[1];
+            const adminId = parseInt(token.split("_")[0]);
+            
+            const body = await c.req.json();
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            await pool.query(
+              `INSERT INTO admin_payment_settings (admin_id, card_number, card_holder_name, bank_name)
+               VALUES ($1, $2, $3, $4)
+               ON CONFLICT (admin_id) DO UPDATE SET
+               card_number = $2, card_holder_name = $3, bank_name = $4, updated_at = CURRENT_TIMESTAMP`,
+              [adminId, body.cardNumber, body.cardHolderName, body.bankName]
+            );
+            await pool.end();
+            
+            return c.json({ success: true });
+          } catch (error) {
+            console.error("Save payment settings error:", error);
+            return c.json({ success: false, message: "Ошибка сохранения" }, 500);
+          }
+        },
+      },
+
+      // Public event page by slug
+      {
+        path: "/e/:slug",
+        method: "GET",
+        handler: async (c) => {
+          const fs = await import("fs");
+          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/ticket.html", "utf-8");
+          return c.html(html);
+        },
+      },
+
+      // API: Get event by slug
+      {
+        path: "/api/e/:slug",
+        method: "GET",
+        handler: async (c) => {
+          const slug = c.req.param("slug");
+          try {
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            const result = await pool.query(
+              `SELECT e.*, c.name as city_name, cat.name_ru as category_name
+               FROM events e
+               LEFT JOIN cities c ON e.city_id = c.id
+               LEFT JOIN categories cat ON e.category_id = cat.id
+               WHERE e.slug = $1 AND e.is_published = true`,
+              [slug]
+            );
+            await pool.end();
+            
+            if (result.rows.length === 0) {
+              return c.json({ error: "Event not found" }, 404);
+            }
+            
+            const e = result.rows[0];
+            return c.json({
+              id: e.id,
+              adminId: e.admin_id,
+              name: e.name,
+              description: e.description,
+              categoryName: e.category_name,
+              cityName: e.city_name,
+              date: e.date?.toISOString?.()?.split("T")[0] || e.date,
+              time: e.time,
+              price: parseFloat(e.price) || 0,
+              availableSeats: e.available_seats,
+              coverImageUrl: e.cover_image_url,
+              slug: e.slug
+            });
+          } catch (error) {
+            console.error("Get event error:", error);
+            return c.json({ error: "Failed to fetch event" }, 500);
+          }
+        },
+      },
+
+      // Create ticket order - sends notification to admin immediately
+      {
+        path: "/api/create-ticket-order",
+        method: "POST",
+        handler: async (c) => {
+          try {
+            const body = await c.req.json();
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            const eventResult = await pool.query(
+              `SELECT e.id, e.price, e.available_seats, e.admin_id, e.name, e.date, e.time, c.name as city_name
+               FROM events e
+               LEFT JOIN cities c ON e.city_id = c.id
+               WHERE e.slug=$1`,
+              [body.eventSlug]
+            );
+            
+            if (eventResult.rows.length === 0) {
+              await pool.end();
+              return c.json({ success: false, message: "Мероприятие не найдено" });
+            }
+            
+            const event = eventResult.rows[0];
+            if (event.available_seats < body.seatsCount) {
+              await pool.end();
+              return c.json({ success: false, message: "Недостаточно мест" });
+            }
+            
+            const orderCode = `TK${Date.now().toString(36).toUpperCase()}`;
+            const totalPrice = parseFloat(event.price) * body.seatsCount;
+            
+            const orderResult = await pool.query(
+              `INSERT INTO orders (event_id, admin_id, customer_name, customer_phone, customer_email, seats_count, total_price, order_code, status)
+               VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')
+               RETURNING id`,
+              [event.id, event.admin_id, body.customerName, body.customerPhone, body.customerEmail, body.seatsCount, totalPrice, orderCode]
+            );
+            
+            await pool.query(
+              "UPDATE events SET available_seats = available_seats - $1 WHERE id = $2",
+              [body.seatsCount, event.id]
+            );
+            
+            await pool.end();
+            
+            // Send notification to admin immediately when customer reaches payment page
+            try {
+              await sendOrderNotificationToAdmin({
+                orderId: orderResult.rows[0].id,
+                orderCode: orderCode,
+                eventName: event.name,
+                eventDate: event.date?.toISOString?.()?.split("T")[0] || String(event.date),
+                eventTime: event.time || "",
+                cityName: event.city_name || "",
+                customerName: body.customerName,
+                customerPhone: body.customerPhone,
+                customerEmail: body.customerEmail,
+                seatsCount: body.seatsCount,
+                totalPrice: totalPrice
+              });
+              console.log("📤 [API] Admin notification sent for new order:", orderCode);
+            } catch (notifyError) {
+              console.error("⚠️ [API] Failed to send admin notification:", notifyError);
+            }
+            
+            return c.json({ success: true, orderCode });
+          } catch (error) {
+            console.error("Create order error:", error);
+            return c.json({ success: false, message: "Ошибка создания заказа" }, 500);
+          }
+        },
+      },
+
+      // Get ticket order by code
+      {
+        path: "/api/ticket-order/:code",
+        method: "GET",
+        handler: async (c) => {
+          const orderCode = c.req.param("code");
+          try {
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            const result = await pool.query(
+              `SELECT o.*, e.name as event_name, e.date, e.time, e.price
+               FROM orders o
+               JOIN events e ON o.event_id = e.id
+               WHERE o.order_code = $1`,
+              [orderCode]
+            );
+            await pool.end();
+            
+            if (result.rows.length === 0) {
+              return c.json({ error: "Order not found" }, 404);
+            }
+            
+            const o = result.rows[0];
+            return c.json({
+              id: o.id,
+              orderCode: o.order_code,
+              eventName: o.event_name,
+              customerName: o.customer_name,
+              seatsCount: o.seats_count,
+              totalPrice: parseFloat(o.total_price),
+              status: o.status,
+              eventDate: o.date,
+              eventTime: o.time
+            });
+          } catch (error) {
+            return c.json({ error: "Failed to fetch order" }, 500);
+          }
+        },
+      },
+
+      // Get payment settings for order
+      {
+        path: "/api/ticket-order/:code/payment-settings",
+        method: "GET",
+        handler: async (c) => {
+          const orderCode = c.req.param("code");
+          try {
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            const result = await pool.query(
+              `SELECT aps.* FROM admin_payment_settings aps
+               JOIN orders o ON o.admin_id = aps.admin_id
+               WHERE o.order_code = $1`,
+              [orderCode]
+            );
+            await pool.end();
+            
+            if (result.rows.length === 0) {
+              return c.json({ cardNumber: "", cardHolderName: "", bankName: "" });
+            }
+            
+            const row = result.rows[0];
+            return c.json({
+              cardNumber: row.card_number,
+              cardHolderName: row.card_holder_name,
+              bankName: row.bank_name
+            });
+          } catch (error) {
+            return c.json({ cardNumber: "", cardHolderName: "", bankName: "" });
+          }
+        },
+      },
+
+      // Mark order as paid (waiting confirmation) - notification already sent when order was created
+      {
+        path: "/api/ticket-order/:code/mark-paid",
+        method: "POST",
+        handler: async (c) => {
+          const orderCode = c.req.param("code");
+          try {
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            await pool.query(
+              "UPDATE orders SET status='waiting_confirmation' WHERE order_code=$1",
+              [orderCode]
+            );
+            
+            await pool.end();
+            console.log("📝 [API] Order marked as waiting confirmation:", orderCode);
+            
+            return c.json({ success: true });
+          } catch (error) {
+            console.error("Mark paid error:", error);
+            return c.json({ success: false, message: "Ошибка" }, 500);
+          }
+        },
+      },
+
+      // Pay page
+      {
+        path: "/pay",
+        method: "GET",
+        handler: async (c) => {
+          const fs = await import("fs");
+          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/pay.html", "utf-8");
+          return c.html(html);
+        },
+      },
+    ],
+  },
+  logger:
+    process.env.NODE_ENV === "production"
+      ? new ProductionPinoLogger({
+          name: "Mastra",
+          level: "info",
+        })
+      : new PinoLogger({
+          name: "Mastra",
+          level: "info",
+        }),
+});
+
+/*  Sanity check 1: Throw an error if there are more than 1 workflows.  */
+// !!!!!! Do not remove this check. !!!!!!
+if (Object.keys(mastra.getWorkflows()).length > 1) {
+  throw new Error(
+    "More than 1 workflows found. Currently, more than 1 workflows are not supported in the UI, since doing so will cause app state to be inconsistent.",
+  );
+}
+
+/*  Sanity check 2: Throw an error if there are more than 1 agents.  */
+// !!!!!! Do not remove this check. !!!!!!
+if (Object.keys(mastra.getAgents()).length > 1) {
+  throw new Error(
+    "More than 1 agents found. Currently, more than 1 agents are not supported in the UI, since doing so will cause app state to be inconsistent.",
+  );
+}

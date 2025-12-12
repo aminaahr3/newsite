@@ -1,0 +1,69 @@
+# Replit.md
+
+## Overview
+
+This is a Mastra-based AI agent automation platform that enables building, orchestrating, and deploying AI-powered workflows. The system uses Mastra as the core AI framework with Inngest for durable workflow execution. It currently implements a Telegram ticket bot that can handle events, orders, and notifications through conversational AI.
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
+
+## System Architecture
+
+### Core Framework
+- **Mastra Framework**: TypeScript-first AI agent framework providing agents, tools, workflows, and memory management
+- **Inngest Integration**: Provides durable execution for workflows - if a workflow fails in production, it can resume from where it left off. Custom integration code lives in `src/mastra/inngest/`
+
+### Agent Architecture
+- Agents are defined in `src/mastra/agents/` and use the `Agent` class from `@mastra/core/agent`
+- Agents require `name`, `instructions`, and `model` configuration
+- Tools extend agent capabilities for API calls, database queries, and custom functions
+- Memory is supported via `@mastra/memory` with PostgreSQL storage for conversation history and semantic recall
+
+### Workflow System
+- Workflows are defined in `src/mastra/workflows/` using `createWorkflow` and `createStep` from `@mastra/core/workflows`
+- Steps have `inputSchema` and `outputSchema` defined with Zod for type safety
+- Workflows support chaining (`.then()`), parallel execution (`.parallel()`), and conditional branching
+- **Important**: Workflows must use `generateLegacy()` for agent calls due to Replit Playground UI backwards compatibility requirements
+
+### Trigger System
+- **Time-based triggers**: Cron expressions via `registerCronTrigger()` - called before Mastra initialization, not in apiRoutes
+- **Webhook triggers**: HTTP endpoints for external services (Telegram, Slack, Linear) - spread into apiRoutes array
+- Trigger handlers receive the Mastra instance and can start workflows via `workflow.createRunAsync()`
+
+### Storage Layer
+- PostgreSQL via `@mastra/pg` for persistent storage
+- Shared storage instance in `src/mastra/storage.ts` used across agents and workflows
+- LibSQL (`@mastra/libsql`) available as alternative for local development
+
+### Entry Point
+- Main configuration in `src/mastra/index.ts` - exports the `mastra` instance
+- Must preserve Inngest imports: `import { inngest, inngestServe } from "./inngest";`
+- Development server runs via `npm run dev` (mastra dev)
+
+## External Dependencies
+
+### AI/LLM Providers
+- **OpenAI**: Via `@ai-sdk/openai` - primary model provider
+- **OpenRouter**: Via `@openrouter/ai-sdk-provider` - alternative model routing
+- **Vercel AI SDK**: Via `ai` package for model interactions
+
+### Messaging Platforms
+- **Telegram**: `node-telegram-bot-api` for bot interactions, webhook trigger in `src/triggers/telegramTriggers.ts`
+- **Slack**: `@slack/web-api` for Slack integration, trigger in `src/triggers/slackTriggers.ts`
+
+### Workflow Orchestration
+- **Inngest**: `inngest` + `@mastra/inngest` for durable workflow execution and step-by-step orchestration
+- **Inngest Realtime**: `@inngest/realtime` for real-time monitoring
+
+### Database
+- **PostgreSQL**: `pg` + `@mastra/pg` for persistent storage
+- **LibSQL**: `@mastra/libsql` for local/embedded database option
+
+### Search/Research
+- **Exa**: `exa-js` for web search capabilities
+
+### Utilities
+- **Zod**: Schema validation for all inputs/outputs
+- **Pino**: Logging via `@mastra/loggers`
+- **dotenv**: Environment variable management

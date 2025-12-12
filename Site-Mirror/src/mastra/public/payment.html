@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Оплата заказа</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0f0f23 100%);
+      min-height: 100vh;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      max-width: 450px;
+      width: 100%;
+    }
+    .card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 30px;
+      margin-bottom: 20px;
+    }
+    .order-info {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .order-info h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    .order-code {
+      background: rgba(102, 126, 234, 0.2);
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-family: monospace;
+      font-size: 18px;
+      letter-spacing: 2px;
+      display: inline-block;
+    }
+    .amount-display {
+      text-align: center;
+      margin: 30px 0;
+    }
+    .amount-label {
+      color: rgba(255,255,255,0.6);
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    .amount-value {
+      font-size: 42px;
+      font-weight: bold;
+      color: #4ade80;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 25px;
+      font-size: 20px;
+    }
+    .payment-methods {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .payment-btn {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 20px;
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 15px;
+      background: rgba(255,255,255,0.05);
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+      text-decoration: none;
+    }
+    .payment-btn:hover:not(.disabled) {
+      border-color: rgba(102, 126, 234, 0.5);
+      background: rgba(102, 126, 234, 0.1);
+      transform: translateY(-2px);
+    }
+    .payment-btn.disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .payment-btn .icon {
+      font-size: 28px;
+      width: 40px;
+      text-align: center;
+    }
+    .payment-btn .text {
+      flex: 1;
+    }
+    .payment-btn .text .title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .payment-btn .text .subtitle {
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+    }
+    .payment-btn .arrow {
+      font-size: 20px;
+      color: rgba(255,255,255,0.4);
+    }
+    .sbp-page { display: none; }
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      margin-bottom: 20px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .back-btn:hover { color: #fff; }
+    .requisites-card {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
+      border: 1px solid rgba(102, 126, 234, 0.3);
+      border-radius: 20px;
+      padding: 25px;
+      text-align: center;
+    }
+    .bank-name {
+      color: rgba(255,255,255,0.6);
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+    .card-number {
+      font-size: 28px;
+      font-family: monospace;
+      letter-spacing: 3px;
+      margin-bottom: 10px;
+      word-break: break-all;
+    }
+    .card-holder {
+      color: rgba(255,255,255,0.7);
+      font-size: 16px;
+      margin-bottom: 25px;
+    }
+    .copy-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border: none;
+      border-radius: 10px;
+      padding: 15px 30px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .copy-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4); }
+    .copy-btn.copied {
+      background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+    }
+    .instructions {
+      margin-top: 25px;
+      padding: 20px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 12px;
+    }
+    .instructions h3 {
+      font-size: 14px;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 15px;
+    }
+    .instructions ol {
+      list-style-position: inside;
+      color: rgba(255,255,255,0.6);
+      font-size: 14px;
+      line-height: 2;
+    }
+    .warning {
+      background: rgba(234, 179, 8, 0.2);
+      border: 1px solid rgba(234, 179, 8, 0.3);
+      border-radius: 12px;
+      padding: 15px;
+      margin-top: 20px;
+      text-align: center;
+      font-size: 14px;
+      color: #fbbf24;
+    }
+    .loading { text-align: center; padding: 40px; }
+    .error-page { text-align: center; padding: 40px; }
+    .error-page h1 { color: #ef4444; margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="loading" id="loading">Загрузка...</div>
+    
+    <div class="error-page" id="errorPage" style="display: none;">
+      <h1>Заказ не найден</h1>
+      <p style="color: rgba(255,255,255,0.6);">Проверьте правильность ссылки</p>
+    </div>
+
+    <div class="payment-select" id="paymentSelect" style="display: none;">
+      <div class="card order-info">
+        <h1>Оплата заказа</h1>
+        <div class="order-code" id="orderCodeDisplay"></div>
+      </div>
+
+      <div class="amount-display">
+        <div class="amount-label">К оплате</div>
+        <div class="amount-value" id="amountDisplay">0 ₽</div>
+      </div>
+
+      <div class="card">
+        <h2>Выберите способ оплаты</h2>
+        <div class="payment-methods">
+          <div class="payment-btn disabled">
+            <span class="icon">💳</span>
+            <span class="text">
+              <div class="title">Банковская карта</div>
+              <div class="subtitle">Временно недоступно</div>
+            </span>
+          </div>
+          <div class="payment-btn" onclick="showSbpPage()">
+            <span class="icon">📱</span>
+            <span class="text">
+              <div class="title">СБП (Система быстрых платежей)</div>
+              <div class="subtitle">Перевод по номеру карты</div>
+            </span>
+            <span class="arrow">→</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sbp-page" id="sbpPage">
+      <a class="back-btn" onclick="showPaymentSelect()">← Назад к выбору оплаты</a>
+      
+      <div class="card order-info">
+        <h1>Оплата через СБП</h1>
+        <div class="order-code" id="orderCodeSbp"></div>
+      </div>
+
+      <div class="amount-display">
+        <div class="amount-label">Сумма перевода</div>
+        <div class="amount-value" id="amountSbp">0 ₽</div>
+      </div>
+
+      <div class="requisites-card">
+        <div class="bank-name" id="bankName">Сбербанк</div>
+        <div class="card-number" id="cardNumber">0000 0000 0000 0000</div>
+        <div class="card-holder" id="cardHolder">ИМЯ ДЕРЖАТЕЛЯ</div>
+        <button class="copy-btn" onclick="copyCardNumber()">📋 Скопировать номер карты</button>
+      </div>
+
+      <div class="instructions">
+        <h3>Инструкция по оплате:</h3>
+        <ol>
+          <li>Откройте приложение вашего банка</li>
+          <li>Выберите "Перевод по номеру карты"</li>
+          <li>Введите номер карты и сумму</li>
+          <li>Подтвердите перевод</li>
+        </ol>
+      </div>
+
+      <div class="warning">
+        ⚠️ После перевода ожидайте подтверждения от администратора
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let orderData = null;
+    let paymentSettings = null;
+
+    async function init() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const orderCode = urlParams.get('order');
+      
+      if (!orderCode) {
+        showError();
+        return;
+      }
+
+      try {
+        const [orderRes, settingsRes] = await Promise.all([
+          fetch(`/api/order/${orderCode}`),
+          fetch('/api/payment-settings')
+        ]);
+        
+        if (!orderRes.ok) {
+          showError();
+          return;
+        }
+        
+        orderData = await orderRes.json();
+        paymentSettings = await settingsRes.json();
+        
+        if (!orderData || orderData.error) {
+          showError();
+          return;
+        }
+        
+        renderPayment();
+      } catch (err) {
+        console.error('Error:', err);
+        showError();
+      }
+    }
+
+    function showError() {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('errorPage').style.display = 'block';
+    }
+
+    function renderPayment() {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('paymentSelect').style.display = 'block';
+      
+      const amount = orderData.totalPrice.toLocaleString() + ' ₽';
+      document.getElementById('orderCodeDisplay').textContent = orderData.orderCode;
+      document.getElementById('amountDisplay').textContent = amount;
+      document.getElementById('orderCodeSbp').textContent = orderData.orderCode;
+      document.getElementById('amountSbp').textContent = amount;
+      
+      if (paymentSettings) {
+        document.getElementById('cardNumber').textContent = paymentSettings.cardNumber || '0000 0000 0000 0000';
+        document.getElementById('cardHolder').textContent = (paymentSettings.cardHolderName || 'ИМЯ ДЕРЖАТЕЛЯ').toUpperCase();
+        document.getElementById('bankName').textContent = paymentSettings.bankName || 'Банк';
+      }
+    }
+
+    function showSbpPage() {
+      document.getElementById('paymentSelect').style.display = 'none';
+      document.getElementById('sbpPage').style.display = 'block';
+    }
+
+    function showPaymentSelect() {
+      document.getElementById('sbpPage').style.display = 'none';
+      document.getElementById('paymentSelect').style.display = 'block';
+    }
+
+    function copyCardNumber() {
+      const cardNumber = document.getElementById('cardNumber').textContent.replace(/\s/g, '');
+      navigator.clipboard.writeText(cardNumber).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        btn.textContent = '✅ Скопировано!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = '📋 Скопировать номер карты';
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Генератор ссылки</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(180deg, #1a1a2e 0%, #0d0d1a 100%);
+      min-height: 100vh;
+      color: #fff;
+    }
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .header {
+      text-align: center;
+      padding: 30px 0;
+    }
+    .header h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+      color: #fff;
+    }
+    .header p {
+      color: rgba(255,255,255,0.6);
+      font-size: 14px;
+    }
+    .login-section, .register-section {
+      background: rgba(255,255,255,0.05);
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 20px;
+    }
+    .login-section h2, .register-section h2 {
+      font-size: 18px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .generator-section {
+      display: none;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: rgba(255,255,255,0.8);
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      font-size: 15px;
+      transition: all 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: #667eea;
+      background: rgba(255,255,255,0.12);
+    }
+    .form-group input::placeholder {
+      color: rgba(255,255,255,0.4);
+    }
+    .form-group select option {
+      background: #1a1a2e;
+      color: #fff;
+    }
+    .btn {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      margin-top: 10px;
+    }
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.15);
+    }
+    .result-box {
+      display: none;
+      background: rgba(74, 222, 128, 0.1);
+      border: 1px solid rgba(74, 222, 128, 0.3);
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    .result-box h3 {
+      color: #4ade80;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+    .result-link {
+      background: rgba(0,0,0,0.3);
+      padding: 12px;
+      border-radius: 8px;
+      word-break: break-all;
+      font-size: 13px;
+      margin-bottom: 15px;
+    }
+    .copy-btn {
+      background: #4ade80;
+      color: #000;
+      font-weight: 600;
+    }
+    .copy-btn:hover {
+      background: #22c55e;
+    }
+    .events-list {
+      margin-top: 30px;
+    }
+    .events-list h3 {
+      font-size: 18px;
+      margin-bottom: 15px;
+    }
+    .event-item {
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 10px;
+    }
+    .event-item .title {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .event-item .meta {
+      font-size: 13px;
+      color: rgba(255,255,255,0.6);
+      margin-bottom: 10px;
+    }
+    .event-item .link {
+      font-size: 12px;
+      word-break: break-all;
+      color: #667eea;
+      cursor: pointer;
+    }
+    .payment-settings {
+      background: rgba(255,255,255,0.05);
+      border-radius: 15px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .payment-settings h3 {
+      font-size: 16px;
+      margin-bottom: 15px;
+    }
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .tab {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+    .tab.active {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .tab:hover:not(.active) {
+      background: rgba(255,255,255,0.1);
+    }
+    .logout-btn {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      padding: 8px 15px;
+      background: rgba(255,255,255,0.1);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .logout-btn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    .switch-link {
+      text-align: center;
+      margin-top: 15px;
+      color: rgba(255,255,255,0.6);
+      font-size: 14px;
+    }
+    .switch-link a {
+      color: #667eea;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .switch-link a:hover {
+      text-decoration: underline;
+    }
+    .error-msg {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      font-size: 14px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Генератор ссылки</h1>
+      <p>Создавайте уникальные ссылки на мероприятия</p>
+    </div>
+
+    <div class="login-section" id="loginSection">
+      <h2>Вход</h2>
+      <div class="error-msg" id="loginError"></div>
+      <form onsubmit="login(event)">
+        <div class="form-group">
+          <label>Логин</label>
+          <input type="text" id="loginUsername" required placeholder="Ваш логин">
+        </div>
+        <div class="form-group">
+          <label>Пароль</label>
+          <input type="password" id="loginPassword" required placeholder="Ваш пароль">
+        </div>
+        <button type="submit" class="btn btn-primary">Войти</button>
+      </form>
+      <div class="switch-link">
+        Нет аккаунта? <a onclick="showRegister()">Зарегистрироваться</a>
+      </div>
+    </div>
+
+    <div class="register-section" id="registerSection" style="display: none;">
+      <h2>Регистрация</h2>
+      <div class="error-msg" id="registerError"></div>
+      <form onsubmit="register(event)">
+        <div class="form-group">
+          <label>Логин</label>
+          <input type="text" id="regUsername" required placeholder="Придумайте логин" minlength="3">
+        </div>
+        <div class="form-group">
+          <label>Отображаемое имя</label>
+          <input type="text" id="regDisplayName" required placeholder="Ваше имя">
+        </div>
+        <div class="form-group">
+          <label>Пароль</label>
+          <input type="password" id="regPassword" required placeholder="Придумайте пароль" minlength="4">
+        </div>
+        <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+      </form>
+      <div class="switch-link">
+        Уже есть аккаунт? <a onclick="showLogin()">Войти</a>
+      </div>
+    </div>
+
+    <div class="generator-section" id="generatorSection">
+      <button class="logout-btn" onclick="logout()">Выйти</button>
+      
+      <div class="tabs">
+        <div class="tab active" onclick="showTab('create')">Создать</div>
+        <div class="tab" onclick="showTab('mylinks')">Мои ссылки</div>
+        <div class="tab" onclick="showTab('settings')">Реквизиты</div>
+      </div>
+
+      <div id="createTab">
+        <div style="background: rgba(255,255,255,0.05); border-radius: 15px; padding: 25px;">
+          <form onsubmit="generateLink(event)">
+            <div class="form-group">
+              <label>В какой категории билет</label>
+              <select id="category" required></select>
+            </div>
+            <div class="form-group">
+              <label>Выберите город</label>
+              <select id="city" required></select>
+            </div>
+            <div class="form-group">
+              <label>Название мероприятия</label>
+              <input type="text" id="eventName" required placeholder="Введите название">
+            </div>
+            <div class="form-group">
+              <label>Описание</label>
+              <input type="text" id="eventDescription" placeholder="Краткое описание">
+            </div>
+            <div class="form-group">
+              <label>Дата</label>
+              <input type="date" id="eventDate" required>
+            </div>
+            <div class="form-group">
+              <label>Время</label>
+              <input type="time" id="eventTime" required>
+            </div>
+            <div class="form-group">
+              <label>Цена билета (₽)</label>
+              <input type="number" id="eventPrice" required min="0" placeholder="1000">
+            </div>
+            <div class="form-group">
+              <label>Осталось мест</label>
+              <input type="number" id="eventSeats" required min="1" placeholder="50">
+            </div>
+            <div class="form-group">
+              <label>URL обложки (опционально)</label>
+              <input type="url" id="eventImage" placeholder="https://example.com/image.jpg">
+            </div>
+            <button type="submit" class="btn btn-primary">Сгенерировать ссылку</button>
+          </form>
+
+          <div class="result-box" id="resultBox">
+            <h3>✅ Ссылка создана!</h3>
+            <div class="result-link" id="resultLink"></div>
+            <button class="btn copy-btn" onclick="copyLink()">📋 Скопировать ссылку</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="mylinksTab" style="display: none;">
+        <div class="events-list" id="eventsList"></div>
+      </div>
+
+      <div id="settingsTab" style="display: none;">
+        <div class="payment-settings">
+          <h3>💳 Реквизиты для оплаты</h3>
+          <p style="color: rgba(255,255,255,0.6); font-size: 13px; margin-bottom: 20px;">
+            Эти реквизиты будут показаны покупателям ваших билетов
+          </p>
+          <form onsubmit="savePaymentSettings(event)">
+            <div class="form-group">
+              <label>Номер карты</label>
+              <input type="text" id="cardNumber" required placeholder="0000 0000 0000 0000">
+            </div>
+            <div class="form-group">
+              <label>Имя держателя карты</label>
+              <input type="text" id="cardHolderName" required placeholder="ИВАН ИВАНОВ">
+            </div>
+            <div class="form-group">
+              <label>Название банка</label>
+              <input type="text" id="bankName" required placeholder="Сбербанк">
+            </div>
+            <button type="submit" class="btn btn-primary">Сохранить реквизиты</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentAdmin = null;
+    let categories = [];
+    let cities = [];
+    let generatedLink = '';
+    const baseUrl = window.location.origin;
+
+    async function login(e) {
+      e.preventDefault();
+      const username = document.getElementById('loginUsername').value;
+      const password = document.getElementById('loginPassword').value;
+      
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          currentAdmin = data.admin;
+          localStorage.setItem('adminToken', data.token);
+          localStorage.setItem('adminData', JSON.stringify(data.admin));
+          showGenerator();
+        } else {
+          showError('loginError', data.message || 'Неверный логин или пароль');
+        }
+      } catch (err) {
+        showError('loginError', 'Ошибка соединения');
+      }
+    }
+
+    async function register(e) {
+      e.preventDefault();
+      const username = document.getElementById('regUsername').value;
+      const displayName = document.getElementById('regDisplayName').value;
+      const password = document.getElementById('regPassword').value;
+      
+      try {
+        const res = await fetch('/api/admin/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, displayName, password })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          currentAdmin = data.admin;
+          localStorage.setItem('adminToken', data.token);
+          localStorage.setItem('adminData', JSON.stringify(data.admin));
+          showGenerator();
+        } else {
+          showError('registerError', data.message || 'Ошибка регистрации');
+        }
+      } catch (err) {
+        showError('registerError', 'Ошибка соединения');
+      }
+    }
+
+    function showError(elementId, message) {
+      const el = document.getElementById(elementId);
+      el.textContent = message;
+      el.style.display = 'block';
+      setTimeout(() => el.style.display = 'none', 5000);
+    }
+
+    function showLogin() {
+      document.getElementById('loginSection').style.display = 'block';
+      document.getElementById('registerSection').style.display = 'none';
+    }
+
+    function showRegister() {
+      document.getElementById('loginSection').style.display = 'none';
+      document.getElementById('registerSection').style.display = 'block';
+    }
+
+    function showGenerator() {
+      document.getElementById('loginSection').style.display = 'none';
+      document.getElementById('registerSection').style.display = 'none';
+      document.getElementById('generatorSection').style.display = 'block';
+      loadCategories();
+      loadMyEvents();
+      loadPaymentSettings();
+    }
+
+    function logout() {
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminData');
+      currentAdmin = null;
+      document.getElementById('generatorSection').style.display = 'none';
+      document.getElementById('loginSection').style.display = 'block';
+    }
+
+    function showTab(tabName) {
+      document.querySelectorAll('.tab').forEach((t, i) => {
+        t.classList.toggle('active', i === ['create', 'mylinks', 'settings'].indexOf(tabName));
+      });
+      document.getElementById('createTab').style.display = tabName === 'create' ? 'block' : 'none';
+      document.getElementById('mylinksTab').style.display = tabName === 'mylinks' ? 'block' : 'none';
+      document.getElementById('settingsTab').style.display = tabName === 'settings' ? 'block' : 'none';
+      
+      if (tabName === 'mylinks') loadMyEvents();
+    }
+
+    async function loadCategories() {
+      try {
+        const res = await fetch('/api/ticket-data');
+        const data = await res.json();
+        categories = data.categories || [];
+        cities = data.cities || [];
+        
+        document.getElementById('category').innerHTML = 
+          '<option value="">Выберите категорию</option>' +
+          categories.map(c => `<option value="${c.id}">${c.nameRu}</option>`).join('');
+        
+        document.getElementById('city').innerHTML = 
+          '<option value="">Выберите город</option>' +
+          cities.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      } catch (err) {
+        console.error('Error loading categories:', err);
+      }
+    }
+
+    async function generateLink(e) {
+      e.preventDefault();
+      const token = localStorage.getItem('adminToken');
+      
+      const data = {
+        categoryId: parseInt(document.getElementById('category').value),
+        cityId: parseInt(document.getElementById('city').value),
+        name: document.getElementById('eventName').value,
+        description: document.getElementById('eventDescription').value,
+        date: document.getElementById('eventDate').value,
+        time: document.getElementById('eventTime').value,
+        price: parseFloat(document.getElementById('eventPrice').value),
+        availableSeats: parseInt(document.getElementById('eventSeats').value),
+        coverImageUrl: document.getElementById('eventImage').value || null
+      };
+
+      try {
+        const res = await fetch('/api/admin/generate-event', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        
+        if (result.success) {
+          generatedLink = `${baseUrl}/e/${result.slug}`;
+          document.getElementById('resultLink').textContent = generatedLink;
+          document.getElementById('resultBox').style.display = 'block';
+        } else {
+          alert(result.message || 'Ошибка генерации');
+        }
+      } catch (err) {
+        alert('Ошибка соединения');
+      }
+    }
+
+    function copyLink() {
+      navigator.clipboard.writeText(generatedLink).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        btn.textContent = '✅ Скопировано!';
+        setTimeout(() => btn.textContent = '📋 Скопировать ссылку', 2000);
+      });
+    }
+
+    async function loadMyEvents() {
+      const token = localStorage.getItem('adminToken');
+      try {
+        const res = await fetch('/api/admin/my-events', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        if (data.events && data.events.length > 0) {
+          document.getElementById('eventsList').innerHTML = 
+            '<h3>Мои ссылки</h3>' +
+            data.events.map(e => `
+              <div class="event-item">
+                <div class="title">${e.name}</div>
+                <div class="meta">${e.cityName} • ${formatDate(e.date)} • ${e.availableSeats} мест • ${e.price} ₽</div>
+                <div class="link" onclick="navigator.clipboard.writeText('${baseUrl}/e/${e.slug}')">${baseUrl}/e/${e.slug}</div>
+              </div>
+            `).join('');
+        } else {
+          document.getElementById('eventsList').innerHTML = '<p style="text-align:center; opacity:0.6;">У вас пока нет созданных ссылок</p>';
+        }
+      } catch (err) {
+        console.error('Error loading events:', err);
+      }
+    }
+
+    async function loadPaymentSettings() {
+      const token = localStorage.getItem('adminToken');
+      try {
+        const res = await fetch('/api/admin/my-payment-settings', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        document.getElementById('cardNumber').value = data.cardNumber || '';
+        document.getElementById('cardHolderName').value = data.cardHolderName || '';
+        document.getElementById('bankName').value = data.bankName || '';
+      } catch (err) {
+        console.error('Error loading payment settings:', err);
+      }
+    }
+
+    async function savePaymentSettings(e) {
+      e.preventDefault();
+      const token = localStorage.getItem('adminToken');
+      
+      const data = {
+        cardNumber: document.getElementById('cardNumber').value,
+        cardHolderName: document.getElementById('cardHolderName').value,
+        bankName: document.getElementById('bankName').value
+      };
+
+      try {
+        const res = await fetch('/api/admin/my-payment-settings', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        
+        if (result.success) {
+          alert('Реквизиты сохранены!');
+        } else {
+          alert(result.message || 'Ошибка сохранения');
+        }
+      } catch (err) {
+        alert('Ошибка соединения');
+      }
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    }
+
+    // Check if already logged in
+    document.addEventListener('DOMContentLoaded', () => {
+      const token = localStorage.getItem('adminToken');
+      const adminData = localStorage.getItem('adminData');
+      if (token && adminData) {
+        currentAdmin = JSON.parse(adminData);
+        showGenerator();
+      }
+    });
+  </script>
+</body>
+</html>
