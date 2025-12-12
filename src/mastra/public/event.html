@@ -911,12 +911,22 @@
       const city = event.cityName || 'Москва';
       const heroImage = event.coverImageUrl || defaultImages[0];
       
-      const sessions = [
-        { day: 'Пятница', time: '17:00' },
-        { day: 'Суббота', time: '11:00' },
-        { day: 'Суббота', time: '14:00' },
-        { day: 'Суббота', time: '17:00' }
-      ];
+      let sessions = [];
+      if (isGeneratedLink && event.date && event.time) {
+        const eventDate = new Date(event.date);
+        const dayNames = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+        const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+        const dayName = dayNames[eventDate.getDay()];
+        const dateStr = `${eventDate.getDate()} ${monthNames[eventDate.getMonth()]}`;
+        sessions = [{ day: `${dayName}, ${dateStr}`, time: event.time, isSelected: true }];
+      } else {
+        sessions = [
+          { day: 'Пятница', time: '17:00' },
+          { day: 'Суббота', time: '11:00' },
+          { day: 'Суббота', time: '14:00' },
+          { day: 'Суббота', time: '17:00' }
+        ];
+      }
       
       const recs = events.filter(e => e.id !== event.id).slice(0, 6);
       const recommendations = recs.length > 0 ? recs : getDemoRecommendations();

@@ -1461,6 +1461,66 @@ export const mastra = new Mastra({
         },
       },
 
+      // Generator API - Get addresses for event template
+      {
+        path: "/api/generator/event-templates/:id/addresses",
+        method: "GET",
+        handler: async (c) => {
+          try {
+            const eventId = c.req.param("id");
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            const result = await pool.query(
+              "SELECT city_id, venue_address FROM event_template_addresses WHERE event_template_id = $1",
+              [eventId]
+            );
+            
+            await pool.end();
+            return c.json({ addresses: result.rows });
+          } catch (error) {
+            console.error("Error fetching addresses:", error);
+            return c.json({ addresses: [] });
+          }
+        },
+      },
+
+      // Generator API - Save addresses for event template
+      {
+        path: "/api/generator/event-templates/:id/addresses",
+        method: "PUT",
+        handler: async (c) => {
+          try {
+            const eventId = c.req.param("id");
+            const body = await c.req.json();
+            const { addresses } = body;
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            // Delete existing addresses
+            await pool.query(
+              "DELETE FROM event_template_addresses WHERE event_template_id = $1",
+              [eventId]
+            );
+            
+            // Insert new addresses
+            for (const addr of addresses) {
+              await pool.query(
+                "INSERT INTO event_template_addresses (event_template_id, city_id, venue_address) VALUES ($1, $2, $3)",
+                [eventId, addr.city_id, addr.venue_address]
+              );
+            }
+            
+            await pool.end();
+            return c.json({ success: true });
+          } catch (error) {
+            console.error("Error saving addresses:", error);
+            return c.json({ success: false }, 500);
+          }
+        },
+      },
+
       // Generator API - Get all generated links
       {
         path: "/api/generator/links",
@@ -1500,11 +1560,18 @@ export const mastra = new Mastra({
             const pg = await import("pg");
             const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
             
+            // Get venue address for this event and city
+            const addrResult = await pool.query(
+              "SELECT venue_address FROM event_template_addresses WHERE event_template_id = $1 AND city_id = $2",
+              [event_template_id, city_id]
+            );
+            const venueAddress = addrResult.rows[0]?.venue_address || null;
+            
             await pool.query(`
               INSERT INTO generated_links 
-              (link_code, event_template_id, city_id, event_date, event_time, available_seats, is_active)
-              VALUES ($1, $2, $3, $4, $5, $6, true)
-            `, [linkCode, event_template_id, city_id, event_date, event_time, available_seats || 100]);
+              (link_code, event_template_id, city_id, event_date, event_time, available_seats, venue_address, is_active)
+              VALUES ($1, $2, $3, $4, $5, $6, $7, true)
+            `, [linkCode, event_template_id, city_id, event_date, event_time, available_seats || 100, venueAddress]);
             
             await pool.end();
             

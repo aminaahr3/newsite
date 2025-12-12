@@ -208,13 +208,10 @@
   </div>
   
   <header class="header">
-    <div class="logo">Generator</div>
+    <div class="logo">Админ-панель</div>
     <nav class="nav">
-      <a href="/generator">Генерация Шоу</a>
-      <a href="/admin">Генерация Билета</a>
-      <a href="/admin-events" class="active">Редактирование Мест</a>
+      <a href="/admin-events" class="active">Редактирование мероприятий</a>
     </nav>
-    <a href="/" class="site-link">Сайт</a>
   </header>
   
   <div class="content">
@@ -250,6 +247,12 @@
           <label>URL изображения</label>
           <div class="image-preview" id="imagePreview">Нет изображения</div>
           <input type="text" id="editImageUrl" placeholder="https://..." onchange="updateImagePreview()">
+        </div>
+        <div class="form-group">
+          <label>Адрес по городам</label>
+          <div id="cityAddressesContainer" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-top: 5px;">
+            <p style="color: #999; font-size: 13px;">Загрузка городов...</p>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -422,7 +425,10 @@
       return `${date.getDate()} ${months[date.getMonth()]}`;
     }
     
-    function openEditModal(eventId) {
+    let allCities = [];
+    let eventAddresses = {};
+    
+    async function openEditModal(eventId) {
       const event = eventTemplates.find(e => e.id === eventId);
       if (!event) return;
       
@@ -432,7 +438,54 @@
       document.getElementById('editImageUrl').value = event.image_url || '';
       updateImagePreview();
       
+      // Load cities and addresses
+      await loadCitiesForEvent(eventId);
+      
       document.getElementById('editModal').classList.add('show');
+    }
+    
+    async function loadCitiesForEvent(eventId) {
+      const container = document.getElementById('cityAddressesContainer');
+      container.innerHTML = '<p style="color: #999;">Загрузка...</p>';
+      
+      try {
+        // Load all cities
+        const citiesRes = await fetch('/api/generator/cities');
+        const citiesData = await citiesRes.json();
+        allCities = citiesData.cities || [];
+        
+        // Load addresses for this event
+        const addressesRes = await fetch(`/api/generator/event-templates/${eventId}/addresses`);
+        const addressesData = await addressesRes.json();
+        eventAddresses = {};
+        (addressesData.addresses || []).forEach(a => {
+          eventAddresses[a.city_id] = a.venue_address;
+        });
+        
+        renderCityAddresses();
+      } catch (err) {
+        console.error('Error loading cities:', err);
+        container.innerHTML = '<p style="color: #f44;">Ошибка загрузки городов</p>';
+      }
+    }
+    
+    function renderCityAddresses() {
+      const container = document.getElementById('cityAddressesContainer');
+      if (allCities.length === 0) {
+        container.innerHTML = '<p style="color: #999;">Нет городов</p>';
+        return;
+      }
+      
+      container.innerHTML = allCities.map(city => `
+        <div style="display: flex; gap: 10px; margin-bottom: 8px; align-items: center;">
+          <span style="min-width: 120px; font-size: 13px;">${city.name}</span>
+          <input type="text" 
+                 id="cityAddr_${city.id}" 
+                 value="${eventAddresses[city.id] || ''}" 
+                 placeholder="Адрес не указан"
+                 style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px;">
+        </div>
+      `).join('');
     }
     
     function closeModal() {
@@ -457,11 +510,28 @@
       const description = document.getElementById('editDescription').value;
       const imageUrl = document.getElementById('editImageUrl').value;
       
+      // Collect city addresses
+      const addresses = [];
+      allCities.forEach(city => {
+        const input = document.getElementById(`cityAddr_${city.id}`);
+        if (input && input.value.trim()) {
+          addresses.push({ city_id: city.id, venue_address: input.value.trim() });
+        }
+      });
+      
       try {
+        // Save event template
         const res = await fetch(`/api/generator/event-templates/${eventId}/update`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, description, image_url: imageUrl })
+        });
+        
+        // Save addresses
+        await fetch(`/api/generator/event-templates/${eventId}/addresses`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ addresses })
         });
         
         if (res.ok) {
