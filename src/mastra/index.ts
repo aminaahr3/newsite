@@ -842,27 +842,28 @@ export const mastra = new Mastra({
             const pg = await import("pg");
             const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
             
-            // Get order with all related data
+            // First try generated link orders (event_template_id based)
             let result = await pool.query(`
               SELECT o.*, 
                      et.name as event_name, et.ticket_image_url, et.image_url,
                      gl.event_date, gl.event_time, gl.city_id,
                      c.name as city_name
               FROM orders o
-              LEFT JOIN event_templates et ON o.event_template_id = et.id
+              JOIN event_templates et ON o.event_template_id = et.id
               LEFT JOIN generated_links gl ON o.link_code = gl.link_code
               LEFT JOIN cities c ON gl.city_id = c.id
-              WHERE o.order_code = $1
+              WHERE o.order_code = $1 AND o.event_template_id IS NOT NULL
             `, [orderCode]);
             
-            // Try regular events if not found
+            // Try regular events if not found (event_id based orders)
             if (result.rows.length === 0) {
               result = await pool.query(`
-                SELECT o.*, e.name as event_name, e.event_date, e.event_time,
-                       NULL as ticket_image_url, e.image as image_url,
-                       e.city as city_name
+                SELECT o.*, e.name as event_name, e.date as event_date, e.time as event_time,
+                       NULL as ticket_image_url, e.image_url as image_url,
+                       ci.name as city_name
                 FROM orders o
                 JOIN events e ON o.event_id = e.id
+                LEFT JOIN cities ci ON e.city_id = ci.id
                 WHERE o.order_code = $1
               `, [orderCode]);
             }
@@ -884,7 +885,7 @@ export const mastra = new Mastra({
               success: true,
               ticket: {
                 order_code: order.order_code,
-                event_name: order.event_name,
+                event_name: order.event_name || 'Мероприятие',
                 event_date: order.event_date,
                 event_time: order.event_time,
                 city_name: order.city_name || 'Москва',

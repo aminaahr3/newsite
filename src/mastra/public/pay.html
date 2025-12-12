@@ -1021,6 +1021,7 @@
       document.getElementById('ticketCode').textContent = orderData.orderCode;
       document.getElementById('ticketEvent').textContent = orderData.eventName;
       document.getElementById('ticketInfo').textContent = `${orderData.seatsCount} билет(ов) • ${formatPrice(orderData.totalPrice)} ₽`;
+      document.getElementById('viewTicketBtn').href = `/ticket?order=${orderData.orderCode}`;
     }
 
     function showFailedPage() {
