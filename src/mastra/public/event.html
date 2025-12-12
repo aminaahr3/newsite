@@ -770,15 +770,6 @@
     let categories = [];
     let selectedSessionData = null;
     
-    const defaultImages = [
-      'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80',
-      'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=800&q=80',
-      'https://images.unsplash.com/photo-1544928147-79a2dbc1f389?w=800&q=80',
-      'https://images.unsplash.com/photo-1518834107812-67b0b7c58434?w=800&q=80',
-      'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&q=80',
-      'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80'
-    ];
-    
     const categoryTabs = [
       'ВЫСТАВКИ', 'МУЗЕИ', 'КВЕСТ КОМНАТА', 'ЭКСТРИМ', 
       'DAILY', 'КОМНАТА ГНЕВА', 'БИЛЬЯРД', 'БОУЛИНГ'
@@ -912,7 +903,7 @@
       const price = 2490;
       const venue = event.venue || 'ул. Маркова, 12';
       const city = event.cityName || 'Москва';
-      const heroImage = event.coverImageUrl || defaultImages[0];
+      const heroImage = event.coverImageUrl || null;
       
       let sessions = [];
       const dayNames = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
@@ -974,8 +965,8 @@
       
       main.innerHTML = `
         <section class="hero-section">
-          <div class="hero-main">
-            <img src="${heroImage}" alt="${event.name}">
+          <div class="hero-main" ${!heroImage ? 'style="background: linear-gradient(135deg, #333 0%, #555 100%);"' : ''}>
+            ${heroImage ? `<img src="${heroImage}" alt="${event.name}">` : ''}
             <div class="hero-overlay"></div>
             <div class="hero-rating">${rating}</div>
             <div class="hero-content">
@@ -984,13 +975,14 @@
               <button class="hero-btn" onclick="scrollToSessions()">Расписание и карты</button>
             </div>
           </div>
+          ${(event.images && event.images.length > 1) ? `
           <div class="hero-gallery">
-            ${(event.images && event.images.length > 1 ? event.images.slice(1, 5) : [1, 2, 3, 4].map(i => defaultImages[i % defaultImages.length])).map(img => `
+            ${event.images.slice(1, 5).map(img => `
               <div class="hero-gallery-item">
-                <img src="${typeof img === 'string' ? img : defaultImages[img % defaultImages.length]}" alt="">
+                <img src="${img}" alt="">
               </div>
             `).join('')}
-          </div>
+          </div>` : ''}
         </section>
 
         <section class="section" id="sessionsSection">
@@ -1029,11 +1021,9 @@
           <div class="recs-scroll">
             ${recommendations.map((r, i) => {
               const recRating = (8 + Math.random() * 1.5).toFixed(1);
-              const image = defaultImages[(i + 2) % defaultImages.length];
               return `
                 <div class="rec-card" onclick="openEvent(${r.id})">
-                  <div class="rec-card-image">
-                    <img src="${image}" alt="${r.name}">
+                  <div class="rec-card-image" style="background: linear-gradient(135deg, #333 0%, #555 100%);">
                     <div class="rec-card-rating">${recRating}</div>
                   </div>
                   <div class="rec-card-title">${r.name}</div>
