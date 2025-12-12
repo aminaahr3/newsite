@@ -498,19 +498,12 @@ export const mastra = new Mastra({
         },
       },
 
-      // Admin panel page
+      // Admin panel page - redirect to admin-events
       {
         path: "/admin",
         method: "GET",
         handler: async (c) => {
-          const { readFile } = await import("fs/promises");
-          try {
-            const htmlPath = "/home/runner/workspace/src/mastra/public/admin.html";
-            const html = await readFile(htmlPath, "utf-8");
-            return c.html(html);
-          } catch (error) {
-            return c.text("Page not found", 404);
-          }
+          return c.redirect("/admin-events");
         },
       },
 
@@ -1915,6 +1908,34 @@ export const mastra = new Mastra({
             return c.json({ success: true });
           } catch (error) {
             console.error("Error updating link:", error);
+            return c.json({ success: false }, 500);
+          }
+        },
+      },
+
+      // Generator API - Delete generated link
+      {
+        path: "/api/generator/links/:id",
+        method: "DELETE",
+        handler: async (c) => {
+          const authPassword = c.req.header("X-Admin-Password");
+          const adminPassword = process.env.ADMIN_PASSWORD || "root2024";
+          if (authPassword !== adminPassword) {
+            return c.json({ success: false, message: "Unauthorized" }, 401);
+          }
+          
+          try {
+            const linkId = c.req.param("id");
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            await pool.query("DELETE FROM generated_links WHERE id = $1", [linkId]);
+            
+            await pool.end();
+            return c.json({ success: true });
+          } catch (error) {
+            console.error("Error deleting link:", error);
             return c.json({ success: false }, 500);
           }
         },

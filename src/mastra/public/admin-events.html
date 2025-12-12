@@ -241,6 +241,13 @@
           <label style="display: block; margin-bottom: 5px; font-weight: 500;">Название банка</label>
           <input type="text" id="paymentBankName" placeholder="Сбербанк" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px;">
         </div>
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label style="display: flex; align-items: center; gap: 12px; cursor: pointer;">
+            <input type="checkbox" id="paymentSbpEnabled" checked style="width: 20px; height: 20px; cursor: pointer;">
+            <span style="font-weight: 500;">СБП включена</span>
+          </label>
+          <small style="display: block; margin-top: 8px; color: #666;">Если выключить, пользователи увидят "Оплата временно недоступна"</small>
+        </div>
         <button onclick="savePaymentSettings()" style="padding: 12px 24px; background: #4CAF50; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">Сохранить реквизиты</button>
       </div>
     </div>
@@ -344,6 +351,7 @@
         document.getElementById('paymentCardNumber').value = data.cardNumber || '';
         document.getElementById('paymentCardHolder').value = data.cardHolderName || '';
         document.getElementById('paymentBankName').value = data.bankName || '';
+        document.getElementById('paymentSbpEnabled').checked = data.sbpEnabled !== false;
       } catch (err) {
         console.error('Error loading payment settings:', err);
       }
@@ -354,6 +362,7 @@
         const cardNumber = document.getElementById('paymentCardNumber').value;
         const cardHolderName = document.getElementById('paymentCardHolder').value;
         const bankName = document.getElementById('paymentBankName').value;
+        const sbpEnabled = document.getElementById('paymentSbpEnabled').checked;
         
         const res = await fetch('/api/admin/payment-settings', {
           method: 'POST',
@@ -361,7 +370,7 @@
             'Content-Type': 'application/json',
             'X-Admin-Password': ADMIN_PASSWORD
           },
-          body: JSON.stringify({ cardNumber, cardHolderName, bankName })
+          body: JSON.stringify({ cardNumber, cardHolderName, bankName, sbpEnabled })
         });
         
         if (res.ok) {
@@ -462,17 +471,38 @@
         <div class="link-card">
           <div class="link-info">
             <strong>${link.event_name}</strong>
-            <span>${link.city_name} - ${formatDate(link.event_date)} ${formatTime(link.event_time)}</span>
+            <span>${link.city_name} - ${formatDate(link.event_date)} ${formatTime(link.event_time)} | ${link.link_code}</span>
           </div>
-          <div class="link-actions">
+          <div class="link-actions" style="display: flex; gap: 8px;">
             <button class="event-btn btn-edit" onclick="openLinkEditModal(${link.id})">Адрес</button>
             <button class="event-btn btn-toggle ${link.is_active ? 'active' : ''}" 
                     onclick="toggleLink(${link.id}, ${!link.is_active})">
-              ${link.is_active ? 'Активна' : 'Выключена'}
+              ${link.is_active ? 'Активна' : 'Выкл'}
             </button>
+            <button class="event-btn" style="background: #ffebee; color: #f44336;" onclick="deleteLink(${link.id}, '${link.link_code}')">Удалить</button>
           </div>
         </div>
       `).join('');
+    }
+    
+    async function deleteLink(linkId, linkCode) {
+      if (!confirm(\`Удалить ссылку \${linkCode}?\`)) return;
+      
+      try {
+        const res = await fetch(\`/api/generator/links/\${linkId}\`, {
+          method: 'DELETE',
+          headers: { 'X-Admin-Password': ADMIN_PASSWORD }
+        });
+        
+        if (res.ok) {
+          await loadLinks();
+        } else {
+          alert('Ошибка удаления');
+        }
+      } catch (err) {
+        console.error('Error deleting link:', err);
+        alert('Ошибка удаления');
+      }
     }
     
     function getCategoryName(categoryId) {
