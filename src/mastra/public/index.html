@@ -3,862 +3,310 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Афиша — Билеты на концерты, спектакли, выставки</title>
+  <title>Афиша - Билетикс</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    :root {
-      --bg-primary: #ffffff;
-      --bg-secondary: #f5f5f5;
-      --bg-card: #ffffff;
-      --text-primary: #1a1a1a;
-      --text-secondary: #666666;
-      --text-muted: #999999;
-      --accent-red: #ff3b30;
-      --accent-green: #34c759;
-      --border-light: #e5e5e5;
-    }
-    
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg-primary);
-      color: var(--text-primary);
-      min-height: 100vh;
-      line-height: 1.4;
-    }
-    
-    a { color: inherit; text-decoration: none; }
+    body { font-family: 'Inter', sans-serif; background: #fff; color: #1a1a1a; }
     
     .header {
-      background: var(--bg-primary);
-      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      padding: 15px 40px;
+      background: white;
+      border-bottom: 1px solid #eee;
       position: sticky;
       top: 0;
       z-index: 100;
     }
-    
-    .header-inner {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 0 24px;
+    .logo {
       display: flex;
       align-items: center;
-      height: 64px;
-      gap: 24px;
+      gap: 10px;
+      text-decoration: none;
     }
-    
-    .logo-section {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
     .logo-icon {
       width: 40px;
       height: 40px;
-      background: var(--accent-red);
+      background: #f44336;
       border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
       color: white;
       font-size: 24px;
-      font-weight: 800;
+      font-weight: 700;
     }
-    
     .logo-text {
-      display: flex;
-      flex-direction: column;
+      font-size: 18px;
+      font-weight: 700;
+      color: #1a1a1a;
     }
-    
-    .logo-name {
-      font-size: 20px;
-      font-weight: 800;
-      color: var(--text-primary);
-      text-transform: lowercase;
-    }
-    
     .logo-city {
       font-size: 11px;
-      color: var(--text-muted);
+      color: #999;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
     }
     
     .nav {
       display: flex;
-      align-items: center;
-      gap: 4px;
-      flex: 1;
-      margin-left: 20px;
-    }
-    
-    .nav-item {
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--text-primary);
-      transition: background 0.2s;
-      white-space: nowrap;
-    }
-    
-    .nav-item:hover {
-      background: var(--bg-secondary);
-    }
-    
-    .nav-item.gid {
-      background: var(--accent-red);
-      color: white;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    
-    .nav-item.gid::before {
-      content: "📍";
-      font-size: 12px;
-    }
-    
-    .nav-divider {
-      width: 1px;
-      height: 20px;
-      background: var(--border-light);
-      margin: 0 8px;
-    }
-    
-    .nav-partner {
-      padding: 8px 12px;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-secondary);
-    }
-    
-    .nav-more {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 16px;
-      color: var(--text-secondary);
-    }
-    
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    
-    .search-btn {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 20px;
-      color: var(--text-secondary);
-      transition: background 0.2s;
-    }
-    
-    .search-btn:hover {
-      background: var(--bg-secondary);
-    }
-    
-    .login-btn {
-      padding: 10px 20px;
-      background: var(--bg-secondary);
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-primary);
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    
-    .login-btn:hover {
-      background: #e8e8e8;
-    }
-    
-    .main-carousel {
-      max-width: 1400px;
-      margin: 24px auto;
-      padding: 0 24px;
-    }
-    
-    .carousel-container {
-      display: flex;
-      gap: 16px;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-    }
-    
-    .carousel-container::-webkit-scrollbar {
-      display: none;
-    }
-    
-    .event-card {
-      flex: 0 0 calc(33.333% - 11px);
-      min-width: 320px;
-      height: 480px;
-      border-radius: 16px;
-      overflow: hidden;
-      position: relative;
-      scroll-snap-align: start;
-      cursor: pointer;
-      transition: transform 0.3s;
-    }
-    
-    .event-card:hover {
-      transform: scale(1.02);
-    }
-    
-    .event-card img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    
-    .event-card-overlay {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.3) 40%, transparent 60%);
-    }
-    
-    .event-rating {
-      position: absolute;
-      top: 16px;
-      left: 16px;
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 15px;
-      font-weight: 700;
-      color: white;
-    }
-    
-    .event-rating.green {
-      background: linear-gradient(135deg, #4ade80, #22c55e);
-    }
-    
-    .event-rating.blue {
-      background: linear-gradient(135deg, #60a5fa, #3b82f6);
-    }
-    
-    .event-category {
-      position: absolute;
-      top: 16px;
-      left: 70px;
-      background: rgba(255,255,255,0.2);
-      backdrop-filter: blur(10px);
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 600;
-      color: white;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
-    .event-content {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      padding: 24px;
-      color: white;
-    }
-    
-    .event-title {
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 8px;
-      line-height: 1.2;
-    }
-    
-    .event-description {
-      font-size: 14px;
-      color: rgba(255,255,255,0.8);
-      margin-bottom: 16px;
-      line-height: 1.5;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-    
-    .event-meta {
-      font-size: 13px;
-      color: rgba(255,255,255,0.7);
-      margin-bottom: 16px;
-    }
-    
-    .event-actions {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    
-    .event-btn {
-      padding: 12px 24px;
-      background: white;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-primary);
-      cursor: pointer;
-      transition: transform 0.2s;
-    }
-    
-    .event-btn:hover {
-      transform: scale(1.05);
-    }
-    
-    .event-price {
-      padding: 10px 16px;
-      background: rgba(255,255,255,0.2);
-      backdrop-filter: blur(10px);
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      color: white;
-    }
-    
-    .event-heart {
-      width: 44px;
-      height: 44px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.2);
-      backdrop-filter: blur(10px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 20px;
-      transition: background 0.2s;
-    }
-    
-    .event-heart:hover {
-      background: rgba(255,255,255,0.3);
-    }
-    
-    .categories-section {
-      max-width: 1400px;
-      margin: 32px auto;
-      padding: 0 24px;
-    }
-    
-    .categories-list {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      gap: 5px;
+      margin-left: 40px;
       flex-wrap: wrap;
     }
+    .nav a {
+      padding: 8px 16px;
+      background: #f5f5f5;
+      border-radius: 20px;
+      text-decoration: none;
+      color: #1a1a1a;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .nav a:hover, .nav a.active {
+      background: #1a1a1a;
+      color: white;
+    }
     
-    .category-link {
+    .header-right {
+      margin-left: auto;
       display: flex;
       align-items: center;
-      gap: 8px;
-      color: var(--text-secondary);
-      font-size: 14px;
-      transition: color 0.2s;
+      gap: 20px;
     }
-    
-    .category-link:hover {
-      color: var(--text-primary);
-    }
-    
-    .category-dot {
-      width: 4px;
-      height: 4px;
+    .more-btn {
+      width: 36px;
+      height: 36px;
+      background: #f5f5f5;
       border-radius: 50%;
-      background: var(--text-muted);
-    }
-    
-    .promo-section {
-      max-width: 1400px;
-      margin: 40px auto;
-      padding: 0 24px;
-    }
-    
-    .promo-scroll {
       display: flex;
-      gap: 16px;
-      overflow-x: auto;
-      padding-bottom: 16px;
-      scrollbar-width: none;
-    }
-    
-    .promo-scroll::-webkit-scrollbar {
-      display: none;
-    }
-    
-    .promo-card {
-      flex: 0 0 300px;
-      height: 120px;
-      border-radius: 12px;
-      overflow: hidden;
-      position: relative;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
     }
-    
-    .promo-card img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
+    .more-btn span {
+      width: 4px;
+      height: 4px;
+      background: #666;
+      border-radius: 50%;
+      margin: 0 1px;
     }
     
-    .events-grid-section {
-      max-width: 1400px;
-      margin: 40px auto;
-      padding: 0 24px;
-    }
+    .main { padding: 30px 40px 60px; max-width: 1400px; margin: 0 auto; }
     
-    .section-header {
+    .category-section { margin-bottom: 50px; }
+    .category-header {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      gap: 15px;
       margin-bottom: 20px;
     }
-    
-    .section-title {
-      font-size: 24px;
-      font-weight: 700;
+    .category-title { font-size: 28px; font-weight: 700; }
+    .category-all {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 14px;
+      border: 1px solid #ddd;
+      border-radius: 20px;
+      text-decoration: none;
+      color: #1a1a1a;
+      font-size: 13px;
     }
+    .category-all:hover { background: #f5f5f5; }
     
-    .section-more {
-      color: var(--accent-red);
-      font-size: 14px;
-      font-weight: 500;
-    }
-    
-    .events-grid {
+    .events-row {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 20px;
     }
     
-    .grid-card {
-      border-radius: 12px;
-      overflow: hidden;
-      background: white;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    
-    .grid-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-    }
-    
-    .grid-card-image {
-      aspect-ratio: 4/3;
+    .event-card {
       position: relative;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+      display: block;
     }
-    
-    .grid-card-image img {
+    .event-image {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
+      aspect-ratio: 3/4;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #1a1a1a 0%, #333 100%);
+      background-size: cover;
+      background-position: center;
+      position: relative;
+      overflow: hidden;
     }
-    
-    .grid-card-rating {
+    .event-rating {
       position: absolute;
       top: 12px;
       left: 12px;
-      padding: 4px 8px;
-      background: var(--accent-green);
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 700;
+      background: #4CAF50;
       color: white;
-    }
-    
-    .grid-card-info {
-      padding: 16px;
-    }
-    
-    .grid-card-category {
-      font-size: 11px;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
-    }
-    
-    .grid-card-title {
-      font-size: 15px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 13px;
       font-weight: 600;
-      margin-bottom: 8px;
+    }
+    .event-favorite {
+      position: absolute;
+      top: 0;
+      right: 15px;
+      width: 0;
+      height: 0;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-top: 24px solid #f44336;
+    }
+    .event-tags {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      display: flex;
+      gap: 5px;
+    }
+    .event-tag {
+      background: rgba(0,0,0,0.7);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+    }
+    .event-name {
+      margin-top: 12px;
+      font-size: 15px;
+      font-weight: 500;
       line-height: 1.3;
     }
-    
-    .grid-card-meta {
-      font-size: 13px;
-      color: var(--text-secondary);
-      margin-bottom: 12px;
-    }
-    
-    .grid-card-price {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--text-primary);
-    }
-    
-    .footer {
-      background: var(--bg-secondary);
-      padding: 40px 24px;
-      margin-top: 60px;
-    }
-    
-    .footer-inner {
-      max-width: 1400px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .footer-links {
-      display: flex;
-      gap: 24px;
-    }
-    
-    .footer-links a {
-      color: var(--text-secondary);
+    .event-price {
+      margin-top: 6px;
       font-size: 14px;
+      color: #666;
     }
     
-    .footer-copy {
-      color: var(--text-muted);
-      font-size: 13px;
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: #999;
+      font-size: 16px;
     }
     
-    .city-modal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 1000;
-      display: none;
-      justify-content: center;
-      align-items: center;
-    }
-    
-    .city-modal.active {
-      display: flex;
-    }
-    
-    .city-modal-content {
-      background: white;
-      border-radius: 16px;
-      padding: 24px;
-      max-width: 400px;
-      width: 90%;
-    }
-    
-    .city-modal-title {
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 20px;
-    }
-    
-    .city-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    
-    .city-option {
-      padding: 12px 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    
-    .city-option:hover {
-      background: var(--bg-secondary);
-    }
-    
-    .city-option.active {
-      background: var(--accent-red);
-      color: white;
-    }
-    
-    @media (max-width: 1024px) {
-      .event-card {
-        flex: 0 0 calc(50% - 8px);
-      }
-      .events-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-      .nav {
-        display: none;
-      }
-    }
-    
-    @media (max-width: 640px) {
-      .event-card {
-        flex: 0 0 100%;
-        height: 400px;
-      }
-      .events-grid {
-        grid-template-columns: 1fr;
-      }
-      .header-inner {
-        padding: 0 16px;
-      }
-      .login-btn {
-        display: none;
-      }
+    @media (max-width: 768px) {
+      .header { padding: 12px 20px; flex-wrap: wrap; gap: 10px; }
+      .nav { margin-left: 0; order: 3; width: 100%; overflow-x: auto; }
+      .main { padding: 20px; }
+      .category-title { font-size: 22px; }
+      .events-row { grid-template-columns: repeat(2, 1fr); gap: 12px; }
     }
   </style>
 </head>
 <body>
   <header class="header">
-    <div class="header-inner">
-      <div class="logo-section" onclick="showCityModal()">
-        <div class="logo-icon">a</div>
-        <div class="logo-text">
-          <span class="logo-name">афиша</span>
-          <span class="logo-city" id="currentCity">МОСКВА</span>
-        </div>
+    <a href="/" class="logo">
+      <div class="logo-icon">a</div>
+      <div>
+        <div class="logo-text">афиша</div>
+        <div class="logo-city" id="cityName">ЗАГРУЗКА...</div>
       </div>
-      
-      <nav class="nav">
-        <a href="#" class="nav-item">КИНО</a>
-        <a href="#" class="nav-item">ТЕАТР</a>
-        <a href="#" class="nav-item">ЁЛКИ</a>
-        <a href="#" class="nav-item gid">ГИД</a>
-        <a href="#" class="nav-item">РЕСТОРАНЫ</a>
-        <div class="nav-divider"></div>
-        <span class="nav-partner">okko</span>
-        <span class="nav-partner" style="font-style: italic;">Daily</span>
-        <div class="nav-more">•••</div>
-      </nav>
-      
-      <div class="header-actions">
-        <div class="search-btn">🔍</div>
-        <div class="login-btn">ВОЙТИ</div>
+    </a>
+    <nav class="nav" id="navCategories"></nav>
+    <div class="header-right">
+      <div class="more-btn">
+        <span></span><span></span><span></span>
       </div>
     </div>
   </header>
-
-  <section class="main-carousel">
-    <div class="carousel-container" id="mainCarousel">
-    </div>
-  </section>
-
-  <section class="categories-section">
-    <div class="categories-list" id="categoryLinks">
-    </div>
-  </section>
-
-  <section class="events-grid-section">
-    <div class="section-header">
-      <h2 class="section-title">Популярные события</h2>
-      <a href="#" class="section-more">Все события →</a>
-    </div>
-    <div class="events-grid" id="eventsGrid">
-    </div>
-  </section>
-
-  <footer class="footer">
-    <div class="footer-inner">
-      <div class="footer-links">
-        <a href="#">О нас</a>
-        <a href="#">Контакты</a>
-        <a href="#">Помощь</a>
-        <a href="/admin">Админ</a>
-      </div>
-      <div class="footer-copy">© 2025 Афиша. Все права защищены.</div>
-    </div>
-  </footer>
-
-  <div class="city-modal" id="cityModal" onclick="hideCityModal(event)">
-    <div class="city-modal-content" onclick="event.stopPropagation()">
-      <h3 class="city-modal-title">Выберите город</h3>
-      <div class="city-list" id="cityList"></div>
-    </div>
-  </div>
-
+  
+  <main class="main" id="mainContent">
+    <div class="loading">Загрузка мероприятий...</div>
+  </main>
+  
   <script>
-    let cities = [];
-    let events = [];
     let categories = [];
-    let selectedCity = 1;
+    let events = {};
+    let cityName = 'Москва';
     
-    const defaultImages = [
-      'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80',
-      'https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=800&q=80',
-      'https://images.unsplash.com/photo-1544928147-79a2dbc1f389?w=800&q=80',
-      'https://images.unsplash.com/photo-1518834107812-67b0b7c58434?w=800&q=80'
-    ];
+    async function init() {
+      await loadCategories();
+      await loadAllEvents();
+      renderPage();
+    }
     
-    async function loadData() {
+    async function loadCategories() {
       try {
-        const res = await fetch('/api/ticket-data');
+        const res = await fetch('/api/generator/categories');
         const data = await res.json();
-        cities = data.cities || [];
-        events = data.events || [];
         categories = data.categories || [];
-        
-        renderMainCarousel();
-        renderCategoryLinks();
-        renderEventsGrid();
-        renderCities();
       } catch (err) {
-        console.error('Error loading data:', err);
-        renderDemoContent();
+        console.error('Error loading categories:', err);
       }
     }
     
-    function renderMainCarousel() {
-      const container = document.getElementById('mainCarousel');
-      const displayEvents = events.length > 0 ? events.slice(0, 3) : getDemoEvents();
+    async function loadAllEvents() {
+      try {
+        for (const cat of categories) {
+          const res = await fetch(`/api/generator/event-templates?category_id=${cat.id}`);
+          const data = await res.json();
+          events[cat.id] = (data.templates || []).filter(t => t.is_active !== false);
+        }
+      } catch (err) {
+        console.error('Error loading events:', err);
+      }
+    }
+    
+    function renderPage() {
+      document.getElementById('cityName').textContent = cityName.toUpperCase();
       
-      container.innerHTML = displayEvents.map((e, i) => {
-        const rating = (7 + Math.random() * 2.5).toFixed(1);
-        const ratingClass = parseFloat(rating) > 8.5 ? 'blue' : 'green';
-        const image = defaultImages[i % defaultImages.length];
+      const nav = document.getElementById('navCategories');
+      nav.innerHTML = categories.map(cat => 
+        `<a href="#cat-${cat.id}">${cat.name_ru.toUpperCase()}</a>`
+      ).join('');
+      
+      const main = document.getElementById('mainContent');
+      main.innerHTML = categories.map(cat => {
+        const catEvents = events[cat.id] || [];
+        if (catEvents.length === 0) return '';
         
         return `
-          <div class="event-card" onclick="openEvent(${e.id})">
-            <img src="${image}" alt="${e.name}">
-            <div class="event-card-overlay"></div>
-            <div class="event-rating ${ratingClass}">${rating}</div>
-            <span class="event-category">${e.categoryName || 'СОБЫТИЕ'}</span>
-            <div class="event-content">
-              <h2 class="event-title">${e.name}</h2>
-              <p class="event-description">${e.description || ''}</p>
-              <div class="event-meta">${e.date ? formatDate(e.date) : ''} ${e.cityName ? '• ' + e.cityName : ''}</div>
-              <div class="event-actions">
-                <button class="event-btn">Купить билет</button>
-                <div class="event-price">от ${formatPrice(e.price || 1000)} ₽</div>
-                <div class="event-heart">♡</div>
-              </div>
+          <section class="category-section" id="cat-${cat.id}">
+            <div class="category-header">
+              <h2 class="category-title">${cat.name_ru}</h2>
+              <a href="#" class="category-all">Все ></a>
             </div>
-          </div>
+            <div class="events-row">
+              ${catEvents.map(event => renderEventCard(event)).join('')}
+            </div>
+          </section>
         `;
       }).join('');
     }
     
-    function renderCategoryLinks() {
-      const container = document.getElementById('categoryLinks');
-      const links = [
-        'Фильмы, изменившие мир',
-        'Подборки',
-        'Каталог фильмов',
-        'Ожидаемые премьеры',
-        'Расписание фильмов',
-        'Ёлки'
-      ];
+    function renderEventCard(event) {
+      const rating = (7 + Math.random() * 3).toFixed(1);
+      const imageStyle = event.image_url ? `background-image: url('${event.image_url}')` : '';
+      const hasFavorite = Math.random() > 0.7;
+      const has18Plus = Math.random() > 0.6;
       
-      container.innerHTML = links.map((link, i) => `
-        ${i > 0 ? '<span class="category-dot"></span>' : ''}
-        <a href="#" class="category-link">${link}</a>
-      `).join('');
-    }
-    
-    function renderEventsGrid() {
-      const container = document.getElementById('eventsGrid');
-      const displayEvents = events.length > 0 ? events : getDemoEvents();
-      
-      container.innerHTML = displayEvents.map((e, i) => {
-        const rating = (7 + Math.random() * 2.5).toFixed(1);
-        const image = defaultImages[i % defaultImages.length];
-        
-        return `
-          <div class="grid-card" onclick="openEvent(${e.id})">
-            <div class="grid-card-image">
-              <img src="${image}" alt="${e.name}">
-              <span class="grid-card-rating">★ ${rating}</span>
-            </div>
-            <div class="grid-card-info">
-              <div class="grid-card-category">${e.categoryName || 'СОБЫТИЕ'}</div>
-              <h3 class="grid-card-title">${e.name}</h3>
-              <div class="grid-card-meta">${e.date ? formatDate(e.date) : ''} ${e.cityName ? '• ' + e.cityName : ''}</div>
-              <div class="grid-card-price">от ${formatPrice(e.price || 1000)} ₽</div>
+      return `
+        <a href="/event/${event.id}" class="event-card">
+          <div class="event-image" style="${imageStyle}">
+            <div class="event-rating">${rating}</div>
+            ${hasFavorite ? '<div class="event-favorite"></div>' : ''}
+            <div class="event-tags">
+              <span class="event-tag">Карты</span>
+              ${has18Plus ? '<span class="event-tag">18+</span>' : ''}
             </div>
           </div>
-        `;
-      }).join('');
+          <div class="event-name">${event.name}</div>
+          <div class="event-price">от 2 490 ₽</div>
+        </a>
+      `;
     }
     
-    function renderCities() {
-      const container = document.getElementById('cityList');
-      const displayCities = cities.length > 0 ? cities : [
-        { id: 1, name: 'Москва' },
-        { id: 2, name: 'Санкт-Петербург' },
-        { id: 3, name: 'Екатеринбург' }
-      ];
-      
-      container.innerHTML = displayCities.map(c => `
-        <div class="city-option ${c.id === selectedCity ? 'active' : ''}" onclick="selectCity(${c.id}, '${c.name}')">${c.name}</div>
-      `).join('');
-    }
-    
-    function getDemoEvents() {
-      return [
-        { id: 1, name: 'Премьера сезона в Большом театре', categoryName: 'СПЕКТАКЛЬ', description: 'Классика русского балета в новой постановке', date: '2025-01-15', cityName: 'Москва', price: 3000 },
-        { id: 2, name: 'Новогодняя ёлка для детей', categoryName: 'ДЕТЯМ', description: 'Волшебное представление для всей семьи', date: '2025-01-01', cityName: 'Москва', price: 2000 },
-        { id: 3, name: 'Рождественская ярмарка', categoryName: 'ВЫСТАВКА', description: 'Праздничная атмосфера и подарки', date: '2025-01-05', cityName: 'Москва', price: 500 },
-        { id: 4, name: 'Концерт симфонического оркестра', categoryName: 'КОНЦЕРТ', description: 'Лучшие произведения мировой классики', date: '2025-01-20', cityName: 'Москва', price: 1500 }
-      ];
-    }
-    
-    function renderDemoContent() {
-      events = getDemoEvents();
-      cities = [{ id: 1, name: 'Москва' }, { id: 2, name: 'Санкт-Петербург' }];
-      renderMainCarousel();
-      renderCategoryLinks();
-      renderEventsGrid();
-      renderCities();
-    }
-    
-    function formatDate(dateStr) {
-      if (!dateStr) return '';
-      const d = new Date(dateStr);
-      const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
-      return `${d.getDate()} ${months[d.getMonth()]}`;
-    }
-    
-    function formatPrice(price) {
-      return new Intl.NumberFormat('ru-RU').format(price);
-    }
-    
-    function openEvent(id) {
-      window.location.href = '/event/' + id;
-    }
-    
-    function selectCity(id, name) {
-      selectedCity = id;
-      document.getElementById('currentCity').textContent = name.toUpperCase();
-      hideCityModal();
-      renderCities();
-    }
-    
-    function showCityModal() {
-      document.getElementById('cityModal').classList.add('active');
-    }
-    
-    function hideCityModal(e) {
-      if (!e || e.target === document.getElementById('cityModal')) {
-        document.getElementById('cityModal').classList.remove('active');
-      }
-    }
-    
-    loadData();
+    init();
   </script>
 </body>
 </html>
