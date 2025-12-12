@@ -303,6 +303,122 @@ export const mastra = new Mastra({
         },
       },
 
+      // API endpoint for creating orders from generated links
+      {
+        path: "/api/create-link-order",
+        method: "POST",
+        handler: async (c) => {
+          const mastra = c.get("mastra");
+          const logger = mastra?.getLogger();
+          
+          try {
+            const body = await c.req.json();
+            logger?.info("📝 [API] Creating link order:", body);
+            
+            // Input validation
+            if (!body.linkCode || typeof body.linkCode !== "string") {
+              return c.json({ success: false, message: "Не указан код ссылки" }, 400);
+            }
+            if (!body.customerName || typeof body.customerName !== "string" || body.customerName.trim().length < 2) {
+              return c.json({ success: false, message: "Укажите ваше имя" }, 400);
+            }
+            if (!body.customerPhone || typeof body.customerPhone !== "string" || body.customerPhone.trim().length < 5) {
+              return c.json({ success: false, message: "Укажите номер телефона" }, 400);
+            }
+            
+            const seatsCount = parseInt(body.seatsCount) || 1;
+            if (seatsCount < 1 || seatsCount > 10) {
+              return c.json({ success: false, message: "Количество мест должно быть от 1 до 10" }, 400);
+            }
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            // Get generated link data
+            const linkResult = await pool.query(`
+              SELECT gl.*, et.name as event_name, et.description, et.category_id, et.id as template_id,
+                     c.name as city_name, cat.name_ru as category_name,
+                     eta.venue_address
+              FROM generated_links gl
+              JOIN event_templates et ON gl.event_template_id = et.id
+              JOIN cities c ON gl.city_id = c.id
+              JOIN categories cat ON et.category_id = cat.id
+              LEFT JOIN event_template_addresses eta ON eta.event_template_id = et.id AND eta.city_id = gl.city_id
+              WHERE gl.link_code = $1 AND gl.is_active = true
+            `, [body.linkCode]);
+            
+            if (linkResult.rows.length === 0) {
+              await pool.end();
+              return c.json({ success: false, message: "Ссылка не найдена или неактивна" }, 400);
+            }
+            
+            const link = linkResult.rows[0];
+            const totalPrice = body.totalPrice || 2990 * seatsCount;
+            
+            // Generate order code
+            const orderCode = `LNK-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
+            
+            // Create order
+            const orderResult = await pool.query(
+              `INSERT INTO orders (
+                event_id, customer_name, customer_phone, customer_email, 
+                seats_count, total_price, order_code, status, payment_status
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', 'pending')
+              RETURNING id`,
+              [
+                link.template_id,
+                body.customerName.trim(),
+                body.customerPhone.trim(),
+                body.customerEmail?.trim() || null,
+                seatsCount,
+                totalPrice,
+                orderCode
+              ]
+            );
+            
+            await pool.end();
+            
+            logger?.info("✅ [API] Link order created:", orderCode);
+            
+            const notificationData = {
+              orderId: orderResult.rows[0].id,
+              orderCode: orderCode,
+              eventName: link.event_name,
+              eventDate: link.event_date?.toISOString?.()?.split("T")[0] || body.selectedDate || "",
+              eventTime: link.event_time || body.selectedTime || "",
+              cityName: link.city_name,
+              customerName: body.customerName.trim(),
+              customerPhone: body.customerPhone.trim(),
+              customerEmail: body.customerEmail?.trim(),
+              seatsCount: seatsCount,
+              totalPrice: totalPrice,
+            };
+            
+            try {
+              await Promise.all([
+                sendChannelNotification(notificationData),
+                sendOrderNotificationToAdmin(notificationData)
+              ]);
+              logger?.info("📤 [API] Notifications sent for link order");
+            } catch (notifyError) {
+              logger?.error("⚠️ [API] Failed to send notifications:", notifyError);
+            }
+            
+            return c.json({
+              success: true,
+              orderCode: orderCode,
+              orderId: orderResult.rows[0].id,
+              eventName: link.event_name,
+              cityName: link.city_name,
+              message: `Заказ ${orderCode} успешно создан!`
+            });
+          } catch (error) {
+            logger?.error("❌ [API] Error creating link order:", error);
+            return c.json({ success: false, message: "Ошибка при создании заказа" }, 500);
+          }
+        },
+      },
+
       // Telegram webhook for admin callbacks (confirm/reject buttons)
       {
         path: "/webhooks/telegram/action",

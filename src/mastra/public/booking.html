@@ -841,7 +841,19 @@
       const monthIndex = selectedFullDate ? selectedFullDate.getMonth() : new Date().getMonth();
       const year = selectedFullDate ? selectedFullDate.getFullYear() : new Date().getFullYear();
       
-      const orderData = {
+      const formattedDate = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
+      
+      const orderData = isGeneratedLink ? {
+        linkCode: linkCode,
+        customerName: document.getElementById('customerName').value,
+        customerPhone: document.getElementById('customerPhone').value,
+        customerEmail: document.getElementById('customerEmail').value,
+        seatsCount: getTotalTickets(),
+        totalPrice: getTotalPrice(),
+        selectedDate: formattedDate,
+        selectedTime: selectedTime,
+        tickets: ticketCounts
+      } : {
         eventId: event.id,
         eventName: event.name,
         customerName: document.getElementById('customerName').value,
@@ -849,13 +861,15 @@
         customerEmail: document.getElementById('customerEmail').value,
         seatsCount: getTotalTickets(),
         totalPrice: getTotalPrice(),
-        selectedDate: `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`,
+        selectedDate: formattedDate,
         selectedTime: selectedTime,
         tickets: ticketCounts
       };
       
+      const apiEndpoint = isGeneratedLink ? '/api/create-link-order' : '/api/create-order';
+      
       try {
-        const res = await fetch('/api/create-order', {
+        const res = await fetch(apiEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(orderData)
