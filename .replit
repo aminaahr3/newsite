@@ -7,8 +7,8 @@ packages = ["unzip"]
 expertMode = true
 
 [deployment]
-build = ["npm", "run", "build"]
-run = ["npm", "run", "start"]
+build = ["bash", "-c", "cd Site-Mirror && npm run build"]
+run = ["bash", "-c", "cd Site-Mirror && npm run start"]
 deploymentTarget = "autoscale"
 
 [workflows]
