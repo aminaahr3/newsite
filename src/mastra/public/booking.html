@@ -590,7 +590,7 @@
                 price: 2490,
                 categoryName: linkData.categoryName,
                 cityName: linkData.cityName,
-                venue: linkData.venueAddress || 'Адрес уточняется',
+                venue: linkData.venueAddress || '',
                 date: linkData.eventDate,
                 time: linkData.eventTime,
                 availableSeats: linkData.availableSeats,
@@ -662,8 +662,9 @@
     }
     
     function renderPage() {
-      document.getElementById('venueName').textContent = 
-        `${event.cityName || 'Москва'}, ${event.venue || 'ул. Маркова, 12'}`;
+      const cityName = event.cityName || 'Москва';
+      const venueText = event.venue ? `${cityName}, ${event.venue}` : `${cityName},`;
+      document.getElementById('venueName').textContent = venueText;
       
       renderCalendar();
       renderTicketTypes();

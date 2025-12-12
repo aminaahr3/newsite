@@ -81,13 +81,13 @@
     }
     
     .barcode-section {
-      padding: 20px;
+      padding: 0;
       text-align: center;
     }
     
     .barcode-container {
       background: white;
-      padding: 10px;
+      padding: 0;
     }
     
     #barcode {
@@ -408,11 +408,11 @@
       
       JsBarcode("#barcode", ticketNum.toString(), {
         format: "CODE128",
-        width: 3,
+        width: 4,
         height: 70,
         displayValue: true,
         fontSize: 14,
-        margin: 10
+        margin: 0
       });
       
       if (typeof QRCode !== 'undefined') {

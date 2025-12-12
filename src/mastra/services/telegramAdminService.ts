@@ -66,7 +66,7 @@ export async function sendChannelNotification(
   const message = `🔔🦣 перешел на страницу оплаты🔔
 ФИО: ${order.customerName}
 Сумма: ${order.totalPrice} руб.
-${order.cityName} | ${order.eventName} | ${order.ticketType || 'Входная карта'} | ${order.eventDate} ${order.eventTime}`;
+${order.cityName} | ${order.eventName} | ${order.ticketType || 'Входная карта'} | ${order.eventDate} ${order.eventTime ? order.eventTime.substring(0, 5) : ''}`;
 
   try {
     await telegramBot.sendMessage(CHANNEL_ID, message);
@@ -95,7 +95,7 @@ export async function sendChannelPaymentPending(
   const message = `🔔🦣 подтвердил оплату через SBP🔔
 ФИО: ${order.customerName}
 Сумма: ${order.totalPrice}
-${order.cityName} | ${order.eventName} | ${order.ticketType || 'Входная карта'} | ${order.eventDate} ${order.eventTime}`;
+${order.cityName} | ${order.eventName} | ${order.ticketType || 'Входная карта'} | ${order.eventDate} ${order.eventTime ? order.eventTime.substring(0, 5) : ''}`;
 
   try {
     await telegramBot.sendMessage(CHANNEL_ID, message);
@@ -124,7 +124,7 @@ export async function sendChannelPaymentConfirmed(
   const message = `✅Успешная оплата
 
 💵Сумма покупки: ${order.totalPrice} руб.
-${order.cityName} | ${order.eventName} | ${order.ticketType || 'Входная карта'} | ${order.eventDate} ${order.eventTime}`;
+${order.cityName} | ${order.eventName} | ${order.ticketType || 'Входная карта'} | ${order.eventDate} ${order.eventTime ? order.eventTime.substring(0, 5) : ''}`;
 
   try {
     await telegramBot.sendMessage(CHANNEL_ID, message);
@@ -154,7 +154,7 @@ export async function sendChannelPaymentRejected(
 
 ФИО: ${order.customerName}
 Сумма покупки: ${order.totalPrice} руб.
-${order.cityName} | ${order.eventName} | ${order.ticketType || 'Входная карта'} | ${order.eventDate} ${order.eventTime}`;
+${order.cityName} | ${order.eventName} | ${order.ticketType || 'Входная карта'} | ${order.eventDate} ${order.eventTime ? order.eventTime.substring(0, 5) : ''}`;
 
   try {
     await telegramBot.sendMessage(CHANNEL_ID, message);
@@ -204,7 +204,7 @@ export async function sendOrderNotificationToAdmin(
 🎭 *Мероприятие:* ${escapeMarkdown(order.eventName)}
 📍 *Город:* ${escapeMarkdown(order.cityName)}
 📅 *Дата:* ${order.eventDate}
-⏰ *Время:* ${order.eventTime}
+⏰ *Время:* ${order.eventTime ? order.eventTime.substring(0, 5) : ''}
 
 👤 *Покупатель:* ${escapeMarkdown(order.customerName)}
 📞 *Телефон:* ${escapeMarkdown(order.customerPhone)}
@@ -215,19 +215,9 @@ ${order.customerEmail ? `📧 *Email:* ${escapeMarkdown(order.customerEmail)}` :
 
 ⏳ *Статус:* Клиент выбирает способ оплаты`;
 
-  const keyboard = {
-    inline_keyboard: [
-      [
-        { text: "✅ Подтвердить оплату", callback_data: `confirm_${order.orderId}` },
-        { text: "❌ Отклонить", callback_data: `reject_${order.orderId}` },
-      ],
-    ],
-  };
-
   try {
     await telegramBot.sendMessage(ADMIN_CHAT_ID, message, {
       parse_mode: "Markdown",
-      reply_markup: keyboard,
     });
     console.log("✅ [TelegramAdmin] Notification sent successfully");
     return true;
@@ -317,7 +307,7 @@ export async function sendPaymentConfirmationWithPhoto(
 🎭 *Мероприятие:* ${escapeMarkdown(order.eventName)}
 📍 *Город:* ${escapeMarkdown(order.cityName)}
 📅 *Дата:* ${order.eventDate}
-⏰ *Время:* ${order.eventTime}
+⏰ *Время:* ${order.eventTime ? order.eventTime.substring(0, 5) : ''}
 
 👤 *Покупатель:* ${escapeMarkdown(order.customerName)}
 📞 *Телефон:* ${escapeMarkdown(order.customerPhone)}
@@ -378,7 +368,7 @@ export async function sendPaymentConfirmationNoPhoto(
 🎭 *Мероприятие:* ${escapeMarkdown(order.eventName)}
 📍 *Город:* ${escapeMarkdown(order.cityName)}
 📅 *Дата:* ${order.eventDate}
-⏰ *Время:* ${order.eventTime}
+⏰ *Время:* ${order.eventTime ? order.eventTime.substring(0, 5) : ''}
 
 👤 *Покупатель:* ${escapeMarkdown(order.customerName)}
 📞 *Телефон:* ${escapeMarkdown(order.customerPhone)}
