@@ -134,35 +134,41 @@ export const manageOrderTool = createTool({
       }
 
       let orderResult;
-      if (context.orderId) {
+      const whereClause = context.orderId ? "o.id = $1" : "o.order_code = $1";
+      const whereValue = context.orderId || context.orderCode;
+      
+      // First try regular orders (with event_id)
+      orderResult = await dbPool.query(
+        `SELECT o.*, e.name as event_name, e.date::text as event_date, e.time::text as event_time,
+                c.name_ru as category_name, ci.name as city_name
+         FROM orders o
+         JOIN events e ON o.event_id = e.id
+         JOIN categories c ON e.category_id = c.id
+         JOIN cities ci ON e.city_id = ci.id
+         WHERE ${whereClause}`,
+        [whereValue],
+      );
+      
+      // If not found, try generated link orders (with event_template_id)
+      if (orderResult.rows.length === 0) {
         orderResult = await dbPool.query(
-          `SELECT o.*, e.name as event_name, e.date::text as event_date, e.time::text as event_time,
-                  c.name_ru as category_name, ci.name as city_name
+          `SELECT o.*, et.name as event_name, gl.event_date::text as event_date, gl.event_time::text as event_time,
+                  cat.name_ru as category_name, ci.name as city_name
            FROM orders o
-           JOIN events e ON o.event_id = e.id
-           JOIN categories c ON e.category_id = c.id
-           JOIN cities ci ON e.city_id = ci.id
-           WHERE o.id = $1`,
-          [context.orderId],
-        );
-      } else {
-        orderResult = await dbPool.query(
-          `SELECT o.*, e.name as event_name, e.date::text as event_date, e.time::text as event_time,
-                  c.name_ru as category_name, ci.name as city_name
-           FROM orders o
-           JOIN events e ON o.event_id = e.id
-           JOIN categories c ON e.category_id = c.id
-           JOIN cities ci ON e.city_id = ci.id
-           WHERE o.order_code = $1`,
-          [context.orderCode],
+           JOIN event_templates et ON o.event_template_id = et.id
+           JOIN categories cat ON et.category_id = cat.id
+           LEFT JOIN generated_links gl ON gl.link_code = o.link_code
+           LEFT JOIN cities ci ON gl.city_id = ci.id
+           WHERE ${whereClause}`,
+          [whereValue],
         );
       }
 
       if (orderResult.rows.length === 0) {
-        logger?.warn("⚠️ [manageOrderTool] Order not found:", context.orderCode);
+        logger?.warn("⚠️ [manageOrderTool] Order not found:", context.orderCode || context.orderId);
         return {
           success: false,
-          message: `Заказ ${context.orderCode} не найден`,
+          message: `Заказ ${context.orderCode || context.orderId} не найден`,
         };
       }
 

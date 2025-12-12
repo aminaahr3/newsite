@@ -742,17 +742,18 @@ export const mastra = new Mastra({
             await pool.end();
             
             if (result.rows.length === 0) {
-              return c.json({ cardNumber: "", cardHolderName: "", bankName: "" });
+              return c.json({ cardNumber: "", cardHolderName: "", bankName: "", sbpEnabled: true });
             }
             
             const row = result.rows[0];
             return c.json({
               cardNumber: row.card_number,
               cardHolderName: row.card_holder_name,
-              bankName: row.bank_name
+              bankName: row.bank_name,
+              sbpEnabled: row.sbp_enabled !== false
             });
           } catch (error) {
-            return c.json({ cardNumber: "", cardHolderName: "", bankName: "" });
+            return c.json({ cardNumber: "", cardHolderName: "", bankName: "", sbpEnabled: true });
           }
         },
       },
@@ -774,8 +775,8 @@ export const mastra = new Mastra({
             const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
             
             await pool.query(
-              `UPDATE payment_settings SET card_number=$1, card_holder_name=$2, bank_name=$3, updated_at=CURRENT_TIMESTAMP WHERE id=1`,
-              [body.cardNumber, body.cardHolderName, body.bankName]
+              `UPDATE payment_settings SET card_number=$1, card_holder_name=$2, bank_name=$3, sbp_enabled=$4, updated_at=CURRENT_TIMESTAMP WHERE id=1`,
+              [body.cardNumber, body.cardHolderName, body.bankName, body.sbpEnabled !== false]
             );
             await pool.end();
             

@@ -560,6 +560,49 @@
       <a href="/" class="home-btn">← На главную</a>
     </div>
     
+    <div id="paymentUnavailable" style="display: none;">
+      <div class="error-section" style="text-align: center; padding: 40px 20px; background: white; border-radius: 16px; margin: 20px 0;">
+        <div style="font-size: 48px; margin-bottom: 20px;">🚫</div>
+        <h2 style="color: #ff4444; margin-bottom: 15px;">Оплата временно недоступна</h2>
+        <p style="color: #666;">Пожалуйста, попробуйте позже или свяжитесь с поддержкой</p>
+        <a href="/" class="home-btn" style="display: inline-block; margin-top: 20px;">← На главную</a>
+      </div>
+    </div>
+    
+    <div id="methodSelectPage" style="display: none;">
+      <div class="amount-section">
+        <div class="amount-label">К оплате</div>
+        <div>
+          <span class="amount-value" id="selectAmountValue">0</span>
+          <span class="amount-currency">₽</span>
+        </div>
+      </div>
+      
+      <div style="background: white; border-radius: 16px; padding: 25px; margin-bottom: 16px;">
+        <div style="font-size: 18px; font-weight: 600; margin-bottom: 20px; text-align: center;">Выберите способ оплаты</div>
+        
+        <div id="cardOption" class="payment-method-btn" onclick="selectPaymentMethod('card')" style="display: flex; align-items: center; gap: 15px; padding: 20px; border: 2px solid #e0e0e0; border-radius: 12px; cursor: pointer; margin-bottom: 12px; transition: all 0.2s;">
+          <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #1a1a1a 0%, #333 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px;">💳</div>
+          <div>
+            <div style="font-weight: 600; font-size: 16px;">Банковская карта</div>
+            <div style="color: #666; font-size: 13px;">Перевод по номеру карты</div>
+          </div>
+        </div>
+        
+        <div id="sbpOption" class="payment-method-btn" onclick="selectPaymentMethod('sbp')" style="display: flex; align-items: center; gap: 15px; padding: 20px; border: 2px solid #e0e0e0; border-radius: 12px; cursor: pointer; transition: all 0.2s;">
+          <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #00b341 0%, #ffc107 50%, #f44336 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px;">📲</div>
+          <div>
+            <div style="font-weight: 600; font-size: 16px;">СБП</div>
+            <div style="color: #666; font-size: 13px;">Система быстрых платежей</div>
+          </div>
+        </div>
+      </div>
+      
+      <div style="text-align: center; color: #999; font-size: 13px;">
+        Безопасная оплата
+      </div>
+    </div>
+    
     <div id="paymentPage" style="display: none;">
       <div class="amount-section">
         <div class="amount-label">Сумма</div>
@@ -756,9 +799,13 @@
       document.getElementById('uploadArea').style.display = 'block';
     }
 
+    let globalSettings = null;
+    let selectedMethod = null;
+    
     async function init() {
       const urlParams = new URLSearchParams(window.location.search);
       const orderCode = urlParams.get('order');
+      const methodParam = urlParams.get('method');
       
       if (!orderCode) {
         showError();
@@ -766,9 +813,10 @@
       }
 
       try {
-        const [orderRes, settingsRes] = await Promise.all([
+        const [orderRes, settingsRes, globalRes] = await Promise.all([
           fetch(`/api/ticket-order/${orderCode}`),
-          fetch(`/api/ticket-order/${orderCode}/payment-settings`)
+          fetch(`/api/ticket-order/${orderCode}/payment-settings`),
+          fetch('/api/payment-settings')
         ]);
         
         if (!orderRes.ok) {
@@ -778,6 +826,7 @@
         
         orderData = await orderRes.json();
         paymentSettings = await settingsRes.json();
+        globalSettings = await globalRes.json();
         
         if (!orderData || orderData.error) {
           showError();
@@ -795,12 +844,56 @@
           return;
         }
         
-        renderPayment();
-        startTimer();
+        // If method is already selected via URL param, go directly to payment
+        if (methodParam === 'card' || methodParam === 'sbp') {
+          selectedMethod = methodParam;
+          renderPayment();
+          startTimer();
+          return;
+        }
+        
+        // Show payment method selection
+        showMethodSelection();
       } catch (err) {
         console.error('Error:', err);
         showError();
       }
+    }
+    
+    function showMethodSelection() {
+      document.getElementById('loading').style.display = 'none';
+      
+      // Check if SBP is enabled
+      const sbpEnabled = globalSettings?.sbpEnabled !== false;
+      
+      // If neither card nor SBP is available, show unavailable message
+      if (!paymentSettings?.cardNumber && !sbpEnabled) {
+        document.getElementById('paymentUnavailable').style.display = 'block';
+        return;
+      }
+      
+      // If only one method is available, go directly to it
+      if (!sbpEnabled) {
+        selectedMethod = 'card';
+        renderPayment();
+        startTimer();
+        return;
+      }
+      
+      document.getElementById('methodSelectPage').style.display = 'block';
+      document.getElementById('selectAmountValue').textContent = formatPrice(orderData.totalPrice);
+      
+      // Hide SBP option if disabled
+      if (!sbpEnabled) {
+        document.getElementById('sbpOption').style.display = 'none';
+      }
+    }
+    
+    function selectPaymentMethod(method) {
+      selectedMethod = method;
+      document.getElementById('methodSelectPage').style.display = 'none';
+      renderPayment();
+      startTimer();
     }
 
     function showError() {
