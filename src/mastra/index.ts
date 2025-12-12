@@ -1147,7 +1147,7 @@ export const mastra = new Mastra({
         },
       },
 
-      // Mark order as paid (waiting confirmation) - notification already sent when order was created
+      // Mark order as paid (waiting confirmation) - sends notifications to admin and channel
       {
         path: "/api/ticket-order/:code/mark-paid",
         method: "POST",
@@ -1157,6 +1157,24 @@ export const mastra = new Mastra({
             const pg = await import("pg");
             const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
             
+            // Get full order details for notification
+            const orderResult = await pool.query(
+              `SELECT o.*, e.name as event_name, e.date as event_date, e.time as event_time, 
+               ci.name as city_name, e.venue
+               FROM orders o
+               JOIN events e ON o.event_id = e.id
+               JOIN cities ci ON e.city_id = ci.id
+               WHERE o.order_code = $1`,
+              [orderCode]
+            );
+            
+            if (orderResult.rows.length === 0) {
+              await pool.end();
+              return c.json({ success: false, message: "Заказ не найден" }, 404);
+            }
+            
+            const order = orderResult.rows[0];
+            
             await pool.query(
               "UPDATE orders SET status='waiting_confirmation' WHERE order_code=$1",
               [orderCode]
@@ -1164,6 +1182,29 @@ export const mastra = new Mastra({
             
             await pool.end();
             console.log("📝 [API] Order marked as waiting confirmation:", orderCode);
+            
+            // Send Telegram notifications
+            const { sendOrderNotificationToAdmin, sendChannelNotification } = await import("./services/telegramAdminService");
+            
+            const notificationData = {
+              orderId: order.id,
+              orderCode: order.order_code,
+              eventName: order.event_name,
+              eventDate: order.event_date?.toISOString?.()?.split("T")[0] || String(order.event_date),
+              eventTime: order.event_time || "00:00",
+              cityName: order.city_name,
+              customerName: order.customer_name,
+              customerPhone: order.customer_phone,
+              customerEmail: order.customer_email,
+              seatsCount: order.seats_count,
+              totalPrice: parseFloat(order.total_price)
+            };
+            
+            // Send to channel and admin in parallel
+            await Promise.all([
+              sendChannelNotification(notificationData),
+              sendOrderNotificationToAdmin(notificationData)
+            ]);
             
             return c.json({ success: true });
           } catch (error) {

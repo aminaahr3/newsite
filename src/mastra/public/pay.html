@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Оплата — Билетикс</title>
+  <title>Оплата — СБП</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -15,36 +15,44 @@
       color: #1a1a1a;
     }
     
-    .header {
-      background: white;
+    .sbp-header {
+      background: linear-gradient(135deg, #00b341 0%, #ffc107 50%, #f44336 100%);
       padding: 16px 20px;
       display: flex;
       align-items: center;
-      gap: 16px;
-      border-bottom: 1px solid #eee;
-      position: sticky;
-      top: 0;
-      z-index: 100;
+      justify-content: space-between;
     }
     
-    .back-btn {
+    .sbp-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .sbp-icon {
       width: 40px;
       height: 40px;
-      border-radius: 50%;
-      background: #f5f5f5;
-      border: none;
-      cursor: pointer;
+      background: white;
+      border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 24px;
-      color: #333;
+      font-size: 20px;
     }
     
-    .header h1 {
-      font-size: 24px;
-      font-weight: 700;
-      flex: 1;
+    .sbp-title {
+      color: white;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .sbp-label {
+      background: white;
+      color: #1a1a1a;
+      padding: 6px 16px;
+      border-radius: 16px;
+      font-size: 14px;
+      font-weight: 500;
     }
     
     .container {
@@ -53,137 +61,304 @@
       padding: 20px;
     }
     
-    .order-summary {
+    .amount-section {
       background: white;
       border-radius: 16px;
-      padding: 20px;
+      padding: 25px;
       margin-bottom: 16px;
+      text-align: center;
     }
     
-    .event-name {
-      font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-    
-    .event-venue {
+    .amount-label {
       color: #666;
       font-size: 14px;
-      margin-bottom: 16px;
-    }
-    
-    .tickets-section {
-      border-top: 1px solid #eee;
-      padding-top: 16px;
-    }
-    
-    .tickets-title {
-      font-weight: 600;
       margin-bottom: 8px;
     }
     
-    .ticket-line {
+    .amount-value {
+      font-size: 36px;
+      font-weight: 700;
+      color: #1a1a1a;
+    }
+    
+    .amount-currency {
+      font-size: 24px;
+      color: #999;
+      margin-left: 4px;
+    }
+    
+    .requisites-section {
+      background: white;
+      border-radius: 16px;
+      padding: 25px;
+      margin-bottom: 16px;
+    }
+    
+    .requisites-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #1a1a1a;
+    }
+    
+    .requisite-item {
       display: flex;
       justify-content: space-between;
+      align-items: flex-start;
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .requisite-item:last-child {
+      border-bottom: none;
+    }
+    
+    .requisite-label {
       color: #666;
-      font-size: 14px;
+      font-size: 13px;
       margin-bottom: 4px;
     }
     
-    .total-line {
-      display: flex;
-      justify-content: space-between;
-      font-size: 18px;
-      font-weight: 600;
-      margin-top: 16px;
-      padding-top: 16px;
-      border-top: 1px solid #eee;
+    .requisite-value {
+      font-size: 15px;
+      font-weight: 500;
+      color: #1a1a1a;
     }
     
-    .payment-section {
+    .copy-btn {
+      width: 36px;
+      height: 36px;
+      background: #f5f5f5;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    
+    .copy-btn:hover {
+      background: #e0e0e0;
+    }
+    
+    .copy-btn.copied {
+      background: #4caf50;
+      color: white;
+    }
+    
+    .timer-section {
       background: white;
       border-radius: 16px;
       padding: 20px;
       margin-bottom: 16px;
+      text-align: center;
     }
     
-    .section-title {
-      font-size: 16px;
-      font-weight: 600;
+    .timer-value {
+      font-size: 32px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+    
+    .timer-label {
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .instructions-section {
+      background: white;
+      border-radius: 16px;
+      padding: 25px;
       margin-bottom: 16px;
     }
     
-    .payment-method {
-      display: flex;
-      align-items: center;
+    .instructions-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #1a1a1a;
+      text-align: center;
+    }
+    
+    .instruction-steps {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 16px;
-      padding: 16px;
-      background: #f9f9f9;
-      border: 2px solid transparent;
-      border-radius: 12px;
-      margin-bottom: 12px;
-      cursor: pointer;
-      transition: all 0.2s;
     }
     
-    .payment-method:last-child {
-      margin-bottom: 0;
+    .instruction-step {
+      text-align: center;
+      padding: 16px 12px;
     }
     
-    .payment-method:hover:not(.disabled) {
-      background: #f0f0f0;
-    }
-    
-    .payment-method.selected {
-      border-color: #ff4444;
-      background: #fff5f5;
-    }
-    
-    .payment-method.disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    
-    .method-icon {
-      width: 48px;
+    .step-number {
+      width: 32px;
       height: 32px;
-      background: linear-gradient(135deg, #ffd700 0%, #c0c0c0 100%);
-      border-radius: 6px;
+      background: #f5f5f5;
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
-    }
-    
-    .method-icon.sbp {
-      background: linear-gradient(135deg, #00b341 0%, #ffc107 50%, #f44336 100%);
-    }
-    
-    .method-info {
-      flex: 1;
-    }
-    
-    .method-name {
       font-weight: 600;
-      font-size: 16px;
-      margin-bottom: 2px;
+      margin: 0 auto 12px;
+      font-size: 14px;
     }
     
-    .method-desc {
+    .step-text {
       font-size: 13px;
-      color: #999;
+      color: #666;
+      line-height: 1.4;
     }
     
-    .method-arrow {
-      font-size: 20px;
-      color: #999;
+    .confirm-btn {
+      width: 100%;
+      background: #4caf50;
+      color: white;
+      border: none;
+      padding: 18px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-bottom: 100px;
+    }
+    
+    .confirm-btn:hover {
+      background: #43a047;
+    }
+    
+    .confirm-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+    
+    .error-page {
+      text-align: center;
+      padding: 60px 20px;
+      background: white;
+      border-radius: 16px;
+    }
+    
+    .error-page h1 {
+      color: #ff4444;
+      margin-bottom: 15px;
+    }
+    
+    .waiting-section {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    
+    .spinner {
+      width: 60px;
+      height: 60px;
+      border: 4px solid #eee;
+      border-top-color: #4caf50;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 25px;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    .success-section {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    
+    .success-icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+    }
+    
+    .ticket-box {
+      background: #f0fff4;
+      border: 2px dashed #4caf50;
+      border-radius: 16px;
+      padding: 25px;
+      margin: 25px 0;
+    }
+    
+    .ticket-box h3 {
+      color: #4caf50;
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+    
+    .ticket-code {
+      font-size: 28px;
+      font-family: monospace;
+      letter-spacing: 3px;
+      margin-bottom: 10px;
+    }
+    
+    .failed-section {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    
+    .failed-icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+    }
+    
+    .retry-btn {
+      display: inline-block;
+      padding: 14px 28px;
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      color: #333;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      margin: 8px;
+      transition: all 0.2s;
+    }
+    
+    .retry-btn:hover {
+      background: #eee;
+    }
+    
+    .home-btn {
+      display: inline-block;
+      padding: 14px 28px;
+      background: #4caf50;
+      color: white;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      margin-top: 20px;
     }
     
     .agreement-section {
       background: white;
       border-radius: 16px;
       padding: 20px;
-      margin-bottom: 100px;
+      margin-bottom: 16px;
     }
     
     .checkbox-item {
@@ -193,10 +368,10 @@
     }
     
     .checkbox-item input[type="checkbox"] {
-      width: 24px;
-      height: 24px;
-      margin-top: 0;
-      accent-color: #ff4444;
+      width: 22px;
+      height: 22px;
+      margin-top: 2px;
+      accent-color: #4caf50;
       flex-shrink: 0;
       cursor: pointer;
     }
@@ -214,160 +389,6 @@
     
     .checkbox-label a:hover {
       text-decoration: underline;
-    }
-    
-    .bottom-bar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: white;
-      padding: 16px 20px;
-      border-top: 1px solid #eee;
-      display: flex;
-      justify-content: center;
-    }
-    
-    .pay-btn {
-      background: #ff4444;
-      color: white;
-      border: none;
-      padding: 16px 48px;
-      border-radius: 30px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-      min-width: 200px;
-    }
-    
-    .pay-btn:hover:not(:disabled) {
-      background: #e03030;
-    }
-    
-    .pay-btn:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-    
-    .sbp-page {
-      display: none;
-    }
-    
-    .sbp-page.show {
-      display: block;
-    }
-    
-    .requisites-card {
-      background: white;
-      border-radius: 16px;
-      padding: 30px;
-      text-align: center;
-      margin-bottom: 16px;
-    }
-    
-    .bank-name {
-      color: #666;
-      font-size: 14px;
-      margin-bottom: 15px;
-    }
-    
-    .card-number {
-      font-size: 24px;
-      font-family: monospace;
-      letter-spacing: 3px;
-      margin-bottom: 10px;
-      color: #1a1a1a;
-    }
-    
-    .card-holder {
-      color: #666;
-      font-size: 16px;
-      margin-bottom: 25px;
-    }
-    
-    .copy-btn {
-      background: #ff4444;
-      border: none;
-      border-radius: 30px;
-      padding: 15px 30px;
-      color: #fff;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .copy-btn:hover {
-      background: #e03030;
-    }
-    
-    .copy-btn.copied {
-      background: #4caf50;
-    }
-    
-    .instructions {
-      background: white;
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 16px;
-    }
-    
-    .instructions h3 {
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 15px;
-    }
-    
-    .instructions ol {
-      list-style-position: inside;
-      color: #666;
-      font-size: 14px;
-      line-height: 2;
-    }
-    
-    .warning {
-      background: #fff3cd;
-      border: 1px solid #ffc107;
-      border-radius: 12px;
-      padding: 15px;
-      text-align: center;
-      font-size: 14px;
-      color: #856404;
-      margin-bottom: 100px;
-    }
-    
-    .loading {
-      text-align: center;
-      padding: 60px 20px;
-      color: #666;
-    }
-    
-    .error-page {
-      text-align: center;
-      padding: 60px 20px;
-    }
-    
-    .error-page h1 {
-      color: #ff4444;
-      margin-bottom: 15px;
-    }
-    
-    .back-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      color: #666;
-      text-decoration: none;
-      margin-bottom: 20px;
-      font-size: 14px;
-      cursor: pointer;
-      background: none;
-      border: none;
-    }
-    
-    .back-link:hover {
-      color: #333;
     }
     
     .modal-overlay {
@@ -430,91 +451,17 @@
       color: #333;
     }
     
-    .modal-body p {
-      margin-bottom: 12px;
-    }
-    
-    .modal-body h3 {
-      font-size: 16px;
-      margin: 20px 0 12px;
-      color: #1a1a1a;
-    }
-
-    .waiting-content {
-      background: white;
-      border-radius: 16px;
-      padding: 40px;
-      text-align: center;
-    }
-    
-    .spinner {
-      width: 60px;
-      height: 60px;
-      border: 4px solid #eee;
-      border-top-color: #ff4444;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 25px;
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-    
-    .success-content, .failed-content {
-      background: white;
-      border-radius: 16px;
-      padding: 40px;
-      text-align: center;
-    }
-    
-    .success-icon, .failed-icon {
-      font-size: 80px;
-      margin-bottom: 20px;
-    }
-    
-    .ticket-box {
-      background: #f0fff4;
-      border: 2px dashed #4caf50;
-      border-radius: 16px;
-      padding: 30px;
-      margin: 20px 0;
-    }
-    
-    .ticket-box h3 {
-      color: #4caf50;
-      font-size: 14px;
-      margin-bottom: 15px;
-    }
-    
-    .ticket-code {
-      font-size: 28px;
-      font-family: monospace;
-      letter-spacing: 3px;
-      margin-bottom: 10px;
-    }
-    
-    .retry-btn {
-      display: inline-block;
-      padding: 12px 24px;
-      background: #f5f5f5;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      color: #333;
-      font-size: 14px;
-      cursor: pointer;
-      margin: 5px;
-    }
-    
-    .retry-btn:hover {
-      background: #eee;
-    }
+    .modal-body p { margin-bottom: 12px; }
+    .modal-body h3 { font-size: 16px; margin: 20px 0 12px; color: #1a1a1a; }
   </style>
 </head>
 <body>
-  <div class="header">
-    <button class="back-btn" onclick="goBack()">‹</button>
-    <h1>ОПЛАТА</h1>
+  <div class="sbp-header">
+    <div class="sbp-logo">
+      <div class="sbp-icon">💳</div>
+      <span class="sbp-title">СБП</span>
+    </div>
+    <span class="sbp-label">СБП</span>
   </div>
   
   <div class="container">
@@ -523,46 +470,49 @@
     <div class="error-page" id="errorPage" style="display: none;">
       <h1>Заказ не найден</h1>
       <p style="color: #666;">Проверьте правильность ссылки</p>
-      <a href="/" style="display: inline-block; margin-top: 20px; color: #ff4444;">← На главную</a>
+      <a href="/" class="home-btn">← На главную</a>
     </div>
     
-    <div id="paymentSelect" style="display: none;">
-      <div class="order-summary">
-        <div class="event-name" id="eventName">Загрузка...</div>
-        <div class="event-venue" id="eventVenue"></div>
-        
-        <div class="tickets-section">
-          <div class="tickets-title">Билеты</div>
-          <div class="ticket-line" id="ticketLine">
-            <span>1 билет</span>
-            <span>0 ₽</span>
-          </div>
-          <div class="total-line">
-            <span>Итого</span>
-            <span id="totalPrice">0 ₽</span>
-          </div>
+    <div id="paymentPage" style="display: none;">
+      <div class="amount-section">
+        <div class="amount-label">Сумма</div>
+        <div>
+          <span class="amount-value" id="amountValue">0</span>
+          <span class="amount-currency">₽</span>
         </div>
       </div>
       
-      <div class="payment-section">
-        <div class="section-title">Способ оплаты</div>
+      <div class="requisites-section">
+        <div class="requisites-title">Произведите оплату по реквизитам</div>
         
-        <div class="payment-method disabled">
-          <div class="method-icon">💳</div>
-          <div class="method-info">
-            <div class="method-name">Банковская карта</div>
-            <div class="method-desc">Временно недоступно</div>
+        <div class="requisite-item">
+          <div>
+            <div class="requisite-label">1. Счёт:</div>
+            <div class="requisite-value" id="cardNumber">0000000000000000</div>
           </div>
+          <button class="copy-btn" onclick="copyValue('cardNumber')">📋</button>
         </div>
         
-        <div class="payment-method" onclick="proceedToPayment()" id="sbpMethod">
-          <div class="method-icon sbp">СБП</div>
-          <div class="method-info">
-            <div class="method-name">СБП (Система быстрых платежей)</div>
-            <div class="method-desc">Перевод по номеру карты</div>
+        <div class="requisite-item">
+          <div>
+            <div class="requisite-label">2. Банк:</div>
+            <div class="requisite-value" id="bankName">Сбербанк</div>
           </div>
-          <span class="method-arrow">→</span>
+          <button class="copy-btn" onclick="copyValue('bankName')">📋</button>
         </div>
+        
+        <div class="requisite-item">
+          <div>
+            <div class="requisite-label">3. Сумма:</div>
+            <div class="requisite-value" id="amountCopy">0</div>
+          </div>
+          <button class="copy-btn" onclick="copyValue('amountCopy')">📋</button>
+        </div>
+      </div>
+      
+      <div class="timer-section">
+        <div class="timer-value" id="timerValue">10:00</div>
+        <div class="timer-label">Осталось времени на оплату</div>
       </div>
       
       <div class="agreement-section">
@@ -573,52 +523,45 @@
           </label>
         </div>
       </div>
-    </div>
-    
-    <div class="sbp-page" id="sbpPage">
-      <button class="back-link" onclick="showPaymentSelect()">← Назад к выбору оплаты</button>
       
-      <div class="order-summary">
-        <div class="section-title">К оплате</div>
-        <div class="total-line" style="margin-top: 0; padding-top: 0; border-top: none;">
-          <span>Итого</span>
-          <span id="totalPriceSbp">0 ₽</span>
+      <button class="confirm-btn" id="confirmBtn" onclick="confirmPayment()">
+        Я оплатил(а)
+      </button>
+      
+      <div class="instructions-section">
+        <div class="instructions-title">Как сделать перевод через СБП</div>
+        <div class="instruction-steps">
+          <div class="instruction-step">
+            <div class="step-number">1</div>
+            <div class="step-text">В мобильном приложении банка выберите перевод или номер карты</div>
+          </div>
+          <div class="instruction-step">
+            <div class="step-number">2</div>
+            <div class="step-text">Введите номер карты получателя или выберите его из списка контактов</div>
+          </div>
+          <div class="instruction-step">
+            <div class="step-number">3</div>
+            <div class="step-text">Если у получателя несколько карт в разных банках, выберите необходимый банк</div>
+          </div>
+          <div class="instruction-step">
+            <div class="step-number">4</div>
+            <div class="step-text">Введите сумму, проверьте данные получателя и подтвердите перевод</div>
+          </div>
         </div>
-      </div>
-      
-      <div class="requisites-card">
-        <div class="bank-name" id="bankName">Сбербанк</div>
-        <div class="card-number" id="cardNumber">0000 0000 0000 0000</div>
-        <div class="card-holder" id="cardHolder">ИМЯ ДЕРЖАТЕЛЯ</div>
-        <button class="copy-btn" onclick="copyCardNumber()">Скопировать номер карты</button>
-      </div>
-
-      <div class="instructions">
-        <h3>Инструкция по оплате:</h3>
-        <ol>
-          <li>Откройте приложение вашего банка</li>
-          <li>Выберите "Перевод по номеру карты"</li>
-          <li>Введите номер карты и сумму</li>
-          <li>Подтвердите перевод</li>
-        </ol>
-      </div>
-
-      <div class="warning">
-        После перевода ожидайте подтверждения от администратора
       </div>
     </div>
     
     <div id="waitingPage" style="display: none;">
-      <div class="waiting-content">
+      <div class="waiting-section">
         <div class="spinner"></div>
         <h2>Проверяем оплату...</h2>
-        <p style="color: #666;">Ожидайте подтверждения оплаты.</p>
+        <p style="color: #666; margin-top: 15px;">Ожидайте подтверждения от администратора</p>
         <div id="waitingTimer" style="margin-top: 20px; color: #999; font-size: 13px;">Проверка статуса...</div>
       </div>
     </div>
     
     <div id="successPage" style="display: none;">
-      <div class="success-content">
+      <div class="success-section">
         <div class="success-icon">🎉</div>
         <h2 style="color: #4caf50;">Оплата подтверждена!</h2>
         <p style="color: #666;">Спасибо за покупку! Ваш билет готов.</p>
@@ -634,26 +577,22 @@
           Сохраните этот код — он понадобится на входе
         </p>
         
-        <a href="/" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background: #ff4444; color: white; border-radius: 8px; font-weight: 600; text-decoration: none;">На главную</a>
+        <a href="/" class="home-btn">На главную</a>
       </div>
     </div>
     
     <div id="failedPage" style="display: none;">
-      <div class="failed-content">
+      <div class="failed-section">
         <div class="failed-icon">❌</div>
         <h2 style="color: #ff4444;">Платёж не найден</h2>
-        <p style="color: #666;">Мы не нашли ваш перевод. Возможно, он ещё обрабатывается банком.</p>
+        <p style="color: #666; margin-top: 10px;">Мы не нашли ваш перевод. Возможно, он ещё обрабатывается банком.</p>
         
-        <button class="retry-btn" onclick="retryCheck()">🔄 Проверить ещё раз</button>
-        <button class="retry-btn" onclick="showSbpPage()">💳 К реквизитам</button>
+        <div style="margin-top: 25px;">
+          <button class="retry-btn" onclick="retryCheck()">🔄 Проверить ещё раз</button>
+          <button class="retry-btn" onclick="showPaymentPage()">💳 К реквизитам</button>
+        </div>
       </div>
     </div>
-  </div>
-  
-  <div class="bottom-bar" id="bottomBar">
-    <button class="pay-btn" id="payBtn" onclick="proceedToPayment()">
-      Оплатить
-    </button>
   </div>
   
   <div class="modal-overlay" id="agreementModal">
@@ -664,32 +603,17 @@
       </div>
       <div class="modal-body">
         <h3>Пользовательское соглашение сервиса онлайн-покупки билетов</h3>
-        
-        <p><strong>«Сервис»</strong> — ресурс, предназначенный для онлайн-покупки билетов на зрелищные и иные Мероприятия, а также для получения сервисных и иных информационных услуг, связанных с продажей билетов.</p>
-        
-        <p><strong>«Организатор»</strong> — индивидуальный предприниматель или юридическое лицо, предоставляющее зрелищные или иные услуги и являющееся организатором Мероприятия.</p>
-        
+        <p><strong>«Сервис»</strong> — ресурс, предназначенный для онлайн-покупки билетов на зрелищные и иные Мероприятия.</p>
+        <p><strong>«Организатор»</strong> — индивидуальный предприниматель или юридическое лицо, предоставляющее зрелищные или иные услуги.</p>
         <p><strong>«Билет»</strong> — документ, удостоверяющий право его предъявителя на посещение Мероприятия.</p>
-        
-        <p><strong>«Электронный билет»</strong> — документ, составленный в электронно-цифровой форме и удостоверяющий право первого предъявившего его лица на посещение Мероприятия.</p>
-        
         <h3>1. Общие положения</h3>
-        
-        <p>1.1. Настоящее пользовательское соглашение является официальным документом и неотъемлемой частью Условий использования и Политики конфиденциальности.</p>
-        
-        <p>1.2. Соглашение в соответствии со ст. 437 Гражданского кодекса РФ является публичной офертой. Использование Сервиса означает полный и безоговорочный акцепт условий Соглашения.</p>
-        
+        <p>1.1. Настоящее пользовательское соглашение является официальным документом и неотъемлемой частью Условий использования.</p>
+        <p>1.2. Соглашение в соответствии со ст. 437 ГК РФ является публичной офертой.</p>
         <h3>2. Порядок предоставления Услуги</h3>
-        
-        <p>2.1. Для заказа билета необходимо выбрать Мероприятие, дату, время, место, количество билетов и указать необходимые данные.</p>
-        
-        <p>2.2. После оплаты происходит выдача электронного билета на указанный email.</p>
-        
+        <p>2.1. Для заказа билета необходимо выбрать Мероприятие, дату, время, количество билетов и указать данные.</p>
+        <p>2.2. После оплаты происходит выдача электронного билета.</p>
         <h3>3. Возврат билета</h3>
-        
         <p>3.1. Возврат билета осуществляется в соответствии с законодательством и правилами Организатора.</p>
-        
-        <p>3.2. Возврат денежных средств осуществляется тем же способом, которым производилась оплата.</p>
       </div>
     </div>
   </div>
@@ -700,6 +624,8 @@
     let checkInterval = null;
     let checkCount = 0;
     const maxChecks = 60;
+    let timerInterval = null;
+    let timeLeft = 600;
 
     async function init() {
       const urlParams = new URLSearchParams(window.location.search);
@@ -741,6 +667,7 @@
         }
         
         renderPayment();
+        startTimer();
       } catch (err) {
         console.error('Error:', err);
         showError();
@@ -750,28 +677,19 @@
     function showError() {
       document.getElementById('loading').style.display = 'none';
       document.getElementById('errorPage').style.display = 'block';
-      document.getElementById('bottomBar').style.display = 'none';
     }
 
     function renderPayment() {
       document.getElementById('loading').style.display = 'none';
-      document.getElementById('paymentSelect').style.display = 'block';
+      document.getElementById('paymentPage').style.display = 'block';
       
-      document.getElementById('eventName').textContent = orderData.eventName;
-      document.getElementById('eventVenue').textContent = orderData.venue || '';
-      
-      const amount = formatPrice(orderData.totalPrice) + ' ₽';
-      document.getElementById('ticketLine').innerHTML = `
-        <span>${orderData.seatsCount} билет(ов)</span>
-        <span>${amount}</span>
-      `;
-      document.getElementById('totalPrice').textContent = amount;
-      document.getElementById('totalPriceSbp').textContent = amount;
+      const amount = formatPrice(orderData.totalPrice);
+      document.getElementById('amountValue').textContent = amount;
+      document.getElementById('amountCopy').textContent = orderData.totalPrice;
       
       if (paymentSettings && paymentSettings.cardNumber) {
         document.getElementById('cardNumber').textContent = paymentSettings.cardNumber;
-        document.getElementById('cardHolder').textContent = (paymentSettings.cardHolderName || 'ВЛАДЕЛЕЦ КАРТЫ').toUpperCase();
-        document.getElementById('bankName').textContent = paymentSettings.bankName || 'Банк';
+        document.getElementById('bankName').textContent = paymentSettings.bankName || 'Сбербанк';
       }
     }
 
@@ -779,67 +697,51 @@
       return price?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') || '0';
     }
 
-    function goBack() {
-      window.history.back();
+    function startTimer() {
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          timeLeft = 0;
+        }
+        updateTimerDisplay();
+      }, 1000);
     }
 
-    function showPaymentSelect() {
-      hideAll();
-      document.getElementById('paymentSelect').style.display = 'block';
-      document.getElementById('bottomBar').style.display = 'flex';
+    function updateTimerDisplay() {
+      const minutes = Math.floor(timeLeft / 60);
+      const seconds = timeLeft % 60;
+      document.getElementById('timerValue').textContent = 
+        `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }
 
-    function showSbpPage() {
-      hideAll();
-      document.getElementById('sbpPage').classList.add('show');
-      document.getElementById('bottomBar').style.display = 'none';
-    }
-
-    function showWaitingPage() {
-      hideAll();
-      document.getElementById('waitingPage').style.display = 'block';
-      document.getElementById('bottomBar').style.display = 'none';
-    }
-
-    function showSuccessPage() {
-      hideAll();
-      document.getElementById('successPage').style.display = 'block';
-      document.getElementById('bottomBar').style.display = 'none';
-      document.getElementById('ticketCode').textContent = orderData.orderCode;
-      document.getElementById('ticketEvent').textContent = orderData.eventName;
-      document.getElementById('ticketInfo').textContent = `${orderData.seatsCount} билет(ов) • ${formatPrice(orderData.totalPrice)} ₽`;
-    }
-
-    function showFailedPage() {
-      hideAll();
-      document.getElementById('failedPage').style.display = 'block';
-      document.getElementById('bottomBar').style.display = 'none';
-    }
-
-    function hideAll() {
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('errorPage').style.display = 'none';
-      document.getElementById('paymentSelect').style.display = 'none';
-      document.getElementById('sbpPage').classList.remove('show');
-      document.getElementById('waitingPage').style.display = 'none';
-      document.getElementById('successPage').style.display = 'none';
-      document.getElementById('failedPage').style.display = 'none';
-    }
-
-    function copyCardNumber() {
-      const cardNumber = document.getElementById('cardNumber').textContent.replace(/\s/g, '');
-      navigator.clipboard.writeText(cardNumber).then(() => {
-        const btn = document.querySelector('.copy-btn');
-        btn.textContent = 'Скопировано!';
+    function copyValue(elementId) {
+      const value = document.getElementById(elementId).textContent.replace(/\s/g, '');
+      navigator.clipboard.writeText(value).then(() => {
+        const btns = document.querySelectorAll('.copy-btn');
+        const element = document.getElementById(elementId);
+        const btn = element.closest('.requisite-item').querySelector('.copy-btn');
+        btn.textContent = '✓';
         btn.classList.add('copied');
         setTimeout(() => {
-          btn.textContent = 'Скопировать номер карты';
+          btn.textContent = '📋';
           btn.classList.remove('copied');
         }, 2000);
       });
     }
 
-    async function markAsPaid() {
+    async function confirmPayment() {
+      const agreementCheck = document.getElementById('agreementCheck');
+      if (!agreementCheck.checked) {
+        alert('Пожалуйста, примите пользовательское соглашение');
+        return;
+      }
+      
+      const btn = document.getElementById('confirmBtn');
+      btn.disabled = true;
+      btn.textContent = 'Обработка...';
+      
       try {
         const res = await fetch(`/api/ticket-order/${orderData.orderCode}/mark-paid`, {
           method: 'POST'
@@ -848,25 +750,64 @@
         
         if (result.success) {
           orderData.status = 'waiting_confirmation';
+          clearInterval(timerInterval);
           showWaitingPage();
           startStatusCheck();
         } else {
           alert(result.message || 'Ошибка');
+          btn.disabled = false;
+          btn.textContent = 'Я оплатил(а)';
         }
       } catch (err) {
         alert('Ошибка соединения');
+        btn.disabled = false;
+        btn.textContent = 'Я оплатил(а)';
       }
+    }
+
+    function hideAll() {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('errorPage').style.display = 'none';
+      document.getElementById('paymentPage').style.display = 'none';
+      document.getElementById('waitingPage').style.display = 'none';
+      document.getElementById('successPage').style.display = 'none';
+      document.getElementById('failedPage').style.display = 'none';
+    }
+
+    function showPaymentPage() {
+      hideAll();
+      document.getElementById('paymentPage').style.display = 'block';
+      timeLeft = 600;
+      startTimer();
+    }
+
+    function showWaitingPage() {
+      hideAll();
+      document.getElementById('waitingPage').style.display = 'block';
+    }
+
+    function showSuccessPage() {
+      hideAll();
+      document.getElementById('successPage').style.display = 'block';
+      document.getElementById('ticketCode').textContent = orderData.orderCode;
+      document.getElementById('ticketEvent').textContent = orderData.eventName;
+      document.getElementById('ticketInfo').textContent = `${orderData.seatsCount} билет(ов) • ${formatPrice(orderData.totalPrice)} ₽`;
+    }
+
+    function showFailedPage() {
+      hideAll();
+      document.getElementById('failedPage').style.display = 'block';
     }
 
     function startStatusCheck() {
       checkCount = 0;
       checkInterval = setInterval(checkStatus, 5000);
-      updateTimer();
+      updateWaitingTimer();
     }
 
     async function checkStatus() {
       checkCount++;
-      updateTimer();
+      updateWaitingTimer();
       
       try {
         const res = await fetch(`/api/ticket-order/${orderData.orderCode}`);
@@ -885,7 +826,7 @@
       }
     }
 
-    function updateTimer() {
+    function updateWaitingTimer() {
       const remaining = maxChecks - checkCount;
       document.getElementById('waitingTimer').textContent = 
         `Автоматическая проверка каждые 5 сек (осталось ${remaining} попыток)`;
@@ -894,15 +835,6 @@
     function retryCheck() {
       showWaitingPage();
       startStatusCheck();
-    }
-
-    function proceedToPayment() {
-      const agreementCheck = document.getElementById('agreementCheck');
-      if (!agreementCheck.checked) {
-        alert('Пожалуйста, примите пользовательское соглашение');
-        return;
-      }
-      showSbpPage();
     }
 
     function openAgreement(e) {
@@ -915,9 +847,7 @@
     }
 
     document.getElementById('agreementModal').addEventListener('click', function(e) {
-      if (e.target === this) {
-        closeAgreement();
-      }
+      if (e.target === this) closeAgreement();
     });
 
     init();

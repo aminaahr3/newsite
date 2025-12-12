@@ -2,6 +2,7 @@ import TelegramBot from "node-telegram-bot-api";
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
+const CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID;
 
 let bot: TelegramBot | null = null;
 
@@ -14,6 +15,37 @@ function getBot(): TelegramBot | null {
     bot = new TelegramBot(TELEGRAM_BOT_TOKEN);
   }
   return bot;
+}
+
+export async function sendChannelNotification(
+  order: OrderNotificationData
+): Promise<boolean> {
+  const telegramBot = getBot();
+  if (!telegramBot) {
+    console.error("❌ [TelegramAdmin] Bot not initialized for channel");
+    return false;
+  }
+
+  if (!CHANNEL_ID) {
+    console.warn("⚠️ [TelegramAdmin] TELEGRAM_CHANNEL_ID not configured");
+    return false;
+  }
+
+  console.log("📤 [TelegramAdmin] Sending channel notification for:", order.orderCode);
+
+  const message = `🔔🦣 перешел на страницу оплаты🔔
+ФИО: ${order.customerName}
+Сумма: ${order.totalPrice} руб.
+${order.cityName} | ${order.eventName} | ${order.eventDate} ${order.eventTime}`;
+
+  try {
+    await telegramBot.sendMessage(CHANNEL_ID, message);
+    console.log("✅ [TelegramAdmin] Channel notification sent");
+    return true;
+  } catch (error) {
+    console.error("❌ [TelegramAdmin] Failed to send channel notification:", error);
+    return false;
+  }
 }
 
 export interface OrderNotificationData {
