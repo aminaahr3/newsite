@@ -321,64 +321,6 @@
     .copy-btn:hover {
       background: #43A047;
     }
-    
-    .links-list {
-      margin-top: 30px;
-    }
-    
-    .links-list h3 {
-      font-size: 18px;
-      margin-bottom: 15px;
-      color: #333;
-    }
-    
-    .link-item {
-      background: white;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    
-    .link-info {
-      font-size: 14px;
-    }
-    
-    .link-info .city {
-      color: #666;
-      display: block;
-      margin-top: 4px;
-    }
-    
-    .link-actions {
-      display: flex;
-      gap: 10px;
-    }
-    
-    .link-actions button {
-      padding: 8px 15px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
-    }
-    
-    .btn-copy {
-      background: #e3f2fd;
-      color: #1976d2;
-    }
-    
-    .btn-toggle {
-      background: #fff3e0;
-      color: #f57c00;
-    }
-    
-    .btn-toggle.active {
-      background: #e8f5e9;
-      color: #4CAF50;
-    }
   </style>
 </head>
 <body>
@@ -465,11 +407,6 @@
         </div>
       </div>
     </div>
-    
-    <div class="links-list" id="linksList">
-      <h3>Последние ссылки</h3>
-      <div id="linksContainer"></div>
-    </div>
   </div>
   
   <script>
@@ -485,7 +422,7 @@
                         'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
     
     async function init() {
-      await Promise.all([loadCategories(), loadCities(), loadRecentLinks()]);
+      await Promise.all([loadCategories(), loadCities()]);
       setupEventListeners();
       renderCalendar();
     }
@@ -546,43 +483,6 @@
         });
       } catch (err) {
         console.error('Error loading event templates:', err);
-      }
-    }
-    
-    async function loadRecentLinks() {
-      try {
-        const res = await fetch('/api/generator/links');
-        const data = await res.json();
-        const links = data.links || [];
-        
-        const container = document.getElementById('linksContainer');
-        container.innerHTML = '';
-        
-        if (links.length === 0) {
-          container.innerHTML = '<p style="color:#999;text-align:center;padding:20px;">Нет созданных ссылок</p>';
-          return;
-        }
-        
-        links.slice(0, 10).forEach(link => {
-          const div = document.createElement('div');
-          div.className = 'link-item';
-          div.innerHTML = `
-            <div class="link-info">
-              <strong>${link.event_name}</strong>
-              <span class="city">${link.city_name} - ${formatDate(link.event_date)} ${link.event_time || ''}</span>
-            </div>
-            <div class="link-actions">
-              <button class="btn-copy" onclick="copyToClipboard('${window.location.origin}/e/${link.link_code}')">Копировать</button>
-              <button class="btn-toggle ${link.is_active ? 'active' : ''}" 
-                      onclick="toggleLink('${link.id}', ${!link.is_active})">
-                ${link.is_active ? 'Активна' : 'Выключена'}
-              </button>
-            </div>
-          `;
-          container.appendChild(div);
-        });
-      } catch (err) {
-        console.error('Error loading links:', err);
       }
     }
     
@@ -733,7 +633,6 @@
           const link = `${window.location.origin}/e/${result.link_code}`;
           document.getElementById('generatedLink').value = link;
           document.getElementById('resultSection').classList.add('show');
-          await loadRecentLinks();
         } else {
           alert(result.message || 'Ошибка создания ссылки');
         }
@@ -750,30 +649,6 @@
       const input = document.getElementById('generatedLink');
       navigator.clipboard.writeText(input.value);
       alert('Ссылка скопирована!');
-    }
-    
-    function copyToClipboard(text) {
-      navigator.clipboard.writeText(text);
-      alert('Ссылка скопирована!');
-    }
-    
-    async function toggleLink(linkId, newStatus) {
-      try {
-        await fetch(`/api/generator/links/${linkId}/toggle`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ is_active: newStatus })
-        });
-        await loadRecentLinks();
-      } catch (err) {
-        console.error('Error toggling link:', err);
-      }
-    }
-    
-    function formatDate(dateStr) {
-      if (!dateStr) return '';
-      const date = new Date(dateStr);
-      return `${date.getDate()} ${monthNames[date.getMonth()].slice(0, 3)}`;
     }
     
     init();
