@@ -849,7 +849,8 @@
                 venue: 'Адрес уточняется после бронирования',
                 date: new Date().toISOString(),
                 availableSeats: 50,
-                coverImageUrl: templateData.imageUrl
+                images: templateData.images || [],
+                coverImageUrl: templateData.imageUrl || (templateData.images && templateData.images[0])
               };
             }
           }
@@ -877,7 +878,8 @@
         cityName: 'Москва',
         venue: 'ул. Маркова, 12',
         date: new Date().toISOString(),
-        availableSeats: 50
+        availableSeats: 50,
+        images: []
       };
     }
     

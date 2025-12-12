@@ -1385,18 +1385,28 @@ export const mastra = new Mastra({
                WHERE et.id = $1`,
               [eventId]
             );
-            await pool.end();
             
             if (result.rows.length === 0) {
+              await pool.end();
               return c.json({ error: "Template not found" }, 404);
             }
+            
+            // Get images for this template
+            const imagesResult = await pool.query(
+              "SELECT image_url FROM event_template_images WHERE event_template_id = $1 ORDER BY sort_order LIMIT 5",
+              [eventId]
+            );
+            const images = imagesResult.rows.map(r => r.image_url);
+            
+            await pool.end();
             
             const template = result.rows[0];
             return c.json({
               id: template.id,
               name: template.name,
               description: template.description,
-              imageUrl: template.image_url,
+              images: images,
+              imageUrl: images[0] || template.image_url,
               categoryName: template.category_name,
               isActive: template.is_active
             });
