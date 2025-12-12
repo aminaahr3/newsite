@@ -7,7 +7,7 @@ packages = ["unzip"]
 expertMode = true
 
 [deployment]
-build = ["bash", "-c", "cd Site-Mirror && npm run build"]
+build = ["bash", "-c", "cd Site-Mirror && npm install && npm run build"]
 run = ["bash", "-c", "cd Site-Mirror && npm run start"]
 deploymentTarget = "autoscale"
 
