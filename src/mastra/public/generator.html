@@ -495,6 +495,59 @@
       cursor: pointer;
       margin-top: 20px;
     }
+    .ticket-types-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .ticket-type-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #f9f9f9;
+      padding: 12px 15px;
+      border-radius: 8px;
+      border: 1px solid #eee;
+    }
+    .ticket-type-name {
+      font-size: 14px;
+      color: #333;
+    }
+    .ticket-qty-input {
+      width: 60px !important;
+      text-align: center;
+      padding: 8px !important;
+    }
+    .tickets-container {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      margin-top: 30px;
+    }
+    .ticket-nav {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .ticket-nav-btn {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .ticket-nav-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .ticket-counter {
+      font-size: 14px;
+      color: #666;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
@@ -675,83 +728,113 @@
           <input type="text" id="ticketCustomerName" placeholder="Иван Иванов">
         </div>
         
+        <div class="form-group">
+          <label>Количество билетов по типам</label>
+          <div class="ticket-types-grid">
+            <div class="ticket-type-row">
+              <span class="ticket-type-name">Входная карта (2990₽)</span>
+              <input type="number" id="ticketQtyStandard" value="0" min="0" max="20" class="ticket-qty-input">
+            </div>
+            <div class="ticket-type-row">
+              <span class="ticket-type-name">Входная карта «для двоих» (4980₽)</span>
+              <input type="number" id="ticketQtyDouble" value="0" min="0" max="20" class="ticket-qty-input">
+            </div>
+            <div class="ticket-type-row">
+              <span class="ticket-type-name">Льготная входная карта (2490₽)</span>
+              <input type="number" id="ticketQtyDiscount" value="0" min="0" max="20" class="ticket-qty-input">
+            </div>
+            <div class="ticket-type-row">
+              <span class="ticket-type-name">Льготная входная карта «для двоих» (3490₽)</span>
+              <input type="number" id="ticketQtyDiscountDouble" value="0" min="0" max="20" class="ticket-qty-input">
+            </div>
+          </div>
+        </div>
+        
         <button class="submit-btn" id="ticketSubmitBtn" onclick="generateTicket()">Создать</button>
       </div>
 
-      <div class="ticket-preview" id="ticketPreview">
-        <div class="ticket-header-row">
-          <div class="ticket-logo">AFISHA</div>
-          <div class="ticket-qr-section">
-            <div class="qr-code" id="ticketQrCode"></div>
-            <div class="ticket-type">
-              <div class="ticket-type-title">Входная карта</div>
-              <div class="ticket-type-number">E-card #<span id="ticketNumberDisplay"></span></div>
+      <div id="ticketsContainer" class="tickets-container" style="display: none;">
+        <div class="ticket-nav" id="ticketNavTop">
+          <button class="ticket-nav-btn" onclick="prevTicket()" id="prevTicketBtn" disabled>&larr; Назад</button>
+          <span class="ticket-counter" id="ticketCounter">1 / 1</span>
+          <button class="ticket-nav-btn" onclick="nextTicket()" id="nextTicketBtn" disabled>Вперёд &rarr;</button>
+        </div>
+        
+        <div class="ticket-preview show" id="ticketPreview">
+          <div class="ticket-header-row">
+            <div class="ticket-logo">AFISHA</div>
+            <div class="ticket-qr-section">
+              <div class="qr-code" id="ticketQrCode"></div>
+              <div class="ticket-type">
+                <div class="ticket-type-title" id="ticketTypeTitleDisplay">Входная карта</div>
+                <div class="ticket-type-number">E-card #<span id="ticketNumberDisplay"></span></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="ticket-image" id="ticketImageDisplay"></div>
+          
+          <div class="barcode-section">
+            <div class="barcode-container">
+              <svg id="ticketBarcode"></svg>
+            </div>
+          </div>
+          
+          <div class="event-title-section">
+            <div>
+              <div class="event-name-display" id="ticketEventName"></div>
+              <div class="event-datetime-display" id="ticketEventDateTime"></div>
+            </div>
+            <div class="age-badge">18+</div>
+          </div>
+          
+          <div class="ticket-divider"></div>
+          
+          <div class="ticket-details">
+            <div class="detail-row">
+              <div>
+                <div class="detail-label">Город</div>
+                <div class="detail-sublabel">City</div>
+              </div>
+              <div class="detail-value" id="ticketCityDisplay"></div>
+            </div>
+            
+            <div class="detail-row">
+              <div>
+                <div class="detail-label">Карта</div>
+                <div class="detail-sublabel">Cards</div>
+              </div>
+              <div class="detail-value" id="ticketCardTypeDisplay">Входная карта</div>
+            </div>
+            
+            <div class="detail-row">
+              <div>
+                <div class="detail-label">Имя, фамилия</div>
+                <div class="detail-sublabel">Name</div>
+              </div>
+              <div class="detail-value" id="ticketCustomerDisplay"></div>
+            </div>
+            
+            <div class="detail-row">
+              <div>
+                <div class="detail-label">Номер заказа #</div>
+                <div class="detail-sublabel">Order number #</div>
+              </div>
+              <div class="detail-value" id="ticketOrderDisplay"></div>
+            </div>
+            
+            <div class="detail-row">
+              <div>
+                <div class="detail-label">Стоимость</div>
+                <div class="detail-sublabel">Price</div>
+              </div>
+              <div class="detail-value" id="ticketPriceDisplay">2990 ₽</div>
             </div>
           </div>
         </div>
         
-        <div class="ticket-image" id="ticketImageDisplay"></div>
-        
-        <div class="barcode-section">
-          <div class="barcode-container">
-            <svg id="ticketBarcode"></svg>
-          </div>
-        </div>
-        
-        <div class="event-title-section">
-          <div>
-            <div class="event-name-display" id="ticketEventName"></div>
-            <div class="event-datetime-display" id="ticketEventDateTime"></div>
-          </div>
-          <div class="age-badge">18+</div>
-        </div>
-        
-        <div class="ticket-divider"></div>
-        
-        <div class="ticket-details">
-          <div class="detail-row">
-            <div>
-              <div class="detail-label">Город</div>
-              <div class="detail-sublabel">City</div>
-            </div>
-            <div class="detail-value" id="ticketCityDisplay"></div>
-          </div>
-          
-          <div class="detail-row">
-            <div>
-              <div class="detail-label">Карта</div>
-              <div class="detail-sublabel">Cards</div>
-            </div>
-            <div class="detail-value">Входная карта</div>
-          </div>
-          
-          <div class="detail-row">
-            <div>
-              <div class="detail-label">Имя, фамилия</div>
-              <div class="detail-sublabel">Name</div>
-            </div>
-            <div class="detail-value" id="ticketCustomerDisplay"></div>
-          </div>
-          
-          <div class="detail-row">
-            <div>
-              <div class="detail-label">Номер заказа #</div>
-              <div class="detail-sublabel">Order number #</div>
-            </div>
-            <div class="detail-value" id="ticketOrderDisplay"></div>
-          </div>
-          
-          <div class="detail-row">
-            <div>
-              <div class="detail-label">Стоимость</div>
-              <div class="detail-sublabel">Price</div>
-            </div>
-            <div class="detail-value">2990 ₽</div>
-          </div>
-        </div>
-        
-        <div style="padding: 0 20px 20px;">
-          <button class="new-ticket-btn" onclick="resetTicketForm()">Создать новый билет</button>
+        <div style="padding: 0 20px 20px; text-align: center;">
+          <button class="new-ticket-btn" onclick="resetTicketForm()">Создать новые билеты</button>
         </div>
       </div>
     </div>
@@ -1307,6 +1390,16 @@
       document.getElementById('ticketDatetimePicker').classList.remove('show');
     }
     
+    const TICKET_TYPES = [
+      { id: 'standard', name: 'Входная карта', price: 2990, inputId: 'ticketQtyStandard' },
+      { id: 'double', name: 'Входная карта «для двоих»', price: 4980, inputId: 'ticketQtyDouble' },
+      { id: 'discount', name: 'Льготная входная карта', price: 2490, inputId: 'ticketQtyDiscount' },
+      { id: 'discountDouble', name: 'Льготная входная карта «для двоих»', price: 3490, inputId: 'ticketQtyDiscountDouble' }
+    ];
+    
+    let generatedTickets = [];
+    let currentTicketIndex = 0;
+    
     async function generateTicket() {
       const categoryId = document.getElementById('ticketCategorySelect').value;
       const cityId = document.getElementById('ticketCitySelect').value;
@@ -1315,6 +1408,17 @@
       
       if (!categoryId || !cityId || !eventId || !ticketSelectedDate || !customerName) {
         alert('Заполните все поля');
+        return;
+      }
+      
+      let totalTickets = 0;
+      TICKET_TYPES.forEach(type => {
+        const qty = parseInt(document.getElementById(type.inputId).value) || 0;
+        totalTickets += qty;
+      });
+      
+      if (totalTickets === 0) {
+        alert('Укажите количество билетов хотя бы одного типа');
         return;
       }
       
@@ -1335,49 +1439,41 @@
                                'Июля', 'Августа', 'Сентября', 'Октября', 'Ноября', 'Декабря'];
         const dateStr = `${day} ${monthNamesGen[ticketSelectedDate.getMonth()]}`;
         
-        const ticketNum = String(34000000 + Math.floor(Math.random() * 1000000));
-        
         function addHours(timeStr, hours) {
           const [h, m] = timeStr.split(':').map(Number);
           const newH = (h + hours) % 24;
           return String(newH).padStart(2, '0') + ':' + String(m).padStart(2, '0');
         }
         
-        document.getElementById('ticketNumberDisplay').textContent = ticketNum;
-        document.getElementById('ticketEventName').textContent = event?.name || template?.name || 'Мероприятие';
-        document.getElementById('ticketEventDateTime').textContent = `${dateStr} ${ticketSelectedTime} - ${addHours(ticketSelectedTime, 7)}`;
-        document.getElementById('ticketCityDisplay').textContent = city?.name || 'Москва';
-        document.getElementById('ticketCustomerDisplay').textContent = customerName;
-        document.getElementById('ticketOrderDisplay').textContent = ticketNum;
-        
         const imageUrl = template?.ticket_image_url || template?.image_url;
-        if (imageUrl) {
-          document.getElementById('ticketImageDisplay').style.backgroundImage = `url(${imageUrl})`;
-        } else {
-          document.getElementById('ticketImageDisplay').style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-        }
+        const eventName = event?.name || template?.name || 'Мероприятие';
+        const cityName = city?.name || 'Москва';
+        const dateTimeStr = `${dateStr} ${ticketSelectedTime} - ${addHours(ticketSelectedTime, 7)}`;
         
-        JsBarcode("#ticketBarcode", ticketNum, {
-          format: "CODE128",
-          width: 4,
-          height: 70,
-          displayValue: true,
-          fontSize: 14,
-          margin: 0
+        generatedTickets = [];
+        
+        TICKET_TYPES.forEach(type => {
+          const qty = parseInt(document.getElementById(type.inputId).value) || 0;
+          for (let i = 0; i < qty; i++) {
+            const ticketNum = String(34000000 + Math.floor(Math.random() * 1000000));
+            generatedTickets.push({
+              ticketNum,
+              typeName: type.name,
+              price: type.price,
+              eventName,
+              dateTimeStr,
+              cityName,
+              customerName,
+              imageUrl
+            });
+          }
         });
         
-        const qrContainer = document.getElementById('ticketQrCode');
-        qrContainer.innerHTML = '';
-        if (typeof QRCode !== 'undefined') {
-          QRCode.toCanvas(document.createElement('canvas'), ticketNum, { width: 60 }, function(error, canvas) {
-            if (!error) {
-              qrContainer.appendChild(canvas);
-            }
-          });
-        }
+        currentTicketIndex = 0;
+        renderCurrentTicket();
         
-        document.getElementById('ticketPreview').classList.add('show');
-        document.getElementById('ticketPreview').scrollIntoView({ behavior: 'smooth' });
+        document.getElementById('ticketsContainer').style.display = 'block';
+        document.getElementById('ticketsContainer').scrollIntoView({ behavior: 'smooth' });
         
       } catch (err) {
         console.error('Error generating ticket:', err);
@@ -1388,13 +1484,77 @@
       }
     }
     
+    function renderCurrentTicket() {
+      if (generatedTickets.length === 0) return;
+      
+      const ticket = generatedTickets[currentTicketIndex];
+      
+      document.getElementById('ticketNumberDisplay').textContent = ticket.ticketNum;
+      document.getElementById('ticketTypeTitleDisplay').textContent = ticket.typeName;
+      document.getElementById('ticketEventName').textContent = ticket.eventName;
+      document.getElementById('ticketEventDateTime').textContent = ticket.dateTimeStr;
+      document.getElementById('ticketCityDisplay').textContent = ticket.cityName;
+      document.getElementById('ticketCardTypeDisplay').textContent = ticket.typeName;
+      document.getElementById('ticketCustomerDisplay').textContent = ticket.customerName;
+      document.getElementById('ticketOrderDisplay').textContent = ticket.ticketNum;
+      document.getElementById('ticketPriceDisplay').textContent = ticket.price + ' ₽';
+      
+      if (ticket.imageUrl) {
+        document.getElementById('ticketImageDisplay').style.backgroundImage = `url(${ticket.imageUrl})`;
+      } else {
+        document.getElementById('ticketImageDisplay').style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+      }
+      
+      JsBarcode("#ticketBarcode", ticket.ticketNum, {
+        format: "CODE128",
+        width: 4,
+        height: 70,
+        displayValue: true,
+        fontSize: 14,
+        margin: 0
+      });
+      
+      const qrContainer = document.getElementById('ticketQrCode');
+      qrContainer.innerHTML = '';
+      if (typeof QRCode !== 'undefined') {
+        QRCode.toCanvas(document.createElement('canvas'), ticket.ticketNum, { width: 60 }, function(error, canvas) {
+          if (!error) {
+            qrContainer.appendChild(canvas);
+          }
+        });
+      }
+      
+      document.getElementById('ticketCounter').textContent = `${currentTicketIndex + 1} / ${generatedTickets.length}`;
+      document.getElementById('prevTicketBtn').disabled = currentTicketIndex === 0;
+      document.getElementById('nextTicketBtn').disabled = currentTicketIndex === generatedTickets.length - 1;
+    }
+    
+    function prevTicket() {
+      if (currentTicketIndex > 0) {
+        currentTicketIndex--;
+        renderCurrentTicket();
+      }
+    }
+    
+    function nextTicket() {
+      if (currentTicketIndex < generatedTickets.length - 1) {
+        currentTicketIndex++;
+        renderCurrentTicket();
+      }
+    }
+    
     function resetTicketForm() {
-      document.getElementById('ticketPreview').classList.remove('show');
+      document.getElementById('ticketsContainer').style.display = 'none';
       document.getElementById('ticketCategorySelect').value = '';
       document.getElementById('ticketCitySelect').value = '';
       document.getElementById('ticketEventSelect').innerHTML = '<option value="">Выберите название</option>';
       document.getElementById('ticketEventSelect').disabled = true;
       document.getElementById('ticketCustomerName').value = '';
+      TICKET_TYPES.forEach(type => {
+        document.getElementById(type.inputId).value = '0';
+      });
+      generatedTickets = [];
+      currentTicketIndex = 0;
       ticketSelectedDate = null;
       ticketSelectedTime = '12:00';
       document.getElementById('ticketDatetimeInput').value = '';
