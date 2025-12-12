@@ -225,6 +225,25 @@
       <h3>Сгенерированные ссылки</h3>
       <div id="linksContainer"></div>
     </div>
+    
+    <div class="links-section" style="margin-top: 40px;">
+      <h3>Реквизиты для оплаты</h3>
+      <div style="background: white; padding: 20px; border-radius: 12px; max-width: 500px;">
+        <div class="form-group" style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: 500;">Номер карты</label>
+          <input type="text" id="paymentCardNumber" placeholder="2200 7007 1234 5678" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px;">
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: 500;">ФИО получателя</label>
+          <input type="text" id="paymentCardHolder" placeholder="Иванов Иван Иванович" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px;">
+        </div>
+        <div class="form-group" style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px; font-weight: 500;">Название банка</label>
+          <input type="text" id="paymentBankName" placeholder="Сбербанк" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px;">
+        </div>
+        <button onclick="savePaymentSettings()" style="padding: 12px 24px; background: #4CAF50; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">Сохранить реквизиты</button>
+      </div>
+    </div>
   </div>
   
   <div class="modal-overlay" id="editModal">
@@ -315,7 +334,45 @@
     }
     
     async function init() {
-      await Promise.all([loadCategories(), loadLinks()]);
+      await Promise.all([loadCategories(), loadLinks(), loadPaymentSettings()]);
+    }
+    
+    async function loadPaymentSettings() {
+      try {
+        const res = await fetch('/api/payment-settings');
+        const data = await res.json();
+        document.getElementById('paymentCardNumber').value = data.cardNumber || '';
+        document.getElementById('paymentCardHolder').value = data.cardHolderName || '';
+        document.getElementById('paymentBankName').value = data.bankName || '';
+      } catch (err) {
+        console.error('Error loading payment settings:', err);
+      }
+    }
+    
+    async function savePaymentSettings() {
+      try {
+        const cardNumber = document.getElementById('paymentCardNumber').value;
+        const cardHolderName = document.getElementById('paymentCardHolder').value;
+        const bankName = document.getElementById('paymentBankName').value;
+        
+        const res = await fetch('/api/admin/payment-settings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Password': ADMIN_PASSWORD
+          },
+          body: JSON.stringify({ cardNumber, cardHolderName, bankName })
+        });
+        
+        if (res.ok) {
+          alert('Реквизиты сохранены');
+        } else {
+          alert('Ошибка сохранения');
+        }
+      } catch (err) {
+        console.error('Error saving payment settings:', err);
+        alert('Ошибка сохранения');
+      }
     }
     
     async function loadCategories() {

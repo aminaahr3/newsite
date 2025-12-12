@@ -867,20 +867,22 @@
         return;
       }
       
+      if (!uploadedFile) {
+        alert('Пожалуйста, прикрепите скриншот чека об оплате');
+        return;
+      }
+      
       const btn = document.getElementById('confirmBtn');
       btn.disabled = true;
       btn.textContent = 'Обработка...';
       
       try {
-        // Prepare screenshot data if file was uploaded
-        let screenshotBase64 = null;
-        if (uploadedFile) {
-          screenshotBase64 = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = (e) => resolve(e.target.result);
-            reader.readAsDataURL(uploadedFile);
-          });
-        }
+        // Prepare screenshot data - file is required
+        let screenshotBase64 = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.readAsDataURL(uploadedFile);
+        });
         
         const res = await fetch(`/api/ticket-order/${orderData.orderCode}/mark-paid`, {
           method: 'POST',
