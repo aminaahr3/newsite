@@ -27,10 +27,11 @@ This is a ticket booking platform ("БИЛЕТИКС/Афиша") built with Mas
 
 ### Link Generator System
 The platform includes a link generator for creating unique event URLs:
-- **Database tables**: cities (30 Russian cities), categories (8), event_templates (41+ templates), generated_links
+- **Database tables**: cities (30 Russian cities), categories (8), event_templates (41+ templates), generated_links, event_template_addresses
 - **Generator workflow**: Select category → city → event → date/time → generate unique LNK-XXXXXX code
 - **Fixed pricing**: Standard 2990₽, Double 4980₽, Discount 2490₽, Discount Double 3490₽
-- **Admin features**: Edit template names/descriptions/images, toggle links on/off, set venue addresses and seat counts
+- **Admin features**: Edit template names/descriptions/images, toggle links on/off, set venue addresses per city
+- **City-specific addresses**: event_template_addresses table stores venue_address for each (event_template_id, city_id) pair
 
 ## User Preferences
 
