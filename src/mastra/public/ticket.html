@@ -92,7 +92,7 @@
     
     #barcode {
       width: 100%;
-      height: 60px;
+      height: 80px;
     }
     
     .event-title-section {
@@ -375,13 +375,18 @@
       document.getElementById('loadingState').style.display = 'none';
       document.getElementById('ticketContent').style.display = 'block';
       
-      const ticketNum = ticket.order_code.replace(/\D/g, '') || String(Date.now()).slice(-10);
+      // Generate 8-digit ticket number starting from 34000000
+      const baseNum = 34000000;
+      const orderNum = parseInt(ticket.order_code.replace(/\D/g, '').slice(-6) || '0', 36) % 1000000;
+      const ticketNum = String(baseNum + orderNum + ticket.orderId || Date.now() % 1000000);
       document.getElementById('ticketNumber').textContent = ticketNum;
       
-      if (ticket.ticket_image_url) {
-        document.getElementById('ticketImage').style.backgroundImage = `url(${ticket.ticket_image_url})`;
-      } else if (ticket.image_url) {
-        document.getElementById('ticketImage').style.backgroundImage = `url(${ticket.image_url})`;
+      // Always show event image if available
+      const imageUrl = ticket.ticket_image_url || ticket.image_url;
+      if (imageUrl) {
+        document.getElementById('ticketImage').style.backgroundImage = `url(${imageUrl})`;
+      } else {
+        document.getElementById('ticketImage').style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
       }
       
       document.getElementById('eventName').textContent = ticket.event_name || 'Мероприятие';
@@ -403,9 +408,11 @@
       
       JsBarcode("#barcode", ticketNum.toString(), {
         format: "CODE128",
-        width: 2,
-        height: 50,
-        displayValue: false
+        width: 3,
+        height: 70,
+        displayValue: true,
+        fontSize: 14,
+        margin: 10
       });
       
       if (typeof QRCode !== 'undefined') {

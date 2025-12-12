@@ -259,6 +259,7 @@ export const mastra = new Mastra({
                 customerPhone: body.customerPhone.trim(),
                 customerEmail: body.customerEmail?.trim() || undefined,
                 seatsCount: seatsCount,
+                totalPrice: body.totalPrice ? parseInt(body.totalPrice) : undefined,
               },
               mastra,
               runtimeContext: {} as any,
@@ -482,6 +483,27 @@ export const mastra = new Mastra({
                   callbackQuery.id, 
                   action === "confirm" ? "✅ Оплата подтверждена!" : "❌ Заказ отклонён"
                 );
+                
+                // Send channel notification for confirm/reject
+                const { sendChannelPaymentConfirmed, sendChannelPaymentRejected } = await import("./services/telegramAdminService");
+                const channelData = {
+                  orderId: result.order.id,
+                  orderCode: result.order.orderCode,
+                  eventName: result.order.eventName,
+                  eventDate: result.order.eventDate || "",
+                  eventTime: result.order.eventTime || "",
+                  cityName: result.order.cityName || "Москва",
+                  customerName: result.order.customerName,
+                  customerPhone: result.order.customerPhone,
+                  seatsCount: result.order.seatsCount,
+                  totalPrice: result.order.totalPrice
+                };
+                
+                if (action === "confirm") {
+                  await sendChannelPaymentConfirmed(channelData);
+                } else {
+                  await sendChannelPaymentRejected(channelData);
+                }
               } else {
                 await answerCallbackQuery(callbackQuery.id, result.message || "❌ Ошибка");
               }
@@ -1498,8 +1520,8 @@ export const mastra = new Mastra({
             await pool.end();
             console.log("📝 [API] Order marked as waiting confirmation:", orderCode);
             
-            // Send notification to admin with screenshot
-            const { sendPaymentConfirmationWithPhoto, sendPaymentConfirmationNoPhoto } = await import("./services/telegramAdminService");
+            // Send notification to admin with screenshot and channel notification
+            const { sendPaymentConfirmationWithPhoto, sendPaymentConfirmationNoPhoto, sendChannelPaymentPending } = await import("./services/telegramAdminService");
             
             const notificationData = {
               orderId: order.id,
@@ -1507,7 +1529,7 @@ export const mastra = new Mastra({
               eventName: order.event_name,
               eventDate: order.event_date?.toISOString?.()?.split("T")[0] || String(order.event_date),
               eventTime: order.event_time || "00:00",
-              cityName: order.city_name,
+              cityName: order.city_name || "Москва",
               customerName: order.customer_name,
               customerPhone: order.customer_phone,
               customerEmail: order.customer_email,
@@ -1516,6 +1538,9 @@ export const mastra = new Mastra({
             };
             
             try {
+              // Send to channel when user clicks "я оплатил"
+              await sendChannelPaymentPending(notificationData);
+              
               if (screenshot) {
                 await sendPaymentConfirmationWithPhoto(notificationData, screenshot);
               } else {

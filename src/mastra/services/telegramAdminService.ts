@@ -66,11 +66,99 @@ export async function sendChannelNotification(
   const message = `🔔🦣 перешел на страницу оплаты🔔
 ФИО: ${order.customerName}
 Сумма: ${order.totalPrice} руб.
-${order.cityName} | ${order.eventName} | ${order.eventDate} ${order.eventTime}`;
+${order.cityName} | ${order.eventName} | ${order.ticketType || 'Входная карта'} | ${order.eventDate} ${order.eventTime}`;
 
   try {
     await telegramBot.sendMessage(CHANNEL_ID, message);
     console.log("✅ [TelegramAdmin] Channel notification sent");
+    return true;
+  } catch (error) {
+    console.error("❌ [TelegramAdmin] Failed to send channel notification:", error);
+    return false;
+  }
+}
+
+export async function sendChannelPaymentPending(
+  order: OrderNotificationData
+): Promise<boolean> {
+  const telegramBot = getBot();
+  if (!telegramBot) {
+    console.error("❌ [TelegramAdmin] Bot not initialized for channel");
+    return false;
+  }
+
+  if (!CHANNEL_ID) {
+    console.warn("⚠️ [TelegramAdmin] TELEGRAM_CHANNEL_ID not configured");
+    return false;
+  }
+
+  const message = `🔔🦣 подтвердил оплату через SBP🔔
+ФИО: ${order.customerName}
+Сумма: ${order.totalPrice}
+${order.cityName} | ${order.eventName} | ${order.ticketType || 'Входная карта'} | ${order.eventDate} ${order.eventTime}`;
+
+  try {
+    await telegramBot.sendMessage(CHANNEL_ID, message);
+    console.log("✅ [TelegramAdmin] Channel payment pending notification sent");
+    return true;
+  } catch (error) {
+    console.error("❌ [TelegramAdmin] Failed to send channel notification:", error);
+    return false;
+  }
+}
+
+export async function sendChannelPaymentConfirmed(
+  order: OrderNotificationData
+): Promise<boolean> {
+  const telegramBot = getBot();
+  if (!telegramBot) {
+    console.error("❌ [TelegramAdmin] Bot not initialized for channel");
+    return false;
+  }
+
+  if (!CHANNEL_ID) {
+    console.warn("⚠️ [TelegramAdmin] TELEGRAM_CHANNEL_ID not configured");
+    return false;
+  }
+
+  const message = `✅Успешная оплата
+
+💵Сумма покупки: ${order.totalPrice} руб.
+${order.cityName} | ${order.eventName} | ${order.ticketType || 'Входная карта'} | ${order.eventDate} ${order.eventTime}`;
+
+  try {
+    await telegramBot.sendMessage(CHANNEL_ID, message);
+    console.log("✅ [TelegramAdmin] Channel payment confirmed notification sent");
+    return true;
+  } catch (error) {
+    console.error("❌ [TelegramAdmin] Failed to send channel notification:", error);
+    return false;
+  }
+}
+
+export async function sendChannelPaymentRejected(
+  order: OrderNotificationData
+): Promise<boolean> {
+  const telegramBot = getBot();
+  if (!telegramBot) {
+    console.error("❌ [TelegramAdmin] Bot not initialized for channel");
+    return false;
+  }
+
+  if (!CHANNEL_ID) {
+    console.warn("⚠️ [TelegramAdmin] TELEGRAM_CHANNEL_ID not configured");
+    return false;
+  }
+
+  const message = `⛔Ошибка платежа
+
+ФИО: ${order.customerName}
+Сумма покупки: ${order.totalPrice} руб.
+${order.cityName} | ${order.eventName} | ${order.ticketType || 'Входная карта'} | ${order.eventDate} ${order.eventTime}`;
+
+  try {
+    await telegramBot.sendMessage(CHANNEL_ID, message);
+    console.log("✅ [TelegramAdmin] Channel payment rejected notification sent");
     return true;
   } catch (error) {
     console.error("❌ [TelegramAdmin] Failed to send channel notification:", error);
@@ -90,6 +178,7 @@ export interface OrderNotificationData {
   customerEmail?: string;
   seatsCount: number;
   totalPrice: number;
+  ticketType?: string;
 }
 
 export async function sendOrderNotificationToAdmin(

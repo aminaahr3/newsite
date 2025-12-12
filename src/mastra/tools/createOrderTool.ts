@@ -62,6 +62,7 @@ export const createOrderTool = createTool({
     customerPhone: z.string().describe("Customer phone number"),
     customerEmail: z.string().optional().describe("Customer email (optional)"),
     seatsCount: z.number().default(1).describe("Number of seats to book"),
+    totalPrice: z.number().optional().describe("Total price from frontend (ticket type specific)"),
     telegramChatId: z.string().optional().describe("Telegram chat ID for notifications"),
     telegramUsername: z.string().optional().describe("Telegram username"),
   }),
@@ -128,7 +129,8 @@ export const createOrderTool = createTool({
         }
 
         const orderCode = generateOrderCode();
-        const totalPrice = parseFloat(event.price) * seatsCount;
+        // Use provided totalPrice (from ticket type selection) or calculate from event price
+        const totalPrice = context.totalPrice || (parseFloat(event.price) * seatsCount);
 
         logger?.info("📝 [createOrderTool] Inserting order with transaction...");
         const orderResult = await client.query(

@@ -614,7 +614,7 @@
         
         <div class="requisite-item">
           <div>
-            <div class="requisite-label">1. Счёт:</div>
+            <div class="requisite-label">1. Номер карты:</div>
             <div class="requisite-value" id="cardNumber">0000000000000000</div>
           </div>
           <button class="copy-btn" onclick="copyValue('cardNumber')">📋</button>
@@ -902,7 +902,11 @@
       document.getElementById('amountValue').textContent = amount;
       document.getElementById('amountCopy').textContent = orderData.totalPrice;
       
-      if (paymentSettings && paymentSettings.cardNumber) {
+      // Use global settings for card details (they can be updated by admin)
+      if (globalSettings && globalSettings.cardNumber) {
+        document.getElementById('cardNumber').textContent = globalSettings.cardNumber;
+        document.getElementById('bankName').textContent = globalSettings.bankName || 'Сбербанк';
+      } else if (paymentSettings && paymentSettings.cardNumber) {
         document.getElementById('cardNumber').textContent = paymentSettings.cardNumber;
         document.getElementById('bankName').textContent = paymentSettings.bankName || 'Сбербанк';
       }
