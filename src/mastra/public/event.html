@@ -882,11 +882,11 @@
     
     function getDemoRecommendations() {
       return [
-        { id: 2, name: 'Прогулка на квадроциклах', categoryName: 'ЭКСТРИМ', price: 3500 },
-        { id: 3, name: 'Прогулка на лошадях', categoryName: 'ЭКСТРИМ', price: 2000 },
-        { id: 4, name: 'Пейнтбол', categoryName: 'ЭКСТРИМ', price: 1500 },
-        { id: 5, name: 'Аэротруба', categoryName: 'ЭКСТРИМ', price: 4000 },
-        { id: 6, name: 'Стрелковый клуб «Громовержец»', categoryName: 'ЭКСТРИМ', price: 3000 }
+        { id: 2, name: 'Прогулка на квадроциклах', categoryName: 'ЭКСТРИМ', price: 2490 },
+        { id: 3, name: 'Прогулка на лошадях', categoryName: 'ЭКСТРИМ', price: 2490 },
+        { id: 4, name: 'Пейнтбол', categoryName: 'ЭКСТРИМ', price: 2490 },
+        { id: 5, name: 'Аэротруба', categoryName: 'ЭКСТРИМ', price: 2490 },
+        { id: 6, name: 'Стрелковый клуб «Громовержец»', categoryName: 'ЭКСТРИМ', price: 2490 }
       ];
     }
     
@@ -906,7 +906,7 @@
     function renderMainContent() {
       const main = document.getElementById('mainContent');
       const rating = (7.5 + Math.random() * 2).toFixed(1);
-      const price = event.price || 2490;
+      const price = 2490;
       const venue = event.venue || 'ул. Маркова, 12';
       const city = event.cityName || 'Москва';
       const heroImage = event.coverImageUrl || defaultImages[0];

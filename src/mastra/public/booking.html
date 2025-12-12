@@ -644,9 +644,6 @@
       
       ticketTypesData.forEach(t => {
         ticketCounts[t.id] = 0;
-        if (event.price) {
-          t.price = event.price;
-        }
       });
       
       renderPage();
