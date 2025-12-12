@@ -792,7 +792,7 @@
     function updateOrderSummary() {
       document.getElementById('orderEventName').textContent = `«${event.name}»`;
       document.getElementById('orderVenue').textContent = 
-        `${event.cityName || 'Москва'}, ${event.venue || 'ул. Маркова, 12'}`;
+        event.venue ? `${event.cityName || 'Москва'}, ${event.venue}` : `${event.cityName || 'Москва'},`;
       
       if (selectedDate) {
         const today = new Date();

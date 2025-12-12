@@ -698,7 +698,6 @@
       </a>
       
       <div class="header-actions">
-        <div class="search-btn">🔍</div>
         <div class="login-btn">ВОЙТИ</div>
       </div>
     </div>
@@ -807,7 +806,7 @@
                 price: 2490,
                 categoryName: linkData.categoryName,
                 cityName: linkData.cityName,
-                venue: linkData.venueAddress || 'Адрес уточняется',
+                venue: linkData.venueAddress || '',
                 date: linkData.eventDate,
                 time: linkData.eventTime,
                 availableSeats: linkData.availableSeats,
@@ -839,7 +838,7 @@
                 price: 2490,
                 categoryName: templateData.categoryName,
                 cityName: 'Москва',
-                venue: 'Адрес уточняется после бронирования',
+                venue: '',
                 date: new Date().toISOString(),
                 availableSeats: 50,
                 images: templateData.images || [],
@@ -1010,7 +1009,7 @@
               <div class="session-card ${s.isMain ? 'main-session' : ''}" onclick="goToBooking('${getSessionDate(s.day)}', '${s.time}')">
                 <div class="session-price">От ${formatPrice(price)} ₽</div>
                 <div class="session-time">${s.day} ${s.time}</div>
-                <div class="session-address">${city}, ${venue}</div>
+                <div class="session-address">${city}${venue ? ', ' + venue : ','}</div>
                 <div class="session-seats" style="font-size: 12px; color: #e53935; margin-top: 4px;">Осталось ${s.seats} мест</div>
               </div>
             `).join('')}
@@ -1170,7 +1169,7 @@
           </div>
           <div class="schedule-info">
             <div class="schedule-time">${s.time}</div>
-            <div class="schedule-venue">${city}, ${venue}</div>
+            <div class="schedule-venue">${city}${venue ? ', ' + venue : ','}</div>
           </div>
           <button class="schedule-price-btn" onclick="goToBooking('${s.isoDate}', '${s.time}')">От ${formatPrice(price)} ₽</button>
         </div>
