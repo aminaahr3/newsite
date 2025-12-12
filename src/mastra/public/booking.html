@@ -549,6 +549,7 @@
     ];
     
     let isGeneratedLink = false;
+    let isEventTemplate = false;
     let linkCode = null;
     
     function getEventId() {
@@ -567,7 +568,8 @@
       const params = new URLSearchParams(window.location.search);
       return {
         date: params.get('date'),
-        time: params.get('time')
+        time: params.get('time'),
+        isTemplate: params.get('template') === '1'
       };
     }
     
@@ -605,21 +607,44 @@
         } else {
           // Regular event loading
           const eventId = getEventId();
-          const [eventRes, dataRes] = await Promise.all([
-            fetch(`/api/event/${eventId}`),
-            fetch('/api/ticket-data')
-          ]);
           
-          if (eventRes.ok) {
-            const eventData = await eventRes.json();
-            if (eventData && !eventData.error) {
-              event = eventData;
+          if (params.isTemplate) {
+            // Load from event templates
+            isEventTemplate = true;
+            const templateRes = await fetch(`/api/generator/event-templates/${eventId}`);
+            if (templateRes.ok) {
+              const templateData = await templateRes.json();
+              if (templateData && !templateData.error) {
+                event = {
+                  id: templateData.id,
+                  name: templateData.name,
+                  description: templateData.description,
+                  price: 2490,
+                  categoryName: templateData.categoryName,
+                  cityName: 'Москва',
+                  venue: '',
+                  availableSeats: 50
+                };
+              }
             }
-          }
-          
-          if (!event && dataRes.ok) {
-            const data = await dataRes.json();
-            event = data.events?.find(e => e.id === eventId);
+          } else {
+            // Load from events table
+            const [eventRes, dataRes] = await Promise.all([
+              fetch(`/api/event/${eventId}`),
+              fetch('/api/ticket-data')
+            ]);
+            
+            if (eventRes.ok) {
+              const eventData = await eventRes.json();
+              if (eventData && !eventData.error) {
+                event = eventData;
+              }
+            }
+            
+            if (!event && dataRes.ok) {
+              const data = await dataRes.json();
+              event = data.events?.find(e => e.id === eventId);
+            }
           }
           
           if (!event) {
@@ -844,30 +869,51 @@
       
       const formattedDate = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(selectedDate).padStart(2, '0')}`;
       
-      const orderData = isGeneratedLink ? {
-        linkCode: linkCode,
-        customerName: document.getElementById('customerName').value,
-        customerPhone: document.getElementById('customerPhone').value,
-        customerEmail: document.getElementById('customerEmail').value,
-        seatsCount: getTotalTickets(),
-        totalPrice: getTotalPrice(),
-        selectedDate: formattedDate,
-        selectedTime: selectedTime,
-        tickets: ticketCounts
-      } : {
-        eventId: event.id,
-        eventName: event.name,
-        customerName: document.getElementById('customerName').value,
-        customerPhone: document.getElementById('customerPhone').value,
-        customerEmail: document.getElementById('customerEmail').value,
-        seatsCount: getTotalTickets(),
-        totalPrice: getTotalPrice(),
-        selectedDate: formattedDate,
-        selectedTime: selectedTime,
-        tickets: ticketCounts
-      };
+      let orderData;
+      let apiEndpoint;
       
-      const apiEndpoint = isGeneratedLink ? '/api/create-link-order' : '/api/create-order';
+      if (isGeneratedLink) {
+        orderData = {
+          linkCode: linkCode,
+          customerName: document.getElementById('customerName').value,
+          customerPhone: document.getElementById('customerPhone').value,
+          customerEmail: document.getElementById('customerEmail').value,
+          seatsCount: getTotalTickets(),
+          totalPrice: getTotalPrice(),
+          selectedDate: formattedDate,
+          selectedTime: selectedTime,
+          tickets: ticketCounts
+        };
+        apiEndpoint = '/api/create-link-order';
+      } else if (isEventTemplate) {
+        orderData = {
+          eventTemplateId: event.id,
+          eventName: event.name,
+          customerName: document.getElementById('customerName').value,
+          customerPhone: document.getElementById('customerPhone').value,
+          customerEmail: document.getElementById('customerEmail').value,
+          seatsCount: getTotalTickets(),
+          totalPrice: getTotalPrice(),
+          selectedDate: formattedDate,
+          selectedTime: selectedTime,
+          tickets: ticketCounts
+        };
+        apiEndpoint = '/api/create-template-order';
+      } else {
+        orderData = {
+          eventId: event.id,
+          eventName: event.name,
+          customerName: document.getElementById('customerName').value,
+          customerPhone: document.getElementById('customerPhone').value,
+          customerEmail: document.getElementById('customerEmail').value,
+          seatsCount: getTotalTickets(),
+          totalPrice: getTotalPrice(),
+          selectedDate: formattedDate,
+          selectedTime: selectedTime,
+          tickets: ticketCounts
+        };
+        apiEndpoint = '/api/create-order';
+      }
       
       try {
         const res = await fetch(apiEndpoint, {

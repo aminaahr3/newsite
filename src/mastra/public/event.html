@@ -774,6 +774,7 @@
     ];
     
     let isGeneratedLink = false;
+    let isEventTemplate = false;
     let linkCode = null;
     
     function getEventId() {
@@ -831,6 +832,7 @@
           if (templateRes.ok) {
             const templateData = await templateRes.json();
             if (templateData && !templateData.error) {
+              isEventTemplate = true;
               event = {
                 id: templateData.id,
                 name: templateData.name,
@@ -1196,6 +1198,8 @@
     function goToBooking(day, time) {
       if (isGeneratedLink && linkCode) {
         window.location.href = `/booking-link/${linkCode}?date=${day}&time=${encodeURIComponent(time)}`;
+      } else if (isEventTemplate) {
+        window.location.href = `/booking/${event.id}?date=${day}&time=${encodeURIComponent(time)}&template=1`;
       } else {
         window.location.href = `/booking/${event.id}?date=${day}&time=${encodeURIComponent(time)}`;
       }

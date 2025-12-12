@@ -421,6 +421,108 @@ export const mastra = new Mastra({
         },
       },
 
+      // API endpoint for creating orders from event templates (without generated link)
+      {
+        path: "/api/create-template-order",
+        method: "POST",
+        handler: async (c) => {
+          const mastra = c.get("mastra");
+          const logger = mastra?.getLogger();
+          
+          try {
+            const body = await c.req.json();
+            logger?.info("📝 [API] Creating template order:", body);
+            
+            if (!body.eventTemplateId) {
+              return c.json({ success: false, message: "Не указан шаблон мероприятия" }, 400);
+            }
+            if (!body.customerName || body.customerName.trim().length < 2) {
+              return c.json({ success: false, message: "Укажите ваше имя" }, 400);
+            }
+            if (!body.customerPhone || body.customerPhone.trim().length < 5) {
+              return c.json({ success: false, message: "Укажите номер телефона" }, 400);
+            }
+            
+            const seatsCount = parseInt(body.seatsCount) || 1;
+            const totalPrice = body.totalPrice || 2990 * seatsCount;
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            const templateResult = await pool.query(`
+              SELECT et.*, cat.name_ru as category_name
+              FROM event_templates et
+              JOIN categories cat ON et.category_id = cat.id
+              WHERE et.id = $1 AND et.is_active = true
+            `, [body.eventTemplateId]);
+            
+            if (templateResult.rows.length === 0) {
+              await pool.end();
+              return c.json({ success: false, message: "Шаблон мероприятия не найден" }, 400);
+            }
+            
+            const template = templateResult.rows[0];
+            const orderCode = `TPL-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
+            
+            const orderResult = await pool.query(
+              `INSERT INTO orders (
+                event_id, event_template_id, customer_name, customer_phone, customer_email, 
+                seats_count, total_price, order_code, status, payment_status
+              ) VALUES (NULL, $1, $2, $3, $4, $5, $6, $7, 'pending', 'pending')
+              RETURNING id`,
+              [
+                body.eventTemplateId,
+                body.customerName.trim(),
+                body.customerPhone.trim(),
+                body.customerEmail?.trim() || null,
+                seatsCount,
+                totalPrice,
+                orderCode
+              ]
+            );
+            
+            await pool.end();
+            
+            logger?.info("✅ [API] Template order created:", orderCode);
+            
+            const notificationData = {
+              orderId: orderResult.rows[0].id,
+              orderCode: orderCode,
+              eventName: template.name,
+              eventDate: body.selectedDate || "",
+              eventTime: body.selectedTime || "",
+              cityName: "Москва",
+              customerName: body.customerName.trim(),
+              customerPhone: body.customerPhone.trim(),
+              customerEmail: body.customerEmail?.trim(),
+              seatsCount: seatsCount,
+              totalPrice: totalPrice,
+            };
+            
+            try {
+              await Promise.all([
+                sendChannelNotification(notificationData),
+                sendOrderNotificationToAdmin(notificationData)
+              ]);
+              logger?.info("📤 [API] Notifications sent for template order");
+            } catch (notifyError) {
+              logger?.error("⚠️ [API] Failed to send notifications:", notifyError);
+            }
+            
+            return c.json({
+              success: true,
+              orderCode: orderCode,
+              orderId: orderResult.rows[0].id,
+              eventName: template.name,
+              totalPrice: totalPrice
+            });
+          } catch (error) {
+            logger?.error("❌ [API] Error creating template order:", error);
+            return c.json({ success: false, message: "Ошибка при создании заказа" }, 500);
+          }
+        },
+      },
+
       // Telegram webhook for admin callbacks (confirm/reject buttons)
       {
         path: "/webhooks/telegram/action",
