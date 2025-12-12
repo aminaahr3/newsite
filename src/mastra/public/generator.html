@@ -97,9 +97,16 @@
     }
     
     .content {
-      max-width: 600px;
+      max-width: 900px;
       margin: 50px auto;
       padding: 0 20px;
+    }
+    
+    @media (max-width: 768px) {
+      .content {
+        max-width: 100%;
+        margin: 20px auto;
+      }
     }
     
     .page-title {
@@ -258,6 +265,30 @@
     .time-label {
       font-size: 14px;
       color: #333;
+    }
+    
+    .time-btn {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .time-btn:hover {
+      background: #e8f5e9;
+      border-color: #4CAF50;
+    }
+    .time-btn.selected {
+      background: #4CAF50;
+      color: white;
+      border-color: #4CAF50;
+    }
+    .time-btn.disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      pointer-events: none;
     }
     
     .time-input {
@@ -427,7 +458,21 @@
               <div class="calendar-weekday">ВС</div>
             </div>
             <div class="time-section">
-              <span class="time-label">Время</span>
+              <span class="time-label">Время (МСК)</span>
+              <div class="time-buttons" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                <button type="button" class="time-btn" onclick="setTime('10:00')">10:00</button>
+                <button type="button" class="time-btn" onclick="setTime('11:00')">11:00</button>
+                <button type="button" class="time-btn" onclick="setTime('12:00')">12:00</button>
+                <button type="button" class="time-btn" onclick="setTime('13:00')">13:00</button>
+                <button type="button" class="time-btn" onclick="setTime('14:00')">14:00</button>
+                <button type="button" class="time-btn" onclick="setTime('15:00')">15:00</button>
+                <button type="button" class="time-btn" onclick="setTime('16:00')">16:00</button>
+                <button type="button" class="time-btn" onclick="setTime('17:00')">17:00</button>
+                <button type="button" class="time-btn" onclick="setTime('18:00')">18:00</button>
+                <button type="button" class="time-btn" onclick="setTime('19:00')">19:00</button>
+                <button type="button" class="time-btn" onclick="setTime('20:00')">20:00</button>
+                <button type="button" class="time-btn" onclick="setTime('21:00')">21:00</button>
+              </div>
               <input type="time" id="timeInput" class="time-input" value="12:00">
             </div>
             <div class="picker-actions">
@@ -459,14 +504,76 @@
     let categories = [];
     let cities = [];
     let eventTemplates = [];
-    let currentMonth = new Date().getMonth();
-    let currentYear = new Date().getFullYear();
     let selectedDate = null;
     let selectedTime = '12:00';
     const ADMIN_PASSWORD = 'root2024';
     
     const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 
                         'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+    
+    function getMoscowNow() {
+      const now = new Date();
+      const mskMs = now.getTime() + (3 * 3600000);
+      const mskDate = new Date(mskMs);
+      return {
+        year: mskDate.getUTCFullYear(),
+        month: mskDate.getUTCMonth(),
+        date: mskDate.getUTCDate(),
+        hours: mskDate.getUTCHours(),
+        minutes: mskDate.getUTCMinutes()
+      };
+    }
+    
+    function toMskDateKey(year, month, day) {
+      return year + '-' + String(month + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    }
+    
+    function getTodayMskKey() {
+      const msk = getMoscowNow();
+      return toMskDateKey(msk.year, msk.month, msk.date);
+    }
+    
+    function isTodayMSK(date) {
+      if (!date) return false;
+      const dateKey = toMskDateKey(date.getFullYear(), date.getMonth(), date.getDate());
+      return dateKey === getTodayMskKey();
+    }
+    
+    function isPastMSK(year, month, day) {
+      const dateKey = toMskDateKey(year, month, day);
+      return dateKey < getTodayMskKey();
+    }
+    
+    const initialMsk = getMoscowNow();
+    let currentMonth = initialMsk.month;
+    let currentYear = initialMsk.year;
+    
+    function setTime(time) {
+      selectedTime = time;
+      document.getElementById('timeInput').value = time;
+      updateTimeButtons();
+    }
+    
+    function updateTimeButtons() {
+      const buttons = document.querySelectorAll('.time-btn');
+      const msk = getMoscowNow();
+      const isToday = isTodayMSK(selectedDate);
+      
+      buttons.forEach(btn => {
+        const btnTime = btn.textContent;
+        const [hours] = btnTime.split(':').map(Number);
+        
+        btn.classList.remove('selected', 'disabled');
+        
+        if (isToday && hours <= msk.hours) {
+          btn.classList.add('disabled');
+        }
+        
+        if (btnTime === selectedTime) {
+          btn.classList.add('selected');
+        }
+      });
+    }
     
     function checkAuth() {
       const password = document.getElementById('authPassword').value;
@@ -597,8 +704,10 @@
       for (let i = 0; i < startDay; i++) {
         const prevDate = new Date(currentYear, currentMonth, -startDay + i + 1);
         const div = document.createElement('div');
-        div.className = 'calendar-day other-month';
+        div.className = 'calendar-day other-month disabled';
         div.textContent = prevDate.getDate();
+        div.style.opacity = '0.3';
+        div.style.cursor = 'not-allowed';
         grid.appendChild(div);
       }
       
@@ -607,19 +716,57 @@
         div.className = 'calendar-day';
         div.textContent = day;
         
-        const date = new Date(currentYear, currentMonth, day);
-        if (selectedDate && date.toDateString() === selectedDate.toDateString()) {
+        const isPast = isPastMSK(currentYear, currentMonth, day);
+        
+        if (isPast) {
+          div.classList.add('disabled');
+          div.style.opacity = '0.3';
+          div.style.cursor = 'not-allowed';
+        } else {
+          div.onclick = () => selectDate(day);
+        }
+        
+        if (selectedDate && 
+            selectedDate.getFullYear() === currentYear && 
+            selectedDate.getMonth() === currentMonth && 
+            selectedDate.getDate() === day) {
           div.classList.add('selected');
         }
         
-        div.onclick = () => selectDate(day);
         grid.appendChild(div);
       }
+      
+      updateTimeButtons();
     }
     
     function selectDate(day) {
-      selectedDate = new Date(currentYear, currentMonth, day);
+      const msk = getMoscowNow();
+      const date = new Date(currentYear, currentMonth, day);
+      
+      if (isPastMSK(currentYear, currentMonth, day)) {
+        return;
+      }
+      
+      selectedDate = date;
+      
+      if (isTodayMSK(date)) {
+        const currentHour = msk.hours;
+        const [selHour] = selectedTime.split(':').map(Number);
+        if (selHour <= currentHour) {
+          const nextHour = currentHour + 1;
+          if (nextHour >= 24) {
+            alert('На сегодня нет доступных временных слотов. Выберите другой день.');
+            selectedDate = null;
+            renderCalendar();
+            return;
+          }
+          selectedTime = nextHour.toString().padStart(2, '0') + ':00';
+          document.getElementById('timeInput').value = selectedTime;
+        }
+      }
+      
       renderCalendar();
+      updateTimeButtons();
     }
     
     function prevMonth() {
@@ -654,11 +801,36 @@
       }
       
       selectedTime = document.getElementById('timeInput').value;
+      
+      if (!selectedTime || selectedTime.length < 5) {
+        alert('Выберите время');
+        return;
+      }
+      
+      const timeParts = selectedTime.split(':');
+      const hours = parseInt(timeParts[0], 10);
+      const minutes = parseInt(timeParts[1], 10);
+      
+      if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+        alert('Неверный формат времени');
+        return;
+      }
+      
+      const msk = getMoscowNow();
+      const isToday = isTodayMSK(selectedDate);
+      
+      if (isToday) {
+        if (hours < msk.hours || (hours === msk.hours && minutes <= msk.minutes)) {
+          alert('Нельзя выбрать прошедшее время (МСК). Выберите время позже текущего.');
+          return;
+        }
+      }
+      
       const day = selectedDate.getDate();
       const month = monthNames[selectedDate.getMonth()].slice(0, 3);
       const year = selectedDate.getFullYear();
       
-      document.getElementById('datetimeInput').value = `${day} ${month} ${year} at ${selectedTime}`;
+      document.getElementById('datetimeInput').value = `${day} ${month} ${year} в ${selectedTime} (МСК)`;
       document.getElementById('datetimePicker').classList.remove('show');
     }
     

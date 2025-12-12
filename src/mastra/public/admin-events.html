@@ -223,6 +223,10 @@
     
     <div class="links-section">
       <h3>Сгенерированные ссылки</h3>
+      <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+        <button class="event-btn" style="background: #ffebee; color: #f44336; flex: none; padding: 10px 20px;" onclick="deleteAllLinks()">Удалить все ссылки</button>
+        <span style="color: #666; font-size: 13px; align-self: center;" id="linksCount"></span>
+      </div>
       <div id="linksContainer"></div>
     </div>
     
@@ -462,6 +466,9 @@
     
     function renderLinks() {
       const container = document.getElementById('linksContainer');
+      const countEl = document.getElementById('linksCount');
+      countEl.textContent = links.length > 0 ? 'Всего: ' + links.length + ' ссылок' : '';
+      
       if (links.length === 0) {
         container.innerHTML = '<p style="color:#999;text-align:center;padding:20px;">Нет сгенерированных ссылок</p>';
         return;
@@ -501,6 +508,32 @@
         }
       } catch (err) {
         console.error('Error deleting link:', err);
+        alert('Ошибка удаления');
+      }
+    }
+    
+    async function deleteAllLinks() {
+      if (links.length === 0) {
+        alert('Нет ссылок для удаления');
+        return;
+      }
+      
+      if (!confirm('Удалить ВСЕ ' + links.length + ' ссылки? Это действие нельзя отменить!')) return;
+      
+      try {
+        let deleted = 0;
+        for (const link of links) {
+          const res = await fetch('/api/generator/links/' + link.id, {
+            method: 'DELETE',
+            headers: { 'X-Admin-Password': ADMIN_PASSWORD }
+          });
+          if (res.ok) deleted++;
+        }
+        
+        alert('Удалено ' + deleted + ' из ' + links.length + ' ссылок');
+        await loadLinks();
+      } catch (err) {
+        console.error('Error deleting all links:', err);
         alert('Ошибка удаления');
       }
     }

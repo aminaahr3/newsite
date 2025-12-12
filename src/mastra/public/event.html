@@ -816,10 +816,13 @@
                 linkCode: linkData.linkCode,
                 cityId: linkData.cityId
               };
+            } else {
+              showUnavailablePage();
+              return;
             }
-          }
-          if (!event) {
-            event = getDemoEvent();
+          } else {
+            showUnavailablePage();
+            return;
           }
         } else {
           // Regular event loading from template
@@ -856,6 +859,19 @@
       }
       
       renderPage();
+    }
+    
+    function showUnavailablePage() {
+      document.body.innerHTML = `
+        <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f5f5f5; font-family: Inter, sans-serif;">
+          <div style="text-align: center; padding: 40px;">
+            <div style="font-size: 80px; margin-bottom: 20px;">🚫</div>
+            <h1 style="font-size: 28px; color: #333; margin-bottom: 15px;">Страница недоступна</h1>
+            <p style="color: #666; font-size: 16px; margin-bottom: 30px;">Данное мероприятие больше недоступно или было удалено.</p>
+            <a href="/" style="display: inline-block; padding: 15px 30px; background: #E53935; color: white; text-decoration: none; border-radius: 8px; font-weight: 500;">На главную</a>
+          </div>
+        </div>
+      `;
     }
     
     function getDemoEvent() {
