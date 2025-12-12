@@ -360,7 +360,144 @@
     .tab-content.active {
       display: block;
     }
+
+    .ticket-preview {
+      background: white;
+      max-width: 400px;
+      margin: 30px auto 0;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      display: none;
+    }
+    .ticket-preview.show {
+      display: block;
+    }
+    .ticket-header-row {
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .ticket-logo {
+      font-size: 24px;
+      font-weight: 700;
+      color: #333;
+      letter-spacing: 2px;
+    }
+    .ticket-qr-section {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .qr-code {
+      width: 60px;
+      height: 60px;
+    }
+    .qr-code canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .ticket-type {
+      text-align: right;
+    }
+    .ticket-type-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+    .ticket-type-number {
+      font-size: 12px;
+      color: #666;
+    }
+    .ticket-image {
+      width: 100%;
+      height: 220px;
+      background-size: cover;
+      background-position: center;
+      background-color: #e0e0e0;
+    }
+    .barcode-section {
+      padding: 0;
+      text-align: center;
+    }
+    .barcode-container {
+      background: white;
+      padding: 0;
+    }
+    #ticketBarcode {
+      width: 100%;
+      height: 80px;
+    }
+    .event-title-section {
+      padding: 0 20px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .event-name-display {
+      font-size: 20px;
+      font-weight: 600;
+      color: #333;
+    }
+    .event-datetime-display {
+      font-size: 14px;
+      color: #666;
+      margin-top: 5px;
+    }
+    .age-badge {
+      border: 1px solid #999;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 12px;
+      color: #666;
+    }
+    .ticket-divider {
+      height: 1px;
+      background: repeating-linear-gradient(90deg, #ddd, #ddd 8px, transparent 8px, transparent 12px);
+      margin: 0 20px;
+    }
+    .ticket-details {
+      padding: 20px;
+    }
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+    .detail-label {
+      font-size: 14px;
+      color: #333;
+    }
+    .detail-sublabel {
+      font-size: 11px;
+      color: #999;
+    }
+    .detail-value {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+      text-align: right;
+    }
+    .new-ticket-btn {
+      width: 100%;
+      background: #666;
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 </head>
 <body>
   <header class="header">
@@ -539,13 +676,82 @@
         </div>
         
         <button class="submit-btn" id="ticketSubmitBtn" onclick="generateTicket()">Создать</button>
-        
-        <div class="result-section" id="ticketResultSection">
-          <div class="result-label">Билет создан:</div>
-          <div class="result-link">
-            <input type="text" id="ticketGeneratedLink" readonly>
-            <button class="copy-btn" onclick="copyTicketLink()">Копировать</button>
+      </div>
+
+      <div class="ticket-preview" id="ticketPreview">
+        <div class="ticket-header-row">
+          <div class="ticket-logo">AFISHA</div>
+          <div class="ticket-qr-section">
+            <div class="qr-code" id="ticketQrCode"></div>
+            <div class="ticket-type">
+              <div class="ticket-type-title">Входная карта</div>
+              <div class="ticket-type-number">E-card #<span id="ticketNumberDisplay"></span></div>
+            </div>
           </div>
+        </div>
+        
+        <div class="ticket-image" id="ticketImageDisplay"></div>
+        
+        <div class="barcode-section">
+          <div class="barcode-container">
+            <svg id="ticketBarcode"></svg>
+          </div>
+        </div>
+        
+        <div class="event-title-section">
+          <div>
+            <div class="event-name-display" id="ticketEventName"></div>
+            <div class="event-datetime-display" id="ticketEventDateTime"></div>
+          </div>
+          <div class="age-badge">18+</div>
+        </div>
+        
+        <div class="ticket-divider"></div>
+        
+        <div class="ticket-details">
+          <div class="detail-row">
+            <div>
+              <div class="detail-label">Город</div>
+              <div class="detail-sublabel">City</div>
+            </div>
+            <div class="detail-value" id="ticketCityDisplay"></div>
+          </div>
+          
+          <div class="detail-row">
+            <div>
+              <div class="detail-label">Карта</div>
+              <div class="detail-sublabel">Cards</div>
+            </div>
+            <div class="detail-value">Входная карта</div>
+          </div>
+          
+          <div class="detail-row">
+            <div>
+              <div class="detail-label">Имя, фамилия</div>
+              <div class="detail-sublabel">Name</div>
+            </div>
+            <div class="detail-value" id="ticketCustomerDisplay"></div>
+          </div>
+          
+          <div class="detail-row">
+            <div>
+              <div class="detail-label">Номер заказа #</div>
+              <div class="detail-sublabel">Order number #</div>
+            </div>
+            <div class="detail-value" id="ticketOrderDisplay"></div>
+          </div>
+          
+          <div class="detail-row">
+            <div>
+              <div class="detail-label">Стоимость</div>
+              <div class="detail-sublabel">Price</div>
+            </div>
+            <div class="detail-value">2990 ₽</div>
+          </div>
+        </div>
+        
+        <div style="padding: 0 20px 20px;">
+          <button class="new-ticket-btn" onclick="resetTicketForm()">Создать новый билет</button>
         </div>
       </div>
     </div>
@@ -1120,30 +1326,80 @@
         const city = cities.find(c => c.id == cityId);
         const event = eventTemplates.find(e => e.id == eventId);
         
+        const response = await fetch(`/api/generator/event-templates/${eventId}`);
+        const data = await response.json();
+        const template = data.success ? data.template : null;
+        
         const day = ticketSelectedDate.getDate();
-        const monthShort = monthNames[ticketSelectedDate.getMonth()].slice(0, 3);
-        const year = ticketSelectedDate.getFullYear();
-        const dateStr = `${day} ${monthShort} ${year}`;
+        const monthNamesGen = ['Января', 'Февраля', 'Марта', 'Апреля', 'Мая', 'Июня', 
+                               'Июля', 'Августа', 'Сентября', 'Октября', 'Ноября', 'Декабря'];
+        const dateStr = `${day} ${monthNamesGen[ticketSelectedDate.getMonth()]}`;
         
-        const ticketUrl = `/ticket.html?eventId=${eventId}&cityId=${cityId}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(ticketSelectedTime)}&name=${encodeURIComponent(customerName)}&direct=1`;
+        const ticketNum = String(34000000 + Math.floor(Math.random() * 1000000));
         
-        document.getElementById('ticketGeneratedLink').value = window.location.origin + ticketUrl;
-        document.getElementById('ticketResultSection').classList.add('show');
+        function addHours(timeStr, hours) {
+          const [h, m] = timeStr.split(':').map(Number);
+          const newH = (h + hours) % 24;
+          return String(newH).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+        }
         
-        window.open(ticketUrl, '_blank');
+        document.getElementById('ticketNumberDisplay').textContent = ticketNum;
+        document.getElementById('ticketEventName').textContent = event?.name || template?.name || 'Мероприятие';
+        document.getElementById('ticketEventDateTime').textContent = `${dateStr} ${ticketSelectedTime} - ${addHours(ticketSelectedTime, 7)}`;
+        document.getElementById('ticketCityDisplay').textContent = city?.name || 'Москва';
+        document.getElementById('ticketCustomerDisplay').textContent = customerName;
+        document.getElementById('ticketOrderDisplay').textContent = ticketNum;
+        
+        const imageUrl = template?.ticket_image_url || template?.image_url;
+        if (imageUrl) {
+          document.getElementById('ticketImageDisplay').style.backgroundImage = `url(${imageUrl})`;
+        } else {
+          document.getElementById('ticketImageDisplay').style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        }
+        
+        JsBarcode("#ticketBarcode", ticketNum, {
+          format: "CODE128",
+          width: 4,
+          height: 70,
+          displayValue: true,
+          fontSize: 14,
+          margin: 0
+        });
+        
+        const qrContainer = document.getElementById('ticketQrCode');
+        qrContainer.innerHTML = '';
+        if (typeof QRCode !== 'undefined') {
+          QRCode.toCanvas(document.createElement('canvas'), ticketNum, { width: 60 }, function(error, canvas) {
+            if (!error) {
+              qrContainer.appendChild(canvas);
+            }
+          });
+        }
+        
+        document.getElementById('ticketPreview').classList.add('show');
+        document.getElementById('ticketPreview').scrollIntoView({ behavior: 'smooth' });
+        
       } catch (err) {
         console.error('Error generating ticket:', err);
-        alert('Ошибка соединения');
+        alert('Ошибка создания билета');
       } finally {
         btn.disabled = false;
         btn.textContent = 'Создать';
       }
     }
     
-    function copyTicketLink() {
-      const input = document.getElementById('ticketGeneratedLink');
-      navigator.clipboard.writeText(input.value);
-      alert('Ссылка скопирована!');
+    function resetTicketForm() {
+      document.getElementById('ticketPreview').classList.remove('show');
+      document.getElementById('ticketCategorySelect').value = '';
+      document.getElementById('ticketCitySelect').value = '';
+      document.getElementById('ticketEventSelect').innerHTML = '<option value="">Выберите название</option>';
+      document.getElementById('ticketEventSelect').disabled = true;
+      document.getElementById('ticketCustomerName').value = '';
+      ticketSelectedDate = null;
+      ticketSelectedTime = '12:00';
+      document.getElementById('ticketDatetimeInput').value = '';
+      document.getElementById('ticketTimeInput').value = '12:00';
+      renderTicketCalendar();
     }
   </script>
 </body>
