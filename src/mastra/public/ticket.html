@@ -380,7 +380,7 @@
       }
       
       try {
-        const response = await fetch(`/api/generator/event-template/${eventId}`);
+        const response = await fetch(`/api/generator/event-templates/${eventId}`);
         if (!response.ok) {
           showError();
           return;
