@@ -718,6 +718,28 @@ export const mastra = new Mastra({
         },
       },
 
+      // Event page by template ID
+      {
+        path: "/event/:id",
+        method: "GET",
+        handler: async (c) => {
+          const fs = await import("fs");
+          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/event.html", "utf-8");
+          return c.html(html);
+        },
+      },
+
+      // Event page by generated link code
+      {
+        path: "/e/:code",
+        method: "GET",
+        handler: async (c) => {
+          const fs = await import("fs");
+          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/event.html", "utf-8");
+          return c.html(html);
+        },
+      },
+
       // Generator page
       {
         path: "/generator",
@@ -1347,9 +1369,47 @@ export const mastra = new Mastra({
         },
       },
       
-      // Generator API - Update event template
+      // Generator API - Get single event template by ID
       {
         path: "/api/generator/event-templates/:id",
+        method: "GET",
+        handler: async (c) => {
+          try {
+            const eventId = c.req.param("id");
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            const result = await pool.query(
+              `SELECT et.*, cat.name_ru as category_name 
+               FROM event_templates et 
+               JOIN categories cat ON et.category_id = cat.id 
+               WHERE et.id = $1`,
+              [eventId]
+            );
+            await pool.end();
+            
+            if (result.rows.length === 0) {
+              return c.json({ error: "Template not found" }, 404);
+            }
+            
+            const template = result.rows[0];
+            return c.json({
+              id: template.id,
+              name: template.name,
+              description: template.description,
+              imageUrl: template.image_url,
+              categoryName: template.category_name,
+              isActive: template.is_active
+            });
+          } catch (error) {
+            console.error("Error fetching event template:", error);
+            return c.json({ error: "Failed to fetch template" }, 500);
+          }
+        },
+      },
+      
+      // Generator API - Update event template
+      {
+        path: "/api/generator/event-templates/:id/update",
         method: "PUT",
         handler: async (c) => {
           try {

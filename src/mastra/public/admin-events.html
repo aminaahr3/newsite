@@ -458,7 +458,7 @@
       const imageUrl = document.getElementById('editImageUrl').value;
       
       try {
-        const res = await fetch(`/api/generator/event-templates/${eventId}`, {
+        const res = await fetch(`/api/generator/event-templates/${eventId}/update`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name, description, image_url: imageUrl })

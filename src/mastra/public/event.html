@@ -831,28 +831,30 @@
             event = getDemoEvent();
           }
         } else {
-          // Regular event loading
+          // Regular event loading from template
           const eventId = getEventId();
-          const [eventRes, dataRes] = await Promise.all([
-            fetch(`/api/event/${eventId}`),
-            fetch('/api/ticket-data')
-          ]);
+          const templateRes = await fetch(`/api/generator/event-templates/${eventId}`);
           
-          if (eventRes.ok) {
-            const eventData = await eventRes.json();
-            if (eventData && !eventData.error) {
-              event = eventData;
+          if (templateRes.ok) {
+            const templateData = await templateRes.json();
+            if (templateData && !templateData.error) {
+              event = {
+                id: templateData.id,
+                name: templateData.name,
+                description: templateData.description,
+                price: 2490,
+                categoryName: templateData.categoryName,
+                cityName: 'Москва',
+                venue: 'Адрес уточняется после бронирования',
+                date: new Date().toISOString(),
+                availableSeats: 50,
+                coverImageUrl: templateData.imageUrl
+              };
             }
           }
           
-          if (dataRes.ok) {
-            const data = await dataRes.json();
-            events = data.events || [];
-            categories = data.categories || [];
-          }
-          
           if (!event) {
-            event = events.find(e => e.id === eventId) || getDemoEvent();
+            event = getDemoEvent();
           }
         }
       } catch (err) {
