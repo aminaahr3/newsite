@@ -2,7 +2,24 @@
 
 ## Overview
 
-This is a Mastra-based AI agent automation platform that enables building, orchestrating, and deploying AI-powered workflows. The system uses Mastra as the core AI framework with Inngest for durable workflow execution. It currently implements a Telegram ticket bot that can handle events, orders, and notifications through conversational AI.
+This is a ticket booking platform ("БИЛЕТИКС/Афиша") built with Mastra framework. The system provides:
+- Public website for browsing events and purchasing tickets
+- Admin panel for managing events and orders
+- Telegram bot notifications for administrators
+- PostgreSQL database for persistent storage
+
+### Frontend Design
+- Afisha.ru-inspired light theme with Inter font
+- Header with red "a" logo, city selector, navigation (КИНО, ТЕАТР, ЁЛКИ, ГИД, РЕСТОРАНЫ)
+- Main carousel with 3 large event cards (ratings, "Купить билет" button, prices, heart icons)
+- Category links section below carousel
+- Popular events grid
+- Responsive design for mobile/tablet
+
+### Key Pages
+- `/` - Main homepage with event carousel and grid
+- `/event/:id` - Event details and order form
+- `/admin` - Admin panel (password protected)
 
 ## User Preferences
 
