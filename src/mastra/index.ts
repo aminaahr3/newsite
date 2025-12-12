@@ -121,6 +121,15 @@ export const mastra = new Mastra({
       },
     ],
     apiRoutes: [
+      // Health check endpoint - returns 200 immediately without database dependency
+      {
+        path: "/health",
+        method: "GET",
+        handler: async (c) => {
+          return c.json({ status: "ok", timestamp: new Date().toISOString() });
+        },
+      },
+
       // Inngest Integration Endpoint
       {
         path: "/api/inngest",
@@ -133,15 +142,36 @@ export const mastra = new Mastra({
         path: "/",
         method: "GET",
         handler: async (c) => {
-          const { readFile } = await import("fs/promises");
           try {
-            // Use absolute path to workspace root since Mastra bundler changes cwd
-            const htmlPath = "/home/runner/workspace/src/mastra/public/index.html";
-            const html = await readFile(htmlPath, "utf-8");
-            return c.html(html);
+            const { readFile } = await import("fs/promises");
+            const { join, dirname } = await import("path");
+            const { fileURLToPath } = await import("url");
+            
+            // Try multiple paths for production compatibility
+            const possiblePaths = [
+              "/home/runner/workspace/src/mastra/public/index.html",
+              join(process.cwd(), "src/mastra/public/index.html"),
+              join(process.cwd(), "public/index.html"),
+            ];
+            
+            for (const htmlPath of possiblePaths) {
+              try {
+                const html = await readFile(htmlPath, "utf-8");
+                return c.html(html);
+              } catch {
+                continue;
+              }
+            }
+            
+            // Fallback response if no file found
+            return c.html(`<!DOCTYPE html>
+<html><head><title>Ticket System</title></head>
+<body><h1>Welcome to Ticket System</h1><p>Server is running.</p></body></html>`);
           } catch (error) {
             console.error("Error serving HTML:", error);
-            return c.text("Page not found", 404);
+            return c.html(`<!DOCTYPE html>
+<html><head><title>Ticket System</title></head>
+<body><h1>Welcome</h1></body></html>`);
           }
         },
       },
