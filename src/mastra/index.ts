@@ -802,6 +802,83 @@ export const mastra = new Mastra({
         },
       },
 
+      // Cities API: Add city (admin only)
+      {
+        path: "/api/admin/cities",
+        method: "POST",
+        handler: async (c) => {
+          const authPassword = c.req.header("X-Admin-Password");
+          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          if (authPassword !== adminPassword) {
+            return c.json({ success: false, message: "Unauthorized" }, 401);
+          }
+
+          try {
+            const body = await c.req.json();
+            if (!body.name || body.name.trim().length < 2) {
+              return c.json({ success: false, message: "Название города должно быть не менее 2 символов" }, 400);
+            }
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            // Check if city already exists
+            const existing = await pool.query("SELECT id FROM cities WHERE name = $1", [body.name.trim()]);
+            if (existing.rows.length > 0) {
+              await pool.end();
+              return c.json({ success: false, message: "Город уже существует" }, 400);
+            }
+            
+            await pool.query("INSERT INTO cities (name) VALUES ($1)", [body.name.trim()]);
+            await pool.end();
+            
+            return c.json({ success: true });
+          } catch (error) {
+            console.error("Error adding city:", error);
+            return c.json({ success: false, message: "Ошибка добавления города" }, 500);
+          }
+        },
+      },
+      
+      // Cities API: Delete city (admin only)
+      {
+        path: "/api/admin/cities/:id",
+        method: "DELETE",
+        handler: async (c) => {
+          const authPassword = c.req.header("X-Admin-Password");
+          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          if (authPassword !== adminPassword) {
+            return c.json({ success: false, message: "Unauthorized" }, 401);
+          }
+
+          try {
+            const cityId = parseInt(c.req.param("id"));
+            if (isNaN(cityId)) {
+              return c.json({ success: false, message: "Неверный ID города" }, 400);
+            }
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            // Delete related generated links first
+            await pool.query("DELETE FROM generated_links WHERE city_id = $1", [cityId]);
+            
+            // Delete city addresses
+            await pool.query("DELETE FROM event_template_addresses WHERE city_id = $1", [cityId]);
+            
+            // Delete city
+            await pool.query("DELETE FROM cities WHERE id = $1", [cityId]);
+            
+            await pool.end();
+            
+            return c.json({ success: true });
+          } catch (error) {
+            console.error("Error deleting city:", error);
+            return c.json({ success: false, message: "Ошибка удаления города" }, 500);
+          }
+        },
+      },
+
       // Order API: Get order by code (supports both regular orders and generated link orders)
       {
         path: "/api/order/:code",

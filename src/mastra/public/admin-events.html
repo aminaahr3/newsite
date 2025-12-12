@@ -255,6 +255,19 @@
         <button onclick="savePaymentSettings()" style="padding: 12px 24px; background: #4CAF50; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">Сохранить реквизиты</button>
       </div>
     </div>
+    
+    <div class="links-section" style="margin-top: 40px;">
+      <h3>Управление городами</h3>
+      <div style="background: white; padding: 20px; border-radius: 12px; max-width: 600px;">
+        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+          <input type="text" id="newCityName" placeholder="Название города" style="flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px;">
+          <button onclick="addCity()" style="padding: 12px 24px; background: #4CAF50; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">Добавить</button>
+        </div>
+        <div id="citiesList" style="max-height: 300px; overflow-y: auto;">
+          <p style="color: #999;">Загрузка городов...</p>
+        </div>
+      </div>
+    </div>
   </div>
   
   <div class="modal-overlay" id="editModal">
@@ -350,7 +363,7 @@
     }
     
     async function init() {
-      await Promise.all([loadCategories(), loadLinks(), loadPaymentSettings()]);
+      await Promise.all([loadCategories(), loadLinks(), loadPaymentSettings(), loadCities()]);
     }
     
     async function loadPaymentSettings() {
@@ -390,6 +403,84 @@
       } catch (err) {
         console.error('Error saving payment settings:', err);
         alert('Ошибка сохранения');
+      }
+    }
+    
+    async function loadCities() {
+      try {
+        const res = await fetch('/api/generator/cities');
+        const data = await res.json();
+        const cities = data.cities || [];
+        renderCitiesList(cities);
+      } catch (err) {
+        console.error('Error loading cities:', err);
+      }
+    }
+    
+    function renderCitiesList(cities) {
+      const container = document.getElementById('citiesList');
+      if (cities.length === 0) {
+        container.innerHTML = '<p style="color: #999;">Нет городов</p>';
+        return;
+      }
+      
+      container.innerHTML = cities.map(city => `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee;">
+          <span>${city.name}</span>
+          <button onclick="deleteCity(${city.id})" style="padding: 6px 12px; background: #ffebee; color: #f44336; border: none; border-radius: 6px; cursor: pointer; font-size: 12px;">Удалить</button>
+        </div>
+      `).join('');
+    }
+    
+    async function addCity() {
+      const nameInput = document.getElementById('newCityName');
+      const name = nameInput.value.trim();
+      if (!name) {
+        alert('Введите название города');
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/admin/cities', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Password': ADMIN_PASSWORD
+          },
+          body: JSON.stringify({ name })
+        });
+        
+        if (res.ok) {
+          nameInput.value = '';
+          await loadCities();
+        } else {
+          const data = await res.json();
+          alert(data.message || 'Ошибка добавления города');
+        }
+      } catch (err) {
+        console.error('Error adding city:', err);
+        alert('Ошибка добавления города');
+      }
+    }
+    
+    async function deleteCity(cityId) {
+      if (!confirm('Удалить этот город? Это также удалит все связанные ссылки.')) return;
+      
+      try {
+        const res = await fetch(`/api/admin/cities/${cityId}`, {
+          method: 'DELETE',
+          headers: { 'X-Admin-Password': ADMIN_PASSWORD }
+        });
+        
+        if (res.ok) {
+          await loadCities();
+        } else {
+          const data = await res.json();
+          alert(data.message || 'Ошибка удаления города');
+        }
+      } catch (err) {
+        console.error('Error deleting city:', err);
+        alert('Ошибка удаления города');
       }
     }
     
