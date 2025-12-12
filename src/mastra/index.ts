@@ -7,7 +7,7 @@ import { MCPServer } from "@mastra/mcp";
 import { NonRetriableError } from "inngest";
 import { z } from "zod";
 
-import { sharedPostgresStorage } from "./storage";
+import { getSharedPostgresStorage } from "./storage";
 import { inngest, inngestServe } from "./inngest";
 
 // Import tools for MCP server and API
@@ -64,8 +64,16 @@ class ProductionPinoLogger extends MastraLogger {
   }
 }
 
+// Initialize storage lazily and safely
+let storage: ReturnType<typeof getSharedPostgresStorage> = undefined;
+try {
+  storage = getSharedPostgresStorage();
+} catch (error) {
+  console.error("[Mastra] Failed to initialize storage:", error);
+}
+
 export const mastra = new Mastra({
-  storage: sharedPostgresStorage,
+  storage: storage,
   // No workflows or agents - using simple Telegram admin notifications
   workflows: {},
   agents: {},

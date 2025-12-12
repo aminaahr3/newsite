@@ -1,19 +1,36 @@
 import { PostgresStore } from "@mastra/pg";
 
-let _sharedPostgresStorage: PostgresStore | null = null;
+let _sharedPostgresStorage: PostgresStore | undefined = undefined;
 
 export function getSharedPostgresStorage(): PostgresStore | undefined {
-  if (!process.env.DATABASE_URL) {
-    console.warn("DATABASE_URL not set, storage disabled");
+  if (_sharedPostgresStorage) {
+    return _sharedPostgresStorage;
+  }
+  
+  const dbUrl = process.env.DATABASE_URL;
+  
+  if (!dbUrl) {
+    console.warn("[Storage] DATABASE_URL not set, storage disabled");
     return undefined;
   }
   
-  if (!_sharedPostgresStorage) {
-    _sharedPostgresStorage = new PostgresStore({
-      connectionString: process.env.DATABASE_URL,
-    });
+  // Skip if it looks like the old broken connection string
+  if (dbUrl.includes("helium")) {
+    console.warn("[Storage] DATABASE_URL contains invalid hostname, storage disabled");
+    return undefined;
   }
-  return _sharedPostgresStorage;
+  
+  try {
+    _sharedPostgresStorage = new PostgresStore({
+      connectionString: dbUrl,
+    });
+    console.log("[Storage] PostgresStore initialized successfully");
+    return _sharedPostgresStorage;
+  } catch (error) {
+    console.error("[Storage] Failed to initialize PostgresStore:", error);
+    return undefined;
+  }
 }
 
-export const sharedPostgresStorage = getSharedPostgresStorage();
+// Lazy initialization - don't create on import
+export const sharedPostgresStorage = undefined as PostgresStore | undefined;
