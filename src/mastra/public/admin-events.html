@@ -486,10 +486,10 @@
     }
     
     async function deleteLink(linkId, linkCode) {
-      if (!confirm(\`Удалить ссылку \${linkCode}?\`)) return;
+      if (!confirm('Удалить ссылку ' + linkCode + '?')) return;
       
       try {
-        const res = await fetch(\`/api/generator/links/\${linkId}\`, {
+        const res = await fetch('/api/generator/links/' + linkId, {
           method: 'DELETE',
           headers: { 'X-Admin-Password': ADMIN_PASSWORD }
         });
