@@ -335,6 +335,75 @@
       color: #666;
     }
     
+    .full-schedule {
+      margin-top: 32px;
+    }
+    
+    .schedule-row {
+      display: flex;
+      align-items: center;
+      padding: 20px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .schedule-date {
+      width: 100px;
+      flex-shrink: 0;
+    }
+    
+    .schedule-day-num {
+      font-size: 36px;
+      font-weight: 300;
+      line-height: 1;
+    }
+    
+    .schedule-day-num sup {
+      font-size: 14px;
+      vertical-align: super;
+    }
+    
+    .schedule-day-name {
+      font-size: 11px;
+      color: #e53935;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    
+    .schedule-info {
+      flex: 1;
+      padding: 16px 24px;
+      background: #f9f9f9;
+      border-radius: 8px;
+      margin: 0 24px;
+    }
+    
+    .schedule-time {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .schedule-venue {
+      font-size: 13px;
+      color: #666;
+    }
+    
+    .schedule-price-btn {
+      padding: 12px 24px;
+      background: #1a1a1a;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    
+    .schedule-price-btn:hover {
+      background: #333;
+    }
+    
     .about-section {
       margin-bottom: 40px;
     }
@@ -834,16 +903,19 @@
         <section class="section" id="sessionsSection">
           <div class="section-header">
             <h2 class="section-title">Расписание сеансов</h2>
-            <a href="#" class="section-link">Полное расписание →</a>
+            <a href="#" class="section-link" onclick="toggleFullSchedule(event)">Полное расписание →</a>
           </div>
-          <div class="sessions-grid">
+          <div class="sessions-grid" id="sessionsGrid">
             ${sessions.map((s, i) => `
-              <div class="session-card" onclick="selectSession('${s.day} ${s.time}', ${price})">
+              <div class="session-card" onclick="goToBooking('${getSessionDate(s.day)}', '${s.time}')">
                 <div class="session-price">От ${formatPrice(price)} ₽</div>
                 <div class="session-time">${s.day} ${s.time}</div>
                 <div class="session-address">${city}, ${venue}</div>
               </div>
             `).join('')}
+          </div>
+          <div class="full-schedule" id="fullSchedule" style="display: none;">
+            ${generateFullSchedule(price, city, venue)}
           </div>
         </section>
 
@@ -953,6 +1025,78 @@
     
     function openEvent(id) {
       window.location.href = `/event/${id}`;
+    }
+    
+    function getSessionDate(dayName) {
+      const today = new Date();
+      const dayOfWeek = today.getDay();
+      const targetDays = { 'Пятница': 5, 'Суббота': 6, 'Воскресенье': 0 };
+      const target = targetDays[dayName];
+      if (target === undefined) return today.toISOString().split('T')[0];
+      
+      let offset = target - dayOfWeek;
+      if (offset <= 0) offset += 7;
+      
+      const date = new Date(today);
+      date.setDate(today.getDate() + offset);
+      return date.toISOString().split('T')[0];
+    }
+    
+    function generateFullSchedule(price, city, venue) {
+      const today = new Date();
+      const scheduleData = [];
+      const dayNames = ['ВОСКРЕСЕНЬЕ', 'ПОНЕДЕЛЬНИК', 'ВТОРНИК', 'СРЕДА', 'ЧЕТВЕРГ', 'ПЯТНИЦА', 'СУББОТА'];
+      const monthAbbr = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн', 'Июл', 'Авг', 'Сен', 'Окт', 'Ноя', 'Дек'];
+      
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() + i);
+        const dayNum = date.getDate();
+        const dayName = dayNames[date.getDay()];
+        const isoDate = date.toISOString().split('T')[0];
+        const times = date.getDay() === 0 || date.getDay() === 6 
+          ? ['11:00', '14:00', '17:00'] 
+          : ['17:00'];
+        
+        times.forEach(time => {
+          scheduleData.push({ dayNum, dayName, time, month: monthAbbr[date.getMonth()], isoDate });
+        });
+      }
+      
+      return scheduleData.map(s => `
+        <div class="schedule-row">
+          <div class="schedule-date">
+            <div class="schedule-day-num">${s.dayNum}<sup>${s.month}</sup></div>
+            <div class="schedule-day-name">${s.dayName}</div>
+          </div>
+          <div class="schedule-info">
+            <div class="schedule-time">${s.time}</div>
+            <div class="schedule-venue">${city}, ${venue}</div>
+          </div>
+          <button class="schedule-price-btn" onclick="goToBooking('${s.isoDate}', '${s.time}')">От ${formatPrice(price)} ₽</button>
+        </div>
+      `).join('');
+    }
+    
+    function toggleFullSchedule(e) {
+      e.preventDefault();
+      const fullSchedule = document.getElementById('fullSchedule');
+      const sessionsGrid = document.getElementById('sessionsGrid');
+      const link = e.target;
+      
+      if (fullSchedule.style.display === 'none') {
+        fullSchedule.style.display = 'block';
+        sessionsGrid.style.display = 'none';
+        link.textContent = 'Свернуть ←';
+      } else {
+        fullSchedule.style.display = 'none';
+        sessionsGrid.style.display = 'grid';
+        link.textContent = 'Полное расписание →';
+      }
+    }
+    
+    function goToBooking(day, time) {
+      window.location.href = `/booking/${event.id}?date=${day}&time=${encodeURIComponent(time)}`;
     }
     
     loadData();

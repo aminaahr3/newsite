@@ -386,6 +386,22 @@ export const mastra = new Mastra({
         },
       },
 
+      // Booking page
+      {
+        path: "/booking/:id",
+        method: "GET",
+        handler: async (c) => {
+          const { readFile } = await import("fs/promises");
+          try {
+            const htmlPath = "/home/runner/workspace/src/mastra/public/booking.html";
+            const html = await readFile(htmlPath, "utf-8");
+            return c.html(html);
+          } catch (error) {
+            return c.text("Page not found", 404);
+          }
+        },
+      },
+
       // API to get single event details
       {
         path: "/api/event/:id",
