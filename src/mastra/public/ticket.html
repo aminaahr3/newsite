@@ -310,6 +310,7 @@
   <script>
     const urlParams = new URLSearchParams(window.location.search);
     const orderCode = urlParams.get('order');
+    const directMode = urlParams.get('direct') === '1';
     
     const monthNames = ['Января', 'Февраля', 'Марта', 'Апреля', 'Мая', 'Июня', 
                         'Июля', 'Августа', 'Сентября', 'Октября', 'Ноября', 'Декабря'];
@@ -325,6 +326,11 @@
     }
     
     async function loadTicket() {
+      if (directMode) {
+        await loadDirectTicket();
+        return;
+      }
+      
       if (!orderCode) {
         showError();
         return;
@@ -357,6 +363,65 @@
         displayTicket(data.ticket);
       } catch (error) {
         console.error('Error loading ticket:', error);
+        showError();
+      }
+    }
+    
+    async function loadDirectTicket() {
+      const eventId = urlParams.get('eventId');
+      const cityId = urlParams.get('cityId');
+      const dateStr = urlParams.get('date');
+      const timeStr = urlParams.get('time');
+      const customerName = urlParams.get('name');
+      
+      if (!eventId) {
+        showError();
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/generator/event-template/${eventId}`);
+        if (!response.ok) {
+          showError();
+          return;
+        }
+        
+        const data = await response.json();
+        if (!data.success || !data.template) {
+          showError();
+          return;
+        }
+        
+        const template = data.template;
+        
+        let cityName = 'Москва';
+        if (cityId) {
+          try {
+            const cityRes = await fetch('/api/generator/cities');
+            const cityData = await cityRes.json();
+            const city = (cityData.cities || []).find(c => c.id == cityId);
+            if (city) cityName = city.name;
+          } catch (e) {}
+        }
+        
+        const ticketNum = String(34000000 + Math.floor(Math.random() * 1000000));
+        
+        const ticket = {
+          event_name: template.name,
+          event_date: dateStr || new Date().toISOString().split('T')[0],
+          event_time: timeStr || '12:00',
+          city_name: cityName,
+          customer_name: customerName || 'Гость',
+          total_price: 2990,
+          order_code: 'DIR-' + ticketNum.slice(-6),
+          orderId: parseInt(ticketNum.slice(-6)),
+          image_url: template.image_url,
+          ticket_image_url: template.ticket_image_url
+        };
+        
+        displayTicket(ticket);
+      } catch (error) {
+        console.error('Error loading direct ticket:', error);
         showError();
       }
     }

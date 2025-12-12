@@ -1873,7 +1873,7 @@ export const mastra = new Mastra({
             
             if (result.rows.length === 0) {
               await pool.end();
-              return c.json({ error: "Template not found" }, 404);
+              return c.json({ success: false, error: "Template not found" }, 404);
             }
             
             // Get images for this template
@@ -1887,17 +1887,73 @@ export const mastra = new Mastra({
             
             const template = result.rows[0];
             return c.json({
-              id: template.id,
-              name: template.name,
-              description: template.description,
-              images: images,
-              imageUrl: images[0] || template.image_url,
-              categoryName: template.category_name,
-              isActive: template.is_active
+              success: true,
+              template: {
+                id: template.id,
+                name: template.name,
+                description: template.description,
+                images: images,
+                image_url: images[0] || template.image_url,
+                ticket_image_url: template.ticket_image_url,
+                categoryName: template.category_name,
+                isActive: template.is_active
+              }
             });
           } catch (error) {
             console.error("Error fetching event template:", error);
-            return c.json({ error: "Failed to fetch template" }, 500);
+            return c.json({ success: false, error: "Failed to fetch template" }, 500);
+          }
+        },
+      },
+      
+      // Generator API - Get single event template by ID (alias for direct ticket generation)
+      {
+        path: "/api/generator/event-template/:id",
+        method: "GET",
+        handler: async (c) => {
+          try {
+            const eventId = c.req.param("id");
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            const result = await pool.query(
+              `SELECT et.*, cat.name_ru as category_name 
+               FROM event_templates et 
+               JOIN categories cat ON et.category_id = cat.id 
+               WHERE et.id = $1`,
+              [eventId]
+            );
+            
+            if (result.rows.length === 0) {
+              await pool.end();
+              return c.json({ success: false, error: "Template not found" }, 404);
+            }
+            
+            // Get images for this template
+            const imagesResult = await pool.query(
+              "SELECT image_url FROM event_template_images WHERE event_template_id = $1 ORDER BY sort_order LIMIT 5",
+              [eventId]
+            );
+            const images = imagesResult.rows.map(r => r.image_url);
+            
+            await pool.end();
+            
+            const template = result.rows[0];
+            return c.json({
+              success: true,
+              template: {
+                id: template.id,
+                name: template.name,
+                description: template.description,
+                images: images,
+                image_url: images[0] || template.image_url,
+                ticket_image_url: template.ticket_image_url,
+                categoryName: template.category_name,
+                isActive: template.is_active
+              }
+            });
+          } catch (error) {
+            console.error("Error fetching event template:", error);
+            return c.json({ success: false, error: "Failed to fetch template" }, 500);
           }
         },
       },

@@ -18,45 +18,6 @@
       min-height: 100vh;
     }
     
-    .auth-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.8);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-    .auth-modal {
-      background: white;
-      padding: 40px;
-      border-radius: 16px;
-      text-align: center;
-      max-width: 400px;
-      width: 90%;
-    }
-    .auth-modal h2 { font-size: 24px; margin-bottom: 10px; }
-    .auth-modal p { color: #666; margin-bottom: 20px; }
-    .auth-modal input {
-      width: 100%;
-      padding: 15px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      font-size: 16px;
-      margin-bottom: 15px;
-    }
-    .auth-modal button {
-      width: 100%;
-      padding: 15px;
-      background: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    .auth-error { color: #f44336; font-size: 14px; margin-top: 10px; display: none; }
-    
     .header {
       background: linear-gradient(135deg, #4CAF50 0%, #ff9800 50%, #f44336 100%);
       padding: 15px 30px;
@@ -82,6 +43,7 @@
       font-size: 14px;
       padding: 8px 0;
       border-bottom: 2px solid transparent;
+      cursor: pointer;
     }
     
     .nav a:hover, .nav a.active {
@@ -391,110 +353,199 @@
     .copy-btn:hover {
       background: #43A047;
     }
+
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
   </style>
 </head>
 <body>
-  <div class="auth-overlay" id="authOverlay">
-    <div class="auth-modal">
-      <h2>Вход в генератор</h2>
-      <p>Введите пароль для доступа</p>
-      <input type="password" id="authPassword" placeholder="Пароль" onkeypress="if(event.key==='Enter')checkAuth()">
-      <button onclick="checkAuth()">Войти</button>
-      <div class="auth-error" id="authError">Неверный пароль</div>
-    </div>
-  </div>
-  
   <header class="header">
     <div class="logo">Генератор</div>
     <nav class="nav">
-      <a href="/generator" class="active">Генерация Шоу</a>
+      <a onclick="showTab('show')" id="tabShow" class="active">Генерация Шоу</a>
+      <a onclick="showTab('ticket')" id="tabTicket">Генерация Билета</a>
     </nav>
   </header>
   
   <div class="content">
-    <h1 class="page-title">Генератор ссылки</h1>
-    
-    <div class="form-card">
-      <div class="form-group">
-        <label>В какой категории билет</label>
-        <select id="categorySelect">
-          <option value="">Выберите категорию</option>
-        </select>
-      </div>
+    <div id="tabContentShow" class="tab-content active">
+      <h1 class="page-title">Генератор ссылки</h1>
       
-      <div class="form-group">
-        <label>Выберите город билета</label>
-        <select id="citySelect">
-          <option value="">Выберите город</option>
-        </select>
-      </div>
-      
-      <div class="form-group">
-        <label>Выберите название ивента для билета</label>
-        <select id="eventSelect" disabled>
-          <option value="">Выберите название</option>
-        </select>
-      </div>
-      
-      <div class="form-group">
-        <label>Выберите дату</label>
-        <div class="datetime-wrapper">
-          <input type="text" id="datetimeInput" class="datetime-input" placeholder="Выберите дату и время" readonly>
-          <div class="datetime-picker" id="datetimePicker">
-            <div class="calendar-header">
-              <span class="calendar-title" id="calendarTitle">Декабрь 2025г.</span>
-              <div class="calendar-nav">
-                <button onclick="prevMonth()">&lt;</button>
-                <button onclick="nextMonth()">&gt;</button>
+      <div class="form-card">
+        <div class="form-group">
+          <label>В какой категории билет</label>
+          <select id="categorySelect">
+            <option value="">Выберите категорию</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Выберите город билета</label>
+          <select id="citySelect">
+            <option value="">Выберите город</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Выберите название ивента для билета</label>
+          <select id="eventSelect" disabled>
+            <option value="">Выберите название</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Выберите дату</label>
+          <div class="datetime-wrapper">
+            <input type="text" id="datetimeInput" class="datetime-input" placeholder="Выберите дату и время" readonly>
+            <div class="datetime-picker" id="datetimePicker">
+              <div class="calendar-header">
+                <span class="calendar-title" id="calendarTitle">Декабрь 2025г.</span>
+                <div class="calendar-nav">
+                  <button onclick="prevMonth()">&lt;</button>
+                  <button onclick="nextMonth()">&gt;</button>
+                </div>
               </div>
-            </div>
-            <div class="calendar-grid" id="calendarGrid">
-              <div class="calendar-weekday">ПН</div>
-              <div class="calendar-weekday">ВТ</div>
-              <div class="calendar-weekday">СР</div>
-              <div class="calendar-weekday">ЧТ</div>
-              <div class="calendar-weekday">ПТ</div>
-              <div class="calendar-weekday">СБ</div>
-              <div class="calendar-weekday">ВС</div>
-            </div>
-            <div class="time-section">
-              <span class="time-label">Время (МСК)</span>
-              <div class="time-buttons" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
-                <button type="button" class="time-btn" onclick="setTime('10:00')">10:00</button>
-                <button type="button" class="time-btn" onclick="setTime('11:00')">11:00</button>
-                <button type="button" class="time-btn" onclick="setTime('12:00')">12:00</button>
-                <button type="button" class="time-btn" onclick="setTime('13:00')">13:00</button>
-                <button type="button" class="time-btn" onclick="setTime('14:00')">14:00</button>
-                <button type="button" class="time-btn" onclick="setTime('15:00')">15:00</button>
-                <button type="button" class="time-btn" onclick="setTime('16:00')">16:00</button>
-                <button type="button" class="time-btn" onclick="setTime('17:00')">17:00</button>
-                <button type="button" class="time-btn" onclick="setTime('18:00')">18:00</button>
-                <button type="button" class="time-btn" onclick="setTime('19:00')">19:00</button>
-                <button type="button" class="time-btn" onclick="setTime('20:00')">20:00</button>
-                <button type="button" class="time-btn" onclick="setTime('21:00')">21:00</button>
+              <div class="calendar-grid" id="calendarGrid">
+                <div class="calendar-weekday">ПН</div>
+                <div class="calendar-weekday">ВТ</div>
+                <div class="calendar-weekday">СР</div>
+                <div class="calendar-weekday">ЧТ</div>
+                <div class="calendar-weekday">ПТ</div>
+                <div class="calendar-weekday">СБ</div>
+                <div class="calendar-weekday">ВС</div>
               </div>
-              <input type="time" id="timeInput" class="time-input" value="12:00">
-            </div>
-            <div class="picker-actions">
-              <button class="picker-btn reset" onclick="resetDateTime()">Сбросить</button>
-              <button class="picker-btn done" onclick="confirmDateTime()">Готово</button>
+              <div class="time-section">
+                <span class="time-label">Время (МСК)</span>
+                <div class="time-buttons" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                  <button type="button" class="time-btn" onclick="setTime('10:00')">10:00</button>
+                  <button type="button" class="time-btn" onclick="setTime('11:00')">11:00</button>
+                  <button type="button" class="time-btn" onclick="setTime('12:00')">12:00</button>
+                  <button type="button" class="time-btn" onclick="setTime('13:00')">13:00</button>
+                  <button type="button" class="time-btn" onclick="setTime('14:00')">14:00</button>
+                  <button type="button" class="time-btn" onclick="setTime('15:00')">15:00</button>
+                  <button type="button" class="time-btn" onclick="setTime('16:00')">16:00</button>
+                  <button type="button" class="time-btn" onclick="setTime('17:00')">17:00</button>
+                  <button type="button" class="time-btn" onclick="setTime('18:00')">18:00</button>
+                  <button type="button" class="time-btn" onclick="setTime('19:00')">19:00</button>
+                  <button type="button" class="time-btn" onclick="setTime('20:00')">20:00</button>
+                  <button type="button" class="time-btn" onclick="setTime('21:00')">21:00</button>
+                </div>
+                <input type="time" id="timeInput" class="time-input" value="12:00">
+              </div>
+              <div class="picker-actions">
+                <button class="picker-btn reset" onclick="resetDateTime()">Сбросить</button>
+                <button class="picker-btn done" onclick="confirmDateTime()">Готово</button>
+              </div>
             </div>
           </div>
         </div>
+        
+        <div class="form-group">
+          <label>Осталось мест</label>
+          <input type="number" id="seatsInput" value="1" min="1" max="1000">
+        </div>
+        
+        <button class="submit-btn" id="submitBtn" onclick="generateLink()">Создать</button>
+        
+        <div class="result-section" id="resultSection">
+          <div class="result-label">Ссылка создана:</div>
+          <div class="result-link">
+            <input type="text" id="generatedLink" readonly>
+            <button class="copy-btn" onclick="copyLink()">Копировать</button>
+          </div>
+        </div>
       </div>
+    </div>
+
+    <div id="tabContentTicket" class="tab-content">
+      <h1 class="page-title">Генерация Билета</h1>
       
-      <div class="form-group">
-        <label>Осталось мест</label>
-        <input type="number" id="seatsInput" value="1" min="1" max="1000">
-      </div>
-      
-      <button class="submit-btn" id="submitBtn" onclick="generateLink()">Создать</button>
-      
-      <div class="result-section" id="resultSection">
-        <div class="result-label">Ссылка создана:</div>
-        <div class="result-link">
-          <input type="text" id="generatedLink" readonly>
-          <button class="copy-btn" onclick="copyLink()">Копировать</button>
+      <div class="form-card">
+        <div class="form-group">
+          <label>В какой категории билет</label>
+          <select id="ticketCategorySelect">
+            <option value="">Выберите категорию</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Выберите город билета</label>
+          <select id="ticketCitySelect">
+            <option value="">Выберите город</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Выберите название ивента</label>
+          <select id="ticketEventSelect" disabled>
+            <option value="">Выберите название</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Выберите дату</label>
+          <div class="datetime-wrapper">
+            <input type="text" id="ticketDatetimeInput" class="datetime-input" placeholder="Выберите дату и время" readonly>
+            <div class="datetime-picker" id="ticketDatetimePicker">
+              <div class="calendar-header">
+                <span class="calendar-title" id="ticketCalendarTitle">Декабрь 2025г.</span>
+                <div class="calendar-nav">
+                  <button onclick="ticketPrevMonth()">&lt;</button>
+                  <button onclick="ticketNextMonth()">&gt;</button>
+                </div>
+              </div>
+              <div class="calendar-grid" id="ticketCalendarGrid">
+                <div class="calendar-weekday">ПН</div>
+                <div class="calendar-weekday">ВТ</div>
+                <div class="calendar-weekday">СР</div>
+                <div class="calendar-weekday">ЧТ</div>
+                <div class="calendar-weekday">ПТ</div>
+                <div class="calendar-weekday">СБ</div>
+                <div class="calendar-weekday">ВС</div>
+              </div>
+              <div class="time-section">
+                <span class="time-label">Время (МСК)</span>
+                <div class="time-buttons" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                  <button type="button" class="time-btn ticket-time-btn" onclick="setTicketTime('10:00')">10:00</button>
+                  <button type="button" class="time-btn ticket-time-btn" onclick="setTicketTime('11:00')">11:00</button>
+                  <button type="button" class="time-btn ticket-time-btn" onclick="setTicketTime('12:00')">12:00</button>
+                  <button type="button" class="time-btn ticket-time-btn" onclick="setTicketTime('13:00')">13:00</button>
+                  <button type="button" class="time-btn ticket-time-btn" onclick="setTicketTime('14:00')">14:00</button>
+                  <button type="button" class="time-btn ticket-time-btn" onclick="setTicketTime('15:00')">15:00</button>
+                  <button type="button" class="time-btn ticket-time-btn" onclick="setTicketTime('16:00')">16:00</button>
+                  <button type="button" class="time-btn ticket-time-btn" onclick="setTicketTime('17:00')">17:00</button>
+                  <button type="button" class="time-btn ticket-time-btn" onclick="setTicketTime('18:00')">18:00</button>
+                  <button type="button" class="time-btn ticket-time-btn" onclick="setTicketTime('19:00')">19:00</button>
+                  <button type="button" class="time-btn ticket-time-btn" onclick="setTicketTime('20:00')">20:00</button>
+                  <button type="button" class="time-btn ticket-time-btn" onclick="setTicketTime('21:00')">21:00</button>
+                </div>
+                <input type="time" id="ticketTimeInput" class="time-input" value="12:00">
+              </div>
+              <div class="picker-actions">
+                <button class="picker-btn reset" onclick="resetTicketDateTime()">Сбросить</button>
+                <button class="picker-btn done" onclick="confirmTicketDateTime()">Готово</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label>Имя и Фамилия</label>
+          <input type="text" id="ticketCustomerName" placeholder="Иван Иванов">
+        </div>
+        
+        <button class="submit-btn" id="ticketSubmitBtn" onclick="generateTicket()">Создать</button>
+        
+        <div class="result-section" id="ticketResultSection">
+          <div class="result-label">Билет создан:</div>
+          <div class="result-link">
+            <input type="text" id="ticketGeneratedLink" readonly>
+            <button class="copy-btn" onclick="copyTicketLink()">Копировать</button>
+          </div>
         </div>
       </div>
     </div>
@@ -506,7 +557,10 @@
     let eventTemplates = [];
     let selectedDate = null;
     let selectedTime = '12:00';
-    const ADMIN_PASSWORD = 'root2024';
+    
+    let ticketSelectedDate = null;
+    let ticketSelectedTime = '12:00';
+    let ticketCurrentMonth, ticketCurrentYear;
     
     const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 
                         'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
@@ -547,6 +601,24 @@
     const initialMsk = getMoscowNow();
     let currentMonth = initialMsk.month;
     let currentYear = initialMsk.year;
+    ticketCurrentMonth = initialMsk.month;
+    ticketCurrentYear = initialMsk.year;
+    
+    function showTab(tab) {
+      document.getElementById('tabShow').classList.remove('active');
+      document.getElementById('tabTicket').classList.remove('active');
+      document.getElementById('tabContentShow').classList.remove('active');
+      document.getElementById('tabContentTicket').classList.remove('active');
+      
+      if (tab === 'show') {
+        document.getElementById('tabShow').classList.add('active');
+        document.getElementById('tabContentShow').classList.add('active');
+      } else if (tab === 'ticket') {
+        document.getElementById('tabTicket').classList.add('active');
+        document.getElementById('tabContentTicket').classList.add('active');
+        renderTicketCalendar();
+      }
+    }
     
     function setTime(time) {
       selectedTime = time;
@@ -555,7 +627,7 @@
     }
     
     function updateTimeButtons() {
-      const buttons = document.querySelectorAll('.time-btn');
+      const buttons = document.querySelectorAll('#tabContentShow .time-btn');
       const msk = getMoscowNow();
       const isToday = isTodayMSK(selectedDate);
       
@@ -575,27 +647,14 @@
       });
     }
     
-    function checkAuth() {
-      const password = document.getElementById('authPassword').value;
-      if (password === ADMIN_PASSWORD || sessionStorage.getItem('adminAuth') === 'true') {
-        sessionStorage.setItem('adminAuth', 'true');
-        document.getElementById('authOverlay').style.display = 'none';
-        init();
-      } else {
-        document.getElementById('authError').style.display = 'block';
-      }
-    }
-    
-    if (sessionStorage.getItem('adminAuth') === 'true') {
-      document.getElementById('authOverlay').style.display = 'none';
-      init();
-    }
-    
     async function init() {
       await Promise.all([loadCategories(), loadCities()]);
       setupEventListeners();
       renderCalendar();
+      renderTicketCalendar();
     }
+    
+    init();
     
     async function loadCategories() {
       try {
@@ -610,6 +669,15 @@
           option.value = cat.id;
           option.textContent = cat.name_ru;
           select.appendChild(option);
+        });
+        
+        const ticketSelect = document.getElementById('ticketCategorySelect');
+        ticketSelect.innerHTML = '<option value="">Выберите категорию</option>';
+        categories.forEach(cat => {
+          const option = document.createElement('option');
+          option.value = cat.id;
+          option.textContent = cat.name_ru;
+          ticketSelect.appendChild(option);
         });
       } catch (err) {
         console.error('Error loading categories:', err);
@@ -630,18 +698,27 @@
           option.textContent = city.name;
           select.appendChild(option);
         });
+        
+        const ticketSelect = document.getElementById('ticketCitySelect');
+        ticketSelect.innerHTML = '<option value="">Выберите город</option>';
+        cities.forEach(city => {
+          const option = document.createElement('option');
+          option.value = city.id;
+          option.textContent = city.name;
+          ticketSelect.appendChild(option);
+        });
       } catch (err) {
         console.error('Error loading cities:', err);
       }
     }
     
-    async function loadEventTemplates(categoryId) {
+    async function loadEventTemplates(categoryId, targetSelect = 'eventSelect') {
       try {
         const res = await fetch(`/api/generator/event-templates?category_id=${categoryId}`);
         const data = await res.json();
         eventTemplates = data.templates || [];
         
-        const select = document.getElementById('eventSelect');
+        const select = document.getElementById(targetSelect);
         select.innerHTML = '<option value="">Выберите название</option>';
         select.disabled = false;
         
@@ -660,10 +737,20 @@
       document.getElementById('categorySelect').addEventListener('change', (e) => {
         const categoryId = e.target.value;
         if (categoryId) {
-          loadEventTemplates(categoryId);
+          loadEventTemplates(categoryId, 'eventSelect');
         } else {
           document.getElementById('eventSelect').innerHTML = '<option value="">Выберите название</option>';
           document.getElementById('eventSelect').disabled = true;
+        }
+      });
+      
+      document.getElementById('ticketCategorySelect').addEventListener('change', (e) => {
+        const categoryId = e.target.value;
+        if (categoryId) {
+          loadEventTemplates(categoryId, 'ticketEventSelect');
+        } else {
+          document.getElementById('ticketEventSelect').innerHTML = '<option value="">Выберите название</option>';
+          document.getElementById('ticketEventSelect').disabled = true;
         }
       });
       
@@ -671,11 +758,21 @@
         document.getElementById('datetimePicker').classList.toggle('show');
       });
       
+      document.getElementById('ticketDatetimeInput').addEventListener('click', () => {
+        document.getElementById('ticketDatetimePicker').classList.toggle('show');
+      });
+      
       document.addEventListener('click', (e) => {
         const picker = document.getElementById('datetimePicker');
         const input = document.getElementById('datetimeInput');
         if (!picker.contains(e.target) && e.target !== input) {
           picker.classList.remove('show');
+        }
+        
+        const ticketPicker = document.getElementById('ticketDatetimePicker');
+        const ticketInput = document.getElementById('ticketDatetimeInput');
+        if (!ticketPicker.contains(e.target) && e.target !== ticketInput) {
+          ticketPicker.classList.remove('show');
         }
       });
     }
@@ -882,6 +979,169 @@
     
     function copyLink() {
       const input = document.getElementById('generatedLink');
+      navigator.clipboard.writeText(input.value);
+      alert('Ссылка скопирована!');
+    }
+    
+    function setTicketTime(time) {
+      ticketSelectedTime = time;
+      document.getElementById('ticketTimeInput').value = time;
+      updateTicketTimeButtons();
+    }
+    
+    function updateTicketTimeButtons() {
+      const buttons = document.querySelectorAll('.ticket-time-btn');
+      buttons.forEach(btn => {
+        btn.classList.remove('selected');
+        if (btn.textContent === ticketSelectedTime) {
+          btn.classList.add('selected');
+        }
+      });
+    }
+    
+    function renderTicketCalendar() {
+      const grid = document.getElementById('ticketCalendarGrid');
+      const title = document.getElementById('ticketCalendarTitle');
+      
+      title.textContent = `${monthNames[ticketCurrentMonth]} ${ticketCurrentYear}г.`;
+      
+      grid.innerHTML = `
+        <div class="calendar-weekday">ПН</div>
+        <div class="calendar-weekday">ВТ</div>
+        <div class="calendar-weekday">СР</div>
+        <div class="calendar-weekday">ЧТ</div>
+        <div class="calendar-weekday">ПТ</div>
+        <div class="calendar-weekday">СБ</div>
+        <div class="calendar-weekday">ВС</div>
+      `;
+      
+      const firstDay = new Date(ticketCurrentYear, ticketCurrentMonth, 1);
+      const lastDay = new Date(ticketCurrentYear, ticketCurrentMonth + 1, 0);
+      let startDay = firstDay.getDay();
+      startDay = startDay === 0 ? 6 : startDay - 1;
+      
+      for (let i = 0; i < startDay; i++) {
+        const prevDate = new Date(ticketCurrentYear, ticketCurrentMonth, -startDay + i + 1);
+        const div = document.createElement('div');
+        div.className = 'calendar-day other-month disabled';
+        div.textContent = prevDate.getDate();
+        div.style.opacity = '0.3';
+        div.style.cursor = 'not-allowed';
+        grid.appendChild(div);
+      }
+      
+      for (let day = 1; day <= lastDay.getDate(); day++) {
+        const div = document.createElement('div');
+        div.className = 'calendar-day';
+        div.textContent = day;
+        div.onclick = () => selectTicketDate(day);
+        
+        if (ticketSelectedDate && 
+            ticketSelectedDate.getFullYear() === ticketCurrentYear && 
+            ticketSelectedDate.getMonth() === ticketCurrentMonth && 
+            ticketSelectedDate.getDate() === day) {
+          div.classList.add('selected');
+        }
+        
+        grid.appendChild(div);
+      }
+      
+      updateTicketTimeButtons();
+    }
+    
+    function selectTicketDate(day) {
+      ticketSelectedDate = new Date(ticketCurrentYear, ticketCurrentMonth, day);
+      renderTicketCalendar();
+    }
+    
+    function ticketPrevMonth() {
+      ticketCurrentMonth--;
+      if (ticketCurrentMonth < 0) {
+        ticketCurrentMonth = 11;
+        ticketCurrentYear--;
+      }
+      renderTicketCalendar();
+    }
+    
+    function ticketNextMonth() {
+      ticketCurrentMonth++;
+      if (ticketCurrentMonth > 11) {
+        ticketCurrentMonth = 0;
+        ticketCurrentYear++;
+      }
+      renderTicketCalendar();
+    }
+    
+    function resetTicketDateTime() {
+      ticketSelectedDate = null;
+      document.getElementById('ticketTimeInput').value = '12:00';
+      ticketSelectedTime = '12:00';
+      document.getElementById('ticketDatetimeInput').value = '';
+      renderTicketCalendar();
+    }
+    
+    function confirmTicketDateTime() {
+      if (!ticketSelectedDate) {
+        alert('Выберите дату');
+        return;
+      }
+      
+      ticketSelectedTime = document.getElementById('ticketTimeInput').value;
+      
+      if (!ticketSelectedTime || ticketSelectedTime.length < 5) {
+        alert('Выберите время');
+        return;
+      }
+      
+      const day = ticketSelectedDate.getDate();
+      const month = monthNames[ticketSelectedDate.getMonth()].slice(0, 3);
+      const year = ticketSelectedDate.getFullYear();
+      
+      document.getElementById('ticketDatetimeInput').value = `${day} ${month} ${year} в ${ticketSelectedTime} (МСК)`;
+      document.getElementById('ticketDatetimePicker').classList.remove('show');
+    }
+    
+    async function generateTicket() {
+      const categoryId = document.getElementById('ticketCategorySelect').value;
+      const cityId = document.getElementById('ticketCitySelect').value;
+      const eventId = document.getElementById('ticketEventSelect').value;
+      const customerName = document.getElementById('ticketCustomerName').value.trim();
+      
+      if (!categoryId || !cityId || !eventId || !ticketSelectedDate || !customerName) {
+        alert('Заполните все поля');
+        return;
+      }
+      
+      const btn = document.getElementById('ticketSubmitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Создание...';
+      
+      try {
+        const city = cities.find(c => c.id == cityId);
+        const event = eventTemplates.find(e => e.id == eventId);
+        
+        const day = ticketSelectedDate.getDate();
+        const monthShort = monthNames[ticketSelectedDate.getMonth()].slice(0, 3);
+        const year = ticketSelectedDate.getFullYear();
+        const dateStr = `${day} ${monthShort} ${year}`;
+        
+        const ticketUrl = `/ticket.html?eventId=${eventId}&cityId=${cityId}&date=${encodeURIComponent(dateStr)}&time=${encodeURIComponent(ticketSelectedTime)}&name=${encodeURIComponent(customerName)}&direct=1`;
+        
+        document.getElementById('ticketGeneratedLink').value = window.location.origin + ticketUrl;
+        document.getElementById('ticketResultSection').classList.add('show');
+        
+        window.open(ticketUrl, '_blank');
+      } catch (err) {
+        console.error('Error generating ticket:', err);
+        alert('Ошибка соединения');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Создать';
+      }
+    }
+    
+    function copyTicketLink() {
+      const input = document.getElementById('ticketGeneratedLink');
       navigator.clipboard.writeText(input.value);
       alert('Ссылка скопирована!');
     }
