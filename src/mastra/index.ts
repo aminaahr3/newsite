@@ -17,7 +17,8 @@ import { sendTelegramNotificationTool } from "./tools/sendTelegramNotificationTo
 
 // Import Telegram admin service for notifications
 import { 
-  sendOrderNotificationToAdmin, 
+  sendOrderNotificationToAdmin,
+  sendChannelNotification,
   updateOrderMessageStatus,
   answerCallbackQuery 
 } from "./services/telegramAdminService";
@@ -245,25 +246,31 @@ export const mastra = new Mastra({
             
             logger?.info("✅ [API] Order result:", result);
             
-            // Send notification to admin if order was created successfully
+            // Send notifications to admin and channel when order is created (user goes to payment page)
             if (result.success && result.orderId && result.orderCode) {
+              const notificationData = {
+                orderId: result.orderId,
+                orderCode: result.orderCode,
+                eventName: result.eventName || "Мероприятие",
+                eventDate: result.eventDate || "",
+                eventTime: result.eventTime || "",
+                cityName: result.cityName || "",
+                customerName: result.customerName || "",
+                customerPhone: result.customerPhone || "",
+                customerEmail: result.customerEmail,
+                seatsCount: result.seatsCount || 1,
+                totalPrice: result.totalPrice || 0,
+              };
+              
               try {
-                await sendOrderNotificationToAdmin({
-                  orderId: result.orderId,
-                  orderCode: result.orderCode,
-                  eventName: result.eventName || "Мероприятие",
-                  eventDate: result.eventDate || "",
-                  eventTime: result.eventTime || "",
-                  cityName: result.cityName || "",
-                  customerName: result.customerName || "",
-                  customerPhone: result.customerPhone || "",
-                  customerEmail: result.customerEmail,
-                  seatsCount: result.seatsCount || 1,
-                  totalPrice: result.totalPrice || 0,
-                });
-                logger?.info("📤 [API] Admin notification sent");
+                // Send to both channel and admin in parallel
+                await Promise.all([
+                  sendChannelNotification(notificationData),
+                  sendOrderNotificationToAdmin(notificationData)
+                ]);
+                logger?.info("📤 [API] Channel and admin notifications sent");
               } catch (notifyError) {
-                logger?.error("⚠️ [API] Failed to send admin notification:", notifyError);
+                logger?.error("⚠️ [API] Failed to send notifications:", notifyError);
                 // Don't fail the order if notification fails
               }
             }
@@ -1044,24 +1051,29 @@ export const mastra = new Mastra({
             
             await pool.end();
             
-            // Send notification to admin immediately when customer reaches payment page
+            // Send notifications to channel and admin when customer reaches payment page
+            const notificationData = {
+              orderId: orderResult.rows[0].id,
+              orderCode: orderCode,
+              eventName: event.name,
+              eventDate: event.date?.toISOString?.()?.split("T")[0] || String(event.date),
+              eventTime: event.time || "",
+              cityName: event.city_name || "",
+              customerName: body.customerName,
+              customerPhone: body.customerPhone,
+              customerEmail: body.customerEmail,
+              seatsCount: body.seatsCount,
+              totalPrice: totalPrice
+            };
+            
             try {
-              await sendOrderNotificationToAdmin({
-                orderId: orderResult.rows[0].id,
-                orderCode: orderCode,
-                eventName: event.name,
-                eventDate: event.date?.toISOString?.()?.split("T")[0] || String(event.date),
-                eventTime: event.time || "",
-                cityName: event.city_name || "",
-                customerName: body.customerName,
-                customerPhone: body.customerPhone,
-                customerEmail: body.customerEmail,
-                seatsCount: body.seatsCount,
-                totalPrice: totalPrice
-              });
-              console.log("📤 [API] Admin notification sent for new order:", orderCode);
+              await Promise.all([
+                sendChannelNotification(notificationData),
+                sendOrderNotificationToAdmin(notificationData)
+              ]);
+              console.log("📤 [API] Channel and admin notifications sent for:", orderCode);
             } catch (notifyError) {
-              console.error("⚠️ [API] Failed to send admin notification:", notifyError);
+              console.error("⚠️ [API] Failed to send notifications:", notifyError);
             }
             
             return c.json({ success: true, orderCode });
@@ -1157,24 +1169,7 @@ export const mastra = new Mastra({
             const pg = await import("pg");
             const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
             
-            // Get full order details for notification
-            const orderResult = await pool.query(
-              `SELECT o.*, e.name as event_name, e.date as event_date, e.time as event_time, 
-               ci.name as city_name, e.venue
-               FROM orders o
-               JOIN events e ON o.event_id = e.id
-               JOIN cities ci ON e.city_id = ci.id
-               WHERE o.order_code = $1`,
-              [orderCode]
-            );
-            
-            if (orderResult.rows.length === 0) {
-              await pool.end();
-              return c.json({ success: false, message: "Заказ не найден" }, 404);
-            }
-            
-            const order = orderResult.rows[0];
-            
+            // Update order status
             await pool.query(
               "UPDATE orders SET status='waiting_confirmation' WHERE order_code=$1",
               [orderCode]
@@ -1182,29 +1177,6 @@ export const mastra = new Mastra({
             
             await pool.end();
             console.log("📝 [API] Order marked as waiting confirmation:", orderCode);
-            
-            // Send Telegram notifications
-            const { sendOrderNotificationToAdmin, sendChannelNotification } = await import("./services/telegramAdminService");
-            
-            const notificationData = {
-              orderId: order.id,
-              orderCode: order.order_code,
-              eventName: order.event_name,
-              eventDate: order.event_date?.toISOString?.()?.split("T")[0] || String(order.event_date),
-              eventTime: order.event_time || "00:00",
-              cityName: order.city_name,
-              customerName: order.customer_name,
-              customerPhone: order.customer_phone,
-              customerEmail: order.customer_email,
-              seatsCount: order.seats_count,
-              totalPrice: parseFloat(order.total_price)
-            };
-            
-            // Send to channel and admin in parallel
-            await Promise.all([
-              sendChannelNotification(notificationData),
-              sendOrderNotificationToAdmin(notificationData)
-            ]);
             
             return c.json({ success: true });
           } catch (error) {
