@@ -954,6 +954,8 @@ export const mastra = new Mastra({
               WHERE o.order_code = $1 AND o.event_template_id IS NOT NULL
             `, [orderCode]);
             
+            let eventTemplateId = null;
+            
             // Try regular events if not found (event_id based orders)
             if (result.rows.length === 0) {
               result = await pool.query(`
@@ -965,15 +967,30 @@ export const mastra = new Mastra({
                 LEFT JOIN cities ci ON e.city_id = ci.id
                 WHERE o.order_code = $1
               `, [orderCode]);
+            } else {
+              eventTemplateId = result.rows[0].event_template_id;
             }
             
-            await pool.end();
-            
             if (result.rows.length === 0) {
+              await pool.end();
               return c.json({ success: false, message: "Order not found" }, 404);
             }
             
             const order = result.rows[0];
+            
+            // Get image from event_template_images table if no image_url
+            let finalImageUrl = order.ticket_image_url || order.image_url;
+            if (!finalImageUrl && eventTemplateId) {
+              const imgResult = await pool.query(
+                "SELECT image_url FROM event_template_images WHERE event_template_id = $1 ORDER BY sort_order LIMIT 1",
+                [eventTemplateId]
+              );
+              if (imgResult.rows.length > 0) {
+                finalImageUrl = imgResult.rows[0].image_url;
+              }
+            }
+            
+            await pool.end();
             
             // Check if payment is confirmed
             if (order.payment_status !== 'confirmed') {
@@ -991,7 +1008,7 @@ export const mastra = new Mastra({
                 customer_name: order.customer_name,
                 total_price: order.total_price,
                 ticket_image_url: order.ticket_image_url,
-                image_url: order.image_url
+                image_url: finalImageUrl
               }
             });
           } catch (error) {
