@@ -4,9 +4,25 @@ import pg from "pg";
 
 const { Pool } = pg;
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+let pool: pg.Pool | null = null;
+
+function getPool(): pg.Pool | null {
+  if (pool) return pool;
+  
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) {
+    console.warn("[getEventsTool] DATABASE_URL not set");
+    return null;
+  }
+  
+  try {
+    pool = new Pool({ connectionString: dbUrl });
+    return pool;
+  } catch (error) {
+    console.error("[getEventsTool] Failed to create pool:", error);
+    return null;
+  }
+}
 
 export const getEventsTool = createTool({
   id: "get-events",
@@ -67,6 +83,13 @@ export const getEventsTool = createTool({
     const logger = mastra?.getLogger();
     logger?.info("🔧 [getEventsTool] Starting execution with params:", context);
 
+    const dbPool = getPool();
+    
+    if (!dbPool) {
+      logger?.warn("⚠️ [getEventsTool] Database not available, returning empty data");
+      return { events: [], categories: [], cities: [] };
+    }
+
     try {
       let eventsQuery = `
         SELECT 
@@ -106,7 +129,7 @@ export const getEventsTool = createTool({
       eventsQuery += " ORDER BY e.date ASC";
 
       logger?.info("📝 [getEventsTool] Executing events query...");
-      const eventsResult = await pool.query(eventsQuery, params);
+      const eventsResult = await dbPool.query(eventsQuery, params);
 
       const events = eventsResult.rows.map((row) => ({
         id: row.id,
@@ -123,7 +146,7 @@ export const getEventsTool = createTool({
       let categories;
       if (context.includeCategories) {
         logger?.info("📝 [getEventsTool] Fetching categories...");
-        const catResult = await pool.query(
+        const catResult = await dbPool.query(
           "SELECT id, name, name_ru FROM categories ORDER BY name_ru",
         );
         categories = catResult.rows.map((row) => ({
@@ -136,7 +159,7 @@ export const getEventsTool = createTool({
       let cities;
       if (context.includeCities) {
         logger?.info("📝 [getEventsTool] Fetching cities...");
-        const cityResult = await pool.query(
+        const cityResult = await dbPool.query(
           "SELECT id, name FROM cities ORDER BY name",
         );
         cities = cityResult.rows.map((row) => ({
@@ -152,7 +175,7 @@ export const getEventsTool = createTool({
       return { events, categories, cities };
     } catch (error) {
       logger?.error("❌ [getEventsTool] Error:", error);
-      throw error;
+      return { events: [], categories: [], cities: [] };
     }
   },
 });

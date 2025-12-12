@@ -4,9 +4,25 @@ import pg from "pg";
 
 const { Pool } = pg;
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+let pool: pg.Pool | null = null;
+
+function getPool(): pg.Pool | null {
+  if (pool) return pool;
+  
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) {
+    console.warn("[createOrderTool] DATABASE_URL not set");
+    return null;
+  }
+  
+  try {
+    pool = new Pool({ connectionString: dbUrl });
+    return pool;
+  } catch (error) {
+    console.error("[createOrderTool] Failed to create pool:", error);
+    return null;
+  }
+}
 
 function generateOrderCode(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -18,9 +34,10 @@ function generateOrderCode(): string {
 }
 
 async function withTransaction<T>(
+  dbPool: pg.Pool,
   fn: (client: pg.PoolClient) => Promise<T>,
 ): Promise<T> {
-  const client = await pool.connect();
+  const client = await dbPool.connect();
   try {
     await client.query("BEGIN");
     const result = await fn(client);
@@ -69,8 +86,18 @@ export const createOrderTool = createTool({
     const logger = mastra?.getLogger();
     logger?.info("🔧 [createOrderTool] Creating order with params:", context);
 
+    const dbPool = getPool();
+    
+    if (!dbPool) {
+      logger?.warn("⚠️ [createOrderTool] Database not available");
+      return {
+        success: false,
+        message: "База данных недоступна. Попробуйте позже.",
+      };
+    }
+
     try {
-      return await withTransaction(async (client) => {
+      return await withTransaction(dbPool, async (client) => {
         const eventResult = await client.query(
           `SELECT e.*, c.name_ru as category_name, ci.name as city_name 
            FROM events e 

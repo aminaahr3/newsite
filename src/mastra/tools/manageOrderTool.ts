@@ -4,24 +4,23 @@ import pg from "pg";
 
 const { Pool } = pg;
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
+let pool: pg.Pool | null = null;
 
-async function withTransaction<T>(
-  fn: (client: pg.PoolClient) => Promise<T>,
-): Promise<T> {
-  const client = await pool.connect();
+function getPool(): pg.Pool | null {
+  if (pool) return pool;
+  
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) {
+    console.warn("[manageOrderTool] DATABASE_URL not set");
+    return null;
+  }
+  
   try {
-    await client.query("BEGIN");
-    const result = await fn(client);
-    await client.query("COMMIT");
-    return result;
+    pool = new Pool({ connectionString: dbUrl });
+    return pool;
   } catch (error) {
-    await client.query("ROLLBACK");
-    throw error;
-  } finally {
-    client.release();
+    console.error("[manageOrderTool] Failed to create pool:", error);
+    return null;
   }
 }
 
@@ -86,10 +85,20 @@ export const manageOrderTool = createTool({
     const logger = mastra?.getLogger();
     logger?.info("🔧 [manageOrderTool] Action:", context.action, "OrderCode:", context.orderCode);
 
+    const dbPool = getPool();
+    
+    if (!dbPool) {
+      logger?.warn("⚠️ [manageOrderTool] Database not available");
+      return {
+        success: false,
+        message: "База данных недоступна",
+      };
+    }
+
     try {
       if (context.action === "list_pending") {
         logger?.info("📝 [manageOrderTool] Listing pending orders...");
-        const result = await pool.query(
+        const result = await dbPool.query(
           `SELECT o.id, o.order_code, e.name as event_name, o.customer_name, 
                   o.total_price::numeric, o.status, o.payment_status
            FROM orders o
@@ -126,7 +135,7 @@ export const manageOrderTool = createTool({
 
       let orderResult;
       if (context.orderId) {
-        orderResult = await pool.query(
+        orderResult = await dbPool.query(
           `SELECT o.*, e.name as event_name, e.date::text as event_date, e.time::text as event_time,
                   c.name_ru as category_name, ci.name as city_name
            FROM orders o
@@ -137,7 +146,7 @@ export const manageOrderTool = createTool({
           [context.orderId],
         );
       } else {
-        orderResult = await pool.query(
+        orderResult = await dbPool.query(
           `SELECT o.*, e.name as event_name, e.date::text as event_date, e.time::text as event_time,
                   c.name_ru as category_name, ci.name as city_name
            FROM orders o
@@ -187,7 +196,7 @@ export const manageOrderTool = createTool({
       }
 
       if (context.action === "confirm_payment") {
-        await pool.query(
+        await dbPool.query(
           "UPDATE orders SET payment_status = 'confirmed', status = 'confirmed', updated_at = NOW() WHERE id = $1",
           [order.id],
         );
@@ -202,12 +211,12 @@ export const manageOrderTool = createTool({
       }
 
       if (context.action === "reject_payment") {
-        await pool.query(
+        await dbPool.query(
           "UPDATE orders SET payment_status = 'rejected', status = 'rejected', updated_at = NOW() WHERE id = $1",
           [order.id],
         );
         
-        await pool.query(
+        await dbPool.query(
           "UPDATE events SET available_seats = available_seats + $1 WHERE id = $2",
           [row.seats_count, row.event_id],
         );
@@ -223,13 +232,13 @@ export const manageOrderTool = createTool({
       }
 
       if (context.action === "cancel") {
-        await pool.query(
+        await dbPool.query(
           "UPDATE orders SET status = 'cancelled', updated_at = NOW() WHERE id = $1",
           [order.id],
         );
         
         if (row.payment_status !== "rejected") {
-          await pool.query(
+          await dbPool.query(
             "UPDATE events SET available_seats = available_seats + $1 WHERE id = $2",
             [row.seats_count, row.event_id],
           );
