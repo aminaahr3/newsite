@@ -832,6 +832,86 @@ export const mastra = new Mastra({
         },
       },
 
+      // Ticket API: Get ticket data by order code (for confirmed orders)
+      {
+        path: "/api/ticket/:orderCode",
+        method: "GET",
+        handler: async (c) => {
+          const orderCode = c.req.param("orderCode");
+          try {
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            // Get order with all related data
+            let result = await pool.query(`
+              SELECT o.*, 
+                     et.name as event_name, et.ticket_image_url, et.image_url,
+                     gl.event_date, gl.event_time, gl.city_id,
+                     c.name as city_name
+              FROM orders o
+              LEFT JOIN event_templates et ON o.event_template_id = et.id
+              LEFT JOIN generated_links gl ON o.link_code = gl.link_code
+              LEFT JOIN cities c ON gl.city_id = c.id
+              WHERE o.order_code = $1
+            `, [orderCode]);
+            
+            // Try regular events if not found
+            if (result.rows.length === 0) {
+              result = await pool.query(`
+                SELECT o.*, e.name as event_name, e.event_date, e.event_time,
+                       NULL as ticket_image_url, e.image as image_url,
+                       e.city as city_name
+                FROM orders o
+                JOIN events e ON o.event_id = e.id
+                WHERE o.order_code = $1
+              `, [orderCode]);
+            }
+            
+            await pool.end();
+            
+            if (result.rows.length === 0) {
+              return c.json({ success: false, message: "Order not found" }, 404);
+            }
+            
+            const order = result.rows[0];
+            
+            // Check if payment is confirmed
+            if (order.payment_status !== 'confirmed') {
+              return c.json({ success: true, pending: true, message: "Payment pending confirmation" });
+            }
+            
+            return c.json({
+              success: true,
+              ticket: {
+                order_code: order.order_code,
+                event_name: order.event_name,
+                event_date: order.event_date,
+                event_time: order.event_time,
+                city_name: order.city_name || 'Москва',
+                customer_name: order.customer_name,
+                total_price: order.total_price,
+                ticket_image_url: order.ticket_image_url,
+                image_url: order.image_url
+              }
+            });
+          } catch (error) {
+            console.error("Error fetching ticket:", error);
+            return c.json({ success: false, message: "Error fetching ticket" }, 500);
+          }
+        },
+      },
+
+      // Ticket page
+      {
+        path: "/ticket",
+        method: "GET",
+        handler: async (c) => {
+          const fs = await import("fs");
+          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/ticket.html", "utf-8");
+          return c.html(html);
+        },
+      },
+
       // Payment page
       {
         path: "/payment",
@@ -1522,7 +1602,7 @@ export const mastra = new Mastra({
             const pg = await import("pg");
             const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
             const result = await pool.query(
-              "SELECT id, name, description, is_active FROM event_templates WHERE category_id = $1 ORDER BY name",
+              "SELECT id, name, description, is_active, ticket_image_url FROM event_templates WHERE category_id = $1 ORDER BY name",
               [categoryId]
             );
             
@@ -1538,7 +1618,8 @@ export const mastra = new Mastra({
                 name: row.name,
                 description: row.description,
                 is_active: row.is_active,
-                image_url: imgRes.rows[0]?.image_url || null
+                image_url: imgRes.rows[0]?.image_url || null,
+                ticket_image_url: row.ticket_image_url
               });
             }
             
@@ -1607,14 +1688,14 @@ export const mastra = new Mastra({
           try {
             const eventId = c.req.param("id");
             const body = await c.req.json();
-            const { name, description, image_url } = body;
+            const { name, description, image_url, ticket_image_url } = body;
             
             const pg = await import("pg");
             const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
             
             await pool.query(
-              "UPDATE event_templates SET name = $1, description = $2, image_url = $3 WHERE id = $4",
-              [name, description, image_url, eventId]
+              "UPDATE event_templates SET name = $1, description = $2, image_url = $3, ticket_image_url = $4 WHERE id = $5",
+              [name, description, image_url, ticket_image_url || null, eventId]
             );
             
             await pool.end();

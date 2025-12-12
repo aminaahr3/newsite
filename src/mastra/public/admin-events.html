@@ -289,6 +289,11 @@
             <p style="color: #999; font-size: 13px;">Загрузка городов...</p>
           </div>
         </div>
+        <div class="form-group">
+          <label>Картинка для билета (URL)</label>
+          <input type="text" id="editTicketImageUrl" placeholder="https://example.com/ticket-image.jpg">
+          <small style="color: #666; font-size: 12px; margin-top: 5px; display: block;">Эта картинка будет отображаться на билете после подтверждения оплаты</small>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="modal-btn btn-cancel" onclick="closeModal()">Отмена</button>
@@ -569,6 +574,7 @@
       document.getElementById('editEventId').value = event.id;
       document.getElementById('editName').value = event.name;
       document.getElementById('editDescription').value = event.description || '';
+      document.getElementById('editTicketImageUrl').value = event.ticket_image_url || '';
       document.getElementById('newImageUrl').value = '';
       
       // Load images and cities
@@ -703,6 +709,7 @@
       const eventId = document.getElementById('editEventId').value;
       const name = document.getElementById('editName').value;
       const description = document.getElementById('editDescription').value;
+      const ticketImageUrl = document.getElementById('editTicketImageUrl').value.trim();
       
       // Collect city addresses
       const addresses = [];
@@ -718,7 +725,7 @@
         const res = await fetch(`/api/generator/event-templates/${eventId}/update`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, description })
+          body: JSON.stringify({ name, description, ticket_image_url: ticketImageUrl })
         });
         
         // Save addresses

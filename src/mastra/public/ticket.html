@@ -3,625 +3,429 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Загрузка...</title>
+  <title>Входная карта - AFISHA</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    
-    :root {
-      --bg-primary: #0a0a14;
-      --bg-secondary: #12121f;
-      --bg-card: #1a1a2e;
-      --bg-hover: #252540;
-      --text-primary: #ffffff;
-      --text-secondary: rgba(255,255,255,0.7);
-      --text-muted: rgba(255,255,255,0.5);
-      --accent: #667eea;
-      --accent-light: #a5b4fc;
-      --green: #4ade80;
-    }
-    
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg-primary);
+    body { 
+      font-family: 'Inter', sans-serif; 
+      background: #f5f5f5; 
       min-height: 100vh;
-      color: var(--text-primary);
-      line-height: 1.5;
-    }
-    
-    a { color: inherit; text-decoration: none; }
-    
-    .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
-    
-    .header {
-      background: var(--bg-secondary);
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    
-    .header-inner {
       display: flex;
-      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .ticket {
+      background: white;
+      max-width: 400px;
+      width: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    
+    .ticket-header {
+      padding: 20px;
+      display: flex;
       justify-content: space-between;
-      height: 64px;
+      align-items: flex-start;
     }
     
-    .logo {
-      font-size: 28px;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--accent) 0%, #764ba2 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+    .ticket-logo {
+      font-size: 24px;
+      font-weight: 700;
+      color: #333;
+      letter-spacing: 2px;
     }
     
-    .nav { display: flex; gap: 30px; }
-    .nav a { color: var(--text-secondary); font-size: 15px; font-weight: 500; transition: color 0.2s; }
-    .nav a:hover { color: var(--text-primary); }
-    
-    .header-actions { display: flex; align-items: center; gap: 15px; }
-    
-    .city-select {
+    .ticket-qr-section {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 8px 14px;
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 8px;
-      color: var(--text-primary);
+      gap: 15px;
+    }
+    
+    .qr-code {
+      width: 60px;
+      height: 60px;
+    }
+    
+    .qr-code canvas {
+      width: 100% !important;
+      height: 100% !important;
+    }
+    
+    .ticket-type {
+      text-align: right;
+    }
+    
+    .ticket-type-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .ticket-type-number {
+      font-size: 12px;
+      color: #666;
+    }
+    
+    .ticket-image {
+      width: 100%;
+      height: 220px;
+      background-size: cover;
+      background-position: center;
+      background-color: #e0e0e0;
+    }
+    
+    .barcode-section {
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .barcode-container {
+      background: white;
+      padding: 10px;
+    }
+    
+    #barcode {
+      width: 100%;
+      height: 60px;
+    }
+    
+    .event-title-section {
+      padding: 0 20px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    
+    .event-name {
+      font-size: 20px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .event-datetime {
       font-size: 14px;
-      cursor: pointer;
+      color: #666;
+      margin-top: 5px;
+    }
+    
+    .age-badge {
+      border: 1px solid #999;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 12px;
+      color: #666;
+    }
+    
+    .divider {
+      height: 1px;
+      background: #eee;
+      margin: 0 20px;
+    }
+    
+    .ticket-details {
+      padding: 20px;
+    }
+    
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+    
+    .detail-label {
+      color: #333;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    
+    .detail-sublabel {
+      color: #999;
+      font-size: 11px;
+    }
+    
+    .detail-value {
+      color: #333;
+      font-size: 14px;
+      text-align: right;
+      font-weight: 500;
     }
     
     .loading {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 60vh;
-      font-size: 18px;
-      color: var(--text-muted);
-    }
-    
-    .error-page {
-      display: none;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      min-height: 60vh;
       text-align: center;
-      padding: 20px;
-    }
-    .error-page h1 { font-size: 64px; margin-bottom: 20px; color: var(--accent); }
-    .error-page p { color: var(--text-muted); }
-    
-    .event-page { display: none; }
-    
-    .breadcrumbs {
-      padding: 15px 0;
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-    .breadcrumbs a { color: var(--accent-light); }
-    .breadcrumbs span { margin: 0 8px; }
-    
-    .event-layout {
-      display: grid;
-      grid-template-columns: 300px 1fr 350px;
-      gap: 30px;
-      padding: 20px 0 60px;
+      padding: 100px 20px;
     }
     
-    .event-poster {
-      position: sticky;
-      top: 84px;
-      height: fit-content;
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #f0f0f0;
+      border-top-color: #4CAF50;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
     }
     
-    .poster-box {
-      width: 100%;
-      aspect-ratio: 3/4;
-      background: var(--bg-card);
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
     
-    .poster-box img { width: 100%; height: 100%; object-fit: cover; }
-    
-    .event-rating {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 15px;
-      padding: 12px;
-      background: var(--bg-card);
-      border-radius: 10px;
-    }
-    .rating-score { font-size: 24px; font-weight: 700; color: var(--green); }
-    .rating-text { color: var(--text-muted); font-size: 13px; }
-    
-    .event-main { min-width: 0; }
-    
-    .event-category {
-      display: inline-block;
-      background: rgba(102, 126, 234, 0.2);
-      color: var(--accent-light);
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 15px;
+    .error-message {
+      text-align: center;
+      padding: 100px 20px;
+      color: #666;
     }
     
-    .event-title {
-      font-size: 36px;
-      font-weight: 700;
-      margin-bottom: 20px;
-      line-height: 1.2;
-    }
-    
-    .event-meta-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 15px;
-      margin-bottom: 30px;
-    }
-    
-    .meta-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 15px;
-      background: var(--bg-card);
-      border-radius: 12px;
-    }
-    .meta-icon { font-size: 24px; }
-    .meta-content {}
-    .meta-label { font-size: 12px; color: var(--text-muted); margin-bottom: 3px; }
-    .meta-value { font-size: 15px; font-weight: 500; }
-    
-    .section-title {
+    .error-message h2 {
       font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 15px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
+      margin-bottom: 10px;
+      color: #333;
     }
     
-    .event-description {
-      color: var(--text-secondary);
-      line-height: 1.8;
-      margin-bottom: 30px;
-    }
-    
-    .venue-section {
-      background: var(--bg-card);
-      border-radius: 14px;
-      padding: 20px;
-      margin-bottom: 30px;
-    }
-    
-    .venue-name { font-size: 18px; font-weight: 600; margin-bottom: 5px; }
-    .venue-address { color: var(--text-muted); font-size: 14px; margin-bottom: 15px; }
-    .venue-map {
-      height: 200px;
-      background: var(--bg-hover);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-muted);
-    }
-    
-    .order-sidebar {
-      position: sticky;
-      top: 84px;
-      height: fit-content;
-    }
-    
-    .order-box {
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-      border: 1px solid rgba(102, 126, 234, 0.2);
-      border-radius: 16px;
-      padding: 25px;
-    }
-    
-    .order-box h2 { font-size: 18px; margin-bottom: 20px; text-align: center; }
-    
-    .price-display {
+    .pending-message {
       text-align: center;
-      padding: 20px;
-      background: rgba(0,0,0,0.3);
-      border-radius: 12px;
+      padding: 60px 20px;
+      color: #666;
+    }
+    
+    .pending-icon {
+      font-size: 48px;
       margin-bottom: 20px;
     }
-    .price-label { color: var(--text-muted); font-size: 13px; margin-bottom: 5px; }
-    .price-value { font-size: 32px; font-weight: 700; color: var(--green); }
     
-    .form-group { margin-bottom: 15px; }
-    .form-group label { display: block; margin-bottom: 6px; color: var(--text-secondary); font-size: 13px; }
-    .form-group input, .form-group select {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 8px;
-      background: rgba(255,255,255,0.05);
-      color: #fff;
+    .pending-message h2 {
+      font-size: 20px;
+      margin-bottom: 10px;
+      color: #333;
+    }
+    
+    .pending-message p {
       font-size: 14px;
-    }
-    .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--accent); }
-    .form-group input::placeholder { color: rgba(255,255,255,0.3); }
-    
-    .total-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 15px;
-      background: rgba(0,0,0,0.3);
-      border-radius: 10px;
-      margin: 20px 0;
-    }
-    .total-label { color: var(--text-muted); font-size: 14px; }
-    .total-amount { font-size: 22px; font-weight: 700; color: var(--green); }
-    
-    .submit-btn {
-      width: 100%;
-      padding: 16px;
-      border: none;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #fff;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 15px 40px rgba(102, 126, 234, 0.3); }
-    .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    
-    .seats-badge {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-top: 15px;
-      padding: 10px;
-      background: rgba(74, 222, 128, 0.1);
-      border-radius: 8px;
-      color: var(--green);
-      font-size: 13px;
-    }
-    .seats-badge.low { background: rgba(251, 146, 60, 0.1); color: #fb923c; }
-    
-    .sold-out {
-      text-align: center;
-      padding: 30px;
-      background: rgba(248, 113, 113, 0.1);
-      border: 1px solid rgba(248, 113, 113, 0.2);
-      border-radius: 14px;
-    }
-    .sold-out h2 { color: #f87171; margin-bottom: 10px; }
-    
-    .footer {
-      background: var(--bg-secondary);
-      border-top: 1px solid rgba(255,255,255,0.08);
-      padding: 40px 0;
-      margin-top: 60px;
-    }
-    .footer-inner { display: flex; justify-content: space-between; align-items: center; }
-    .footer-links { display: flex; gap: 30px; }
-    .footer-links a { color: var(--text-muted); font-size: 14px; }
-    .footer-links a:hover { color: var(--text-primary); }
-    .footer-copy { color: var(--text-muted); font-size: 13px; }
-    
-    @media (max-width: 1000px) {
-      .event-layout { grid-template-columns: 1fr; }
-      .event-poster { position: static; max-width: 300px; margin: 0 auto; }
-      .order-sidebar { position: static; }
-      .nav { display: none; }
+      line-height: 1.6;
     }
   </style>
 </head>
 <body>
-  <header class="header">
-    <div class="container header-inner">
-      <a href="/" class="logo">БИЛЕТИКС</a>
-      <nav class="nav">
-        <a href="/">Главная</a>
-        <a href="/#concerts">Концерты</a>
-        <a href="/#theatre">Театр</a>
-        <a href="/#exhibitions">Выставки</a>
-        <a href="/#kids">Детям</a>
-      </nav>
-      <div class="header-actions">
-        <button class="city-select">
-          <span>📍</span>
-          <span id="headerCity">Москва</span>
-        </button>
-      </div>
+  <div class="ticket" id="ticketContainer">
+    <div class="loading" id="loadingState">
+      <div class="loading-spinner"></div>
+      <p>Загрузка билета...</p>
     </div>
-  </header>
-
-  <div class="loading" id="loading">Загрузка...</div>
-  
-  <div class="error-page" id="errorPage">
-    <h1>404</h1>
-    <p>Мероприятие не найдено</p>
-    <a href="/" style="margin-top: 20px; color: var(--accent-light);">← На главную</a>
-  </div>
-
-  <div class="event-page" id="eventPage">
-    <div class="container">
-      <div class="breadcrumbs">
-        <a href="/">Главная</a>
-        <span>›</span>
-        <a href="/" id="breadCategory">Концерты</a>
-        <span>›</span>
-        <span id="breadTitle">Название мероприятия</span>
+    
+    <div class="error-message" id="errorState" style="display: none;">
+      <h2>Билет не найден</h2>
+      <p>Проверьте правильность ссылки или обратитесь в поддержку</p>
+    </div>
+    
+    <div class="pending-message" id="pendingState" style="display: none;">
+      <div class="pending-icon">⏳</div>
+      <h2>Оплата на проверке</h2>
+      <p>Ваш платеж находится на проверке.<br>Билет будет доступен после подтверждения оплаты администратором.</p>
+    </div>
+    
+    <div id="ticketContent" style="display: none;">
+      <div class="ticket-header">
+        <div class="ticket-logo">AFISHA</div>
+        <div class="ticket-qr-section">
+          <div class="qr-code" id="qrCode"></div>
+          <div class="ticket-type">
+            <div class="ticket-type-title">Входная карта</div>
+            <div class="ticket-type-number">E-card #<span id="ticketNumber"></span></div>
+          </div>
+        </div>
       </div>
       
-      <div class="event-layout">
-        <div class="event-poster">
-          <div class="poster-box" id="posterBox">
-            <img id="posterImage" src="" alt="">
+      <div class="ticket-image" id="ticketImage"></div>
+      
+      <div class="barcode-section">
+        <div class="barcode-container">
+          <svg id="barcode"></svg>
+        </div>
+      </div>
+      
+      <div class="event-title-section">
+        <div>
+          <div class="event-name" id="eventName"></div>
+          <div class="event-datetime" id="eventDateTime"></div>
+        </div>
+        <div class="age-badge">18+</div>
+      </div>
+      
+      <div class="divider"></div>
+      
+      <div class="ticket-details">
+        <div class="detail-row">
+          <div>
+            <div class="detail-label">Город</div>
+            <div class="detail-sublabel">City</div>
           </div>
-          <div class="event-rating">
-            <span class="rating-score" id="ratingScore">8.5</span>
-            <span class="rating-text">рейтинг<br>пользователей</span>
-          </div>
+          <div class="detail-value" id="cityName"></div>
         </div>
         
-        <div class="event-main">
-          <span class="event-category" id="categoryTag"></span>
-          <h1 class="event-title" id="eventTitle"></h1>
-          
-          <div class="event-meta-grid">
-            <div class="meta-item">
-              <span class="meta-icon">📅</span>
-              <div class="meta-content">
-                <div class="meta-label">Дата</div>
-                <div class="meta-value" id="metaDate"></div>
-              </div>
-            </div>
-            <div class="meta-item">
-              <span class="meta-icon">⏰</span>
-              <div class="meta-content">
-                <div class="meta-label">Время</div>
-                <div class="meta-value" id="metaTime"></div>
-              </div>
-            </div>
-            <div class="meta-item">
-              <span class="meta-icon">📍</span>
-              <div class="meta-content">
-                <div class="meta-label">Город</div>
-                <div class="meta-value" id="metaCity"></div>
-              </div>
-            </div>
-            <div class="meta-item">
-              <span class="meta-icon">🎟️</span>
-              <div class="meta-content">
-                <div class="meta-label">Возраст</div>
-                <div class="meta-value">12+</div>
-              </div>
-            </div>
+        <div class="detail-row">
+          <div>
+            <div class="detail-label">Карта</div>
+            <div class="detail-sublabel">Cards</div>
           </div>
-          
-          <div class="description-section">
-            <h3 class="section-title">О мероприятии</h3>
-            <p class="event-description" id="eventDescription"></p>
-          </div>
-          
-          <div class="venue-section">
-            <h3 class="section-title" style="border: none; padding: 0; margin-bottom: 15px;">Место проведения</h3>
-            <div class="venue-name" id="venueName">Концертный зал</div>
-            <div class="venue-address" id="venueAddress"></div>
-            <div class="venue-map">🗺️ Карта</div>
-          </div>
+          <div class="detail-value">Входная карта</div>
         </div>
         
-        <div class="order-sidebar">
-          <div class="order-box" id="orderBox">
-            <h2>Купить билет</h2>
-            
-            <div class="price-display">
-              <div class="price-label">Цена билета</div>
-              <div class="price-value" id="priceDisplay">0 ₽</div>
-            </div>
-            
-            <form id="orderForm" onsubmit="submitOrder(event)">
-              <div class="form-group">
-                <label>Ваше имя</label>
-                <input type="text" id="customerName" required placeholder="Иван Иванов" minlength="2">
-              </div>
-              <div class="form-group">
-                <label>Телефон</label>
-                <input type="tel" id="customerPhone" required placeholder="+7 999 123 4567">
-              </div>
-              <div class="form-group">
-                <label>Email (необязательно)</label>
-                <input type="email" id="customerEmail" placeholder="email@example.com">
-              </div>
-              <div class="form-group">
-                <label>Количество билетов</label>
-                <select id="seatsCount" onchange="updateTotal()"></select>
-              </div>
-              <div class="total-row">
-                <span class="total-label">Итого:</span>
-                <span class="total-amount" id="totalAmount">0 ₽</span>
-              </div>
-              <button type="submit" class="submit-btn" id="submitBtn">Купить билет</button>
-            </form>
-            
-            <div class="seats-badge" id="seatsBadge">
-              <span>🎫</span>
-              <span id="seatsLeft">Осталось 0 мест</span>
-            </div>
+        <div class="detail-row">
+          <div>
+            <div class="detail-label">Имя, фамилия</div>
+            <div class="detail-sublabel">Name</div>
           </div>
-          
-          <div class="sold-out" id="soldOut" style="display: none;">
-            <h2>Билеты распроданы</h2>
-            <p style="color: var(--text-muted);">Все места уже заняты</p>
+          <div class="detail-value" id="customerName"></div>
+        </div>
+        
+        <div class="detail-row">
+          <div>
+            <div class="detail-label">Номер заказа #</div>
+            <div class="detail-sublabel">Order number #</div>
           </div>
+          <div class="detail-value" id="orderNumber"></div>
+        </div>
+        
+        <div class="detail-row">
+          <div>
+            <div class="detail-label">Стоимость</div>
+            <div class="detail-sublabel">Price</div>
+          </div>
+          <div class="detail-value" id="totalPrice"></div>
         </div>
       </div>
     </div>
   </div>
-
-  <footer class="footer">
-    <div class="container footer-inner">
-      <div class="footer-links">
-        <a href="#">О нас</a>
-        <a href="#">Контакты</a>
-        <a href="#">Помощь</a>
-        <a href="#">Реклама</a>
-      </div>
-      <div class="footer-copy">© 2025 Билетикс. Все права защищены.</div>
-    </div>
-  </footer>
 
   <script>
-    let eventData = null;
-    let eventSlug = null;
-
-    async function init() {
-      const pathParts = window.location.pathname.split('/');
-      eventSlug = pathParts[pathParts.length - 1];
-      
-      if (!eventSlug) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderCode = urlParams.get('order');
+    
+    const monthNames = ['Января', 'Февраля', 'Марта', 'Апреля', 'Мая', 'Июня', 
+                        'Июля', 'Августа', 'Сентября', 'Октября', 'Ноября', 'Декабря'];
+    
+    function formatDate(dateStr) {
+      const date = new Date(dateStr);
+      return `${date.getDate()} ${monthNames[date.getMonth()]}`;
+    }
+    
+    function formatTime(timeStr) {
+      if (!timeStr) return '';
+      return timeStr.substring(0, 5);
+    }
+    
+    async function loadTicket() {
+      if (!orderCode) {
         showError();
         return;
       }
-
+      
       try {
-        const res = await fetch(`/api/e/${eventSlug}`);
-        if (!res.ok) {
+        const response = await fetch(`/api/ticket/${orderCode}`);
+        if (!response.ok) {
           showError();
           return;
         }
-        eventData = await res.json();
-        if (!eventData || eventData.error) {
+        
+        const data = await response.json();
+        
+        if (!data.success) {
           showError();
           return;
         }
-        renderEvent();
-      } catch (err) {
-        console.error('Error:', err);
+        
+        if (data.pending) {
+          showPending();
+          return;
+        }
+        
+        if (!data.ticket) {
+          showError();
+          return;
+        }
+        
+        displayTicket(data.ticket);
+      } catch (error) {
+        console.error('Error loading ticket:', error);
         showError();
       }
     }
-
+    
     function showError() {
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('errorPage').style.display = 'flex';
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('errorState').style.display = 'block';
     }
-
-    function renderEvent() {
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('eventPage').style.display = 'block';
-      document.title = eventData.name + ' — Билетикс';
-
-      if (eventData.coverImageUrl) {
-        document.getElementById('posterImage').src = eventData.coverImageUrl;
-      } else {
-        document.getElementById('posterBox').style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
-      }
-
-      document.getElementById('categoryTag').textContent = eventData.categoryName;
-      document.getElementById('eventTitle').textContent = eventData.name;
-      document.getElementById('breadCategory').textContent = eventData.categoryName;
-      document.getElementById('breadTitle').textContent = eventData.name;
+    
+    function showPending() {
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('pendingState').style.display = 'block';
+    }
+    
+    function displayTicket(ticket) {
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('ticketContent').style.display = 'block';
       
-      document.getElementById('metaDate').textContent = formatDate(eventData.date);
-      document.getElementById('metaTime').textContent = eventData.time?.slice(0,5) || '19:00';
-      document.getElementById('metaCity').textContent = eventData.cityName;
-      document.getElementById('headerCity').textContent = eventData.cityName;
+      const ticketNum = ticket.order_code.replace(/\D/g, '') || String(Date.now()).slice(-10);
+      document.getElementById('ticketNumber').textContent = ticketNum;
       
-      document.getElementById('priceDisplay').textContent = eventData.price.toLocaleString() + ' ₽';
-      
-      document.getElementById('ratingScore').textContent = (7.5 + Math.random() * 2).toFixed(1);
-      
-      if (eventData.description) {
-        document.getElementById('eventDescription').textContent = eventData.description;
-      } else {
-        document.getElementById('eventDescription').textContent = 'Подробное описание мероприятия будет доступно в ближайшее время.';
+      if (ticket.ticket_image_url) {
+        document.getElementById('ticketImage').style.backgroundImage = `url(${ticket.ticket_image_url})`;
+      } else if (ticket.image_url) {
+        document.getElementById('ticketImage').style.backgroundImage = `url(${ticket.image_url})`;
       }
       
-      document.getElementById('venueName').textContent = eventData.categoryName === 'Концерты' ? 'Концертный зал' : 'Площадка';
-      document.getElementById('venueAddress').textContent = eventData.cityName + ', центр города';
-
-      if (eventData.availableSeats <= 0) {
-        document.getElementById('orderBox').style.display = 'none';
-        document.getElementById('soldOut').style.display = 'block';
-      } else {
-        const seatsSelect = document.getElementById('seatsCount');
-        const maxSeats = Math.min(eventData.availableSeats, 10);
-        seatsSelect.innerHTML = '';
-        for (let i = 1; i <= maxSeats; i++) {
-          seatsSelect.innerHTML += `<option value="${i}">${i}</option>`;
-        }
-        updateTotal();
-        
-        const badge = document.getElementById('seatsBadge');
-        document.getElementById('seatsLeft').textContent = `Осталось ${eventData.availableSeats} мест`;
-        if (eventData.availableSeats < 10) {
-          badge.classList.add('low');
-        }
+      document.getElementById('eventName').textContent = ticket.event_name || 'Мероприятие';
+      
+      let dateTimeStr = '';
+      if (ticket.event_date) {
+        dateTimeStr = formatDate(ticket.event_date);
       }
-    }
-
-    function formatDate(dateStr) {
-      if (!dateStr) return '';
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-    }
-
-    function updateTotal() {
-      const seats = parseInt(document.getElementById('seatsCount').value) || 1;
-      const total = seats * eventData.price;
-      document.getElementById('totalAmount').textContent = total.toLocaleString() + ' ₽';
-    }
-
-    async function submitOrder(e) {
-      e.preventDefault();
-      const btn = document.getElementById('submitBtn');
-      btn.disabled = true;
-      btn.textContent = 'Оформление...';
-
-      const data = {
-        eventSlug: eventSlug,
-        customerName: document.getElementById('customerName').value,
-        customerPhone: document.getElementById('customerPhone').value,
-        customerEmail: document.getElementById('customerEmail').value || undefined,
-        seatsCount: parseInt(document.getElementById('seatsCount').value)
-      };
-
-      try {
-        const res = await fetch('/api/create-ticket-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
+      if (ticket.event_time) {
+        const endTime = addHours(ticket.event_time, 7);
+        dateTimeStr += ` ${formatTime(ticket.event_time)} - ${endTime}`;
+      }
+      document.getElementById('eventDateTime').textContent = dateTimeStr;
+      
+      document.getElementById('cityName').textContent = ticket.city_name || 'Москва';
+      document.getElementById('customerName').textContent = ticket.customer_name || '';
+      document.getElementById('orderNumber').textContent = ticketNum;
+      document.getElementById('totalPrice').textContent = `${ticket.total_price || 0} ₽`;
+      
+      JsBarcode("#barcode", ticketNum.toString(), {
+        format: "CODE128",
+        width: 2,
+        height: 50,
+        displayValue: false
+      });
+      
+      if (typeof QRCode !== 'undefined') {
+        const qrContainer = document.getElementById('qrCode');
+        QRCode.toCanvas(document.createElement('canvas'), ticketNum.toString(), { width: 60 }, function(error, canvas) {
+          if (!error) {
+            qrContainer.innerHTML = '';
+            qrContainer.appendChild(canvas);
+          }
         });
-        const result = await res.json();
-        
-        if (result.success) {
-          window.location.href = '/pay?order=' + result.orderCode;
-        } else {
-          alert(result.message || 'Ошибка оформления заказа');
-          btn.disabled = false;
-          btn.textContent = 'Купить билет';
-        }
-      } catch (err) {
-        alert('Ошибка соединения');
-        btn.disabled = false;
-        btn.textContent = 'Купить билет';
       }
     }
-
-    init();
+    
+    function addHours(timeStr, hours) {
+      const [h, m] = timeStr.split(':').map(Number);
+      const newH = (h + hours) % 24;
+      return `${String(newH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+    
+    loadTicket();
   </script>
 </body>
 </html>
