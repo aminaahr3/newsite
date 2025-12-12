@@ -786,7 +786,7 @@ export const mastra = new Mastra({
         },
       },
 
-      // Order API: Get order by code
+      // Order API: Get order by code (supports both regular orders and generated link orders)
       {
         path: "/api/order/:code",
         method: "GET",
@@ -795,13 +795,27 @@ export const mastra = new Mastra({
           try {
             const pg = await import("pg");
             const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-            const result = await pool.query(
+            
+            // First try to find order with event_id (regular orders)
+            let result = await pool.query(
               `SELECT o.*, e.name as event_name, e.price 
                FROM orders o 
                JOIN events e ON o.event_id = e.id 
                WHERE o.order_code = $1`,
               [orderCode]
             );
+            
+            // If not found, try to find order with event_template_id (generated link orders)
+            if (result.rows.length === 0) {
+              result = await pool.query(
+                `SELECT o.*, et.name as event_name, 2990 as price 
+                 FROM orders o 
+                 JOIN event_templates et ON o.event_template_id = et.id 
+                 WHERE o.order_code = $1`,
+                [orderCode]
+              );
+            }
+            
             await pool.end();
             
             if (result.rows.length === 0) {
