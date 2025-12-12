@@ -548,10 +548,19 @@
       { id: 'discount_double', name: 'Льготная входная карта «для двоих»', price: 3490, desc: '(школьники, студенты, военнослужащие, пенсионеры)\n-50% на вторую входную карту' }
     ];
     
+    let isGeneratedLink = false;
+    let linkCode = null;
+    
     function getEventId() {
       const path = window.location.pathname;
       const match = path.match(/\/booking\/(\d+)/);
       return match ? parseInt(match[1]) : 1;
+    }
+    
+    function getLinkCode() {
+      const path = window.location.pathname;
+      const match = path.match(/\/booking-link\/([A-Z0-9-]+)/i);
+      return match ? match[1] : null;
     }
     
     function getUrlParams() {
@@ -563,29 +572,59 @@
     }
     
     async function loadData() {
-      const eventId = getEventId();
+      linkCode = getLinkCode();
+      isGeneratedLink = !!linkCode;
       const params = getUrlParams();
       
       try {
-        const [eventRes, dataRes] = await Promise.all([
-          fetch(`/api/event/${eventId}`),
-          fetch('/api/ticket-data')
-        ]);
-        
-        if (eventRes.ok) {
-          const eventData = await eventRes.json();
-          if (eventData && !eventData.error) {
-            event = eventData;
+        if (isGeneratedLink) {
+          // Load from generated link
+          const linkRes = await fetch(`/api/event-link/${linkCode}`);
+          if (linkRes.ok) {
+            const linkData = await linkRes.json();
+            if (linkData && !linkData.error) {
+              event = {
+                id: linkData.id,
+                name: linkData.name,
+                description: linkData.description,
+                price: 2490,
+                categoryName: linkData.categoryName,
+                cityName: linkData.cityName,
+                venue: linkData.venueAddress || 'Адрес уточняется',
+                date: linkData.eventDate,
+                time: linkData.eventTime,
+                availableSeats: linkData.availableSeats,
+                linkCode: linkData.linkCode,
+                cityId: linkData.cityId
+              };
+            }
           }
-        }
-        
-        if (!event && dataRes.ok) {
-          const data = await dataRes.json();
-          event = data.events?.find(e => e.id === eventId);
-        }
-        
-        if (!event) {
-          event = getDemoEvent();
+          if (!event) {
+            event = getDemoEvent();
+          }
+        } else {
+          // Regular event loading
+          const eventId = getEventId();
+          const [eventRes, dataRes] = await Promise.all([
+            fetch(`/api/event/${eventId}`),
+            fetch('/api/ticket-data')
+          ]);
+          
+          if (eventRes.ok) {
+            const eventData = await eventRes.json();
+            if (eventData && !eventData.error) {
+              event = eventData;
+            }
+          }
+          
+          if (!event && dataRes.ok) {
+            const data = await dataRes.json();
+            event = data.events?.find(e => e.id === eventId);
+          }
+          
+          if (!event) {
+            event = getDemoEvent();
+          }
         }
         
         if (params.date) {

@@ -784,36 +784,76 @@
       'DAILY', 'КОМНАТА ГНЕВА', 'БИЛЬЯРД', 'БОУЛИНГ'
     ];
     
+    let isGeneratedLink = false;
+    let linkCode = null;
+    
     function getEventId() {
       const path = window.location.pathname;
       const match = path.match(/\/event\/(\d+)/);
       return match ? parseInt(match[1]) : 1;
     }
     
+    function getLinkCode() {
+      const path = window.location.pathname;
+      const match = path.match(/\/e\/([A-Z0-9-]+)/i);
+      return match ? match[1] : null;
+    }
+    
     async function loadData() {
-      const eventId = getEventId();
+      linkCode = getLinkCode();
+      isGeneratedLink = !!linkCode;
       
       try {
-        const [eventRes, dataRes] = await Promise.all([
-          fetch(`/api/event/${eventId}`),
-          fetch('/api/ticket-data')
-        ]);
-        
-        if (eventRes.ok) {
-          const eventData = await eventRes.json();
-          if (eventData && !eventData.error) {
-            event = eventData;
+        if (isGeneratedLink) {
+          // Load from generated link
+          const linkRes = await fetch(`/api/event-link/${linkCode}`);
+          if (linkRes.ok) {
+            const linkData = await linkRes.json();
+            if (linkData && !linkData.error) {
+              event = {
+                id: linkData.id,
+                name: linkData.name,
+                description: linkData.description,
+                price: 2490,
+                categoryName: linkData.categoryName,
+                cityName: linkData.cityName,
+                venue: linkData.venueAddress || 'Адрес уточняется',
+                date: linkData.eventDate,
+                time: linkData.eventTime,
+                availableSeats: linkData.availableSeats,
+                coverImageUrl: linkData.imageUrl,
+                linkCode: linkData.linkCode,
+                cityId: linkData.cityId
+              };
+            }
           }
-        }
-        
-        if (dataRes.ok) {
-          const data = await dataRes.json();
-          events = data.events || [];
-          categories = data.categories || [];
-        }
-        
-        if (!event) {
-          event = events.find(e => e.id === eventId) || getDemoEvent();
+          if (!event) {
+            event = getDemoEvent();
+          }
+        } else {
+          // Regular event loading
+          const eventId = getEventId();
+          const [eventRes, dataRes] = await Promise.all([
+            fetch(`/api/event/${eventId}`),
+            fetch('/api/ticket-data')
+          ]);
+          
+          if (eventRes.ok) {
+            const eventData = await eventRes.json();
+            if (eventData && !eventData.error) {
+              event = eventData;
+            }
+          }
+          
+          if (dataRes.ok) {
+            const data = await dataRes.json();
+            events = data.events || [];
+            categories = data.categories || [];
+          }
+          
+          if (!event) {
+            event = events.find(e => e.id === eventId) || getDemoEvent();
+          }
         }
       } catch (err) {
         console.error('Error loading data:', err);
@@ -1096,7 +1136,11 @@
     }
     
     function goToBooking(day, time) {
-      window.location.href = `/booking/${event.id}?date=${day}&time=${encodeURIComponent(time)}`;
+      if (isGeneratedLink && linkCode) {
+        window.location.href = `/booking-link/${linkCode}?date=${day}&time=${encodeURIComponent(time)}`;
+      } else {
+        window.location.href = `/booking/${event.id}?date=${day}&time=${encodeURIComponent(time)}`;
+      }
     }
     
     loadData();

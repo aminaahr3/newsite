@@ -33,6 +33,16 @@ setTimeout(() => {
   });
 }, 3000);
 
+// Helper function to generate unique link codes with LNK- prefix
+function generateLinkCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let result = 'LNK-';
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 class ProductionPinoLogger extends MastraLogger {
   protected logger: pino.Logger;
 
@@ -718,6 +728,17 @@ export const mastra = new Mastra({
           return c.html(html);
         },
       },
+      
+      // Admin Events page
+      {
+        path: "/admin-events",
+        method: "GET",
+        handler: async (c) => {
+          const fs = await import("fs");
+          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/admin-events.html", "utf-8");
+          return c.html(html);
+        },
+      },
 
       // Admin Register
       {
@@ -1252,6 +1273,313 @@ export const mastra = new Mastra({
           const fs = await import("fs");
           const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/pay.html", "utf-8");
           return c.html(html);
+        },
+      },
+
+      // Generator page
+      {
+        path: "/generator",
+        method: "GET",
+        handler: async (c) => {
+          const fs = await import("fs");
+          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/generator.html", "utf-8");
+          return c.html(html);
+        },
+      },
+
+      // Generator API - Get categories
+      {
+        path: "/api/generator/categories",
+        method: "GET",
+        handler: async (c) => {
+          try {
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            const result = await pool.query(
+              "SELECT id, name, name_ru FROM categories WHERE id IN (6,7,8,9,10,11,12,13) ORDER BY id"
+            );
+            await pool.end();
+            return c.json({ categories: result.rows });
+          } catch (error) {
+            console.error("Error fetching categories:", error);
+            return c.json({ categories: [] });
+          }
+        },
+      },
+
+      // Generator API - Get cities
+      {
+        path: "/api/generator/cities",
+        method: "GET",
+        handler: async (c) => {
+          try {
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            const result = await pool.query("SELECT id, name FROM cities ORDER BY name");
+            await pool.end();
+            return c.json({ cities: result.rows });
+          } catch (error) {
+            console.error("Error fetching cities:", error);
+            return c.json({ cities: [] });
+          }
+        },
+      },
+
+      // Generator API - Get event templates by category
+      {
+        path: "/api/generator/event-templates",
+        method: "GET",
+        handler: async (c) => {
+          try {
+            const categoryId = c.req.query("category_id");
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            const result = await pool.query(
+              "SELECT id, name, description, image_url, is_active FROM event_templates WHERE category_id = $1 ORDER BY name",
+              [categoryId]
+            );
+            await pool.end();
+            return c.json({ templates: result.rows });
+          } catch (error) {
+            console.error("Error fetching event templates:", error);
+            return c.json({ templates: [] });
+          }
+        },
+      },
+      
+      // Generator API - Update event template
+      {
+        path: "/api/generator/event-templates/:id",
+        method: "PUT",
+        handler: async (c) => {
+          try {
+            const eventId = c.req.param("id");
+            const body = await c.req.json();
+            const { name, description, image_url } = body;
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            await pool.query(
+              "UPDATE event_templates SET name = $1, description = $2, image_url = $3 WHERE id = $4",
+              [name, description, image_url, eventId]
+            );
+            
+            await pool.end();
+            return c.json({ success: true });
+          } catch (error) {
+            console.error("Error updating event template:", error);
+            return c.json({ success: false }, 500);
+          }
+        },
+      },
+      
+      // Generator API - Toggle event template status
+      {
+        path: "/api/generator/event-templates/:id/toggle",
+        method: "POST",
+        handler: async (c) => {
+          try {
+            const eventId = c.req.param("id");
+            const body = await c.req.json();
+            const { is_active } = body;
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            await pool.query(
+              "UPDATE event_templates SET is_active = $1 WHERE id = $2",
+              [is_active, eventId]
+            );
+            
+            await pool.end();
+            return c.json({ success: true });
+          } catch (error) {
+            console.error("Error toggling event template:", error);
+            return c.json({ success: false }, 500);
+          }
+        },
+      },
+
+      // Generator API - Get all generated links
+      {
+        path: "/api/generator/links",
+        method: "GET",
+        handler: async (c) => {
+          try {
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            const result = await pool.query(`
+              SELECT gl.*, et.name as event_name, c.name as city_name
+              FROM generated_links gl
+              JOIN event_templates et ON gl.event_template_id = et.id
+              JOIN cities c ON gl.city_id = c.id
+              ORDER BY gl.created_at DESC
+              LIMIT 50
+            `);
+            await pool.end();
+            return c.json({ links: result.rows });
+          } catch (error) {
+            console.error("Error fetching links:", error);
+            return c.json({ links: [] });
+          }
+        },
+      },
+
+      // Generator API - Create new link
+      {
+        path: "/api/generator/create-link",
+        method: "POST",
+        handler: async (c) => {
+          try {
+            const body = await c.req.json();
+            const { event_template_id, city_id, event_date, event_time, available_seats } = body;
+            
+            const linkCode = generateLinkCode();
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            await pool.query(`
+              INSERT INTO generated_links 
+              (link_code, event_template_id, city_id, event_date, event_time, available_seats, is_active)
+              VALUES ($1, $2, $3, $4, $5, $6, true)
+            `, [linkCode, event_template_id, city_id, event_date, event_time, available_seats || 100]);
+            
+            await pool.end();
+            
+            return c.json({ success: true, link_code: linkCode });
+          } catch (error) {
+            console.error("Error creating link:", error);
+            return c.json({ success: false, message: "Ошибка создания ссылки" }, 500);
+          }
+        },
+      },
+
+      // Generator API - Toggle link status
+      {
+        path: "/api/generator/links/:id/toggle",
+        method: "POST",
+        handler: async (c) => {
+          try {
+            const linkId = c.req.param("id");
+            const body = await c.req.json();
+            const { is_active } = body;
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            await pool.query(
+              "UPDATE generated_links SET is_active = $1 WHERE id = $2",
+              [is_active, linkId]
+            );
+            
+            await pool.end();
+            return c.json({ success: true });
+          } catch (error) {
+            console.error("Error toggling link:", error);
+            return c.json({ success: false }, 500);
+          }
+        },
+      },
+      
+      // Generator API - Update generated link
+      {
+        path: "/api/generator/links/:id",
+        method: "PUT",
+        handler: async (c) => {
+          try {
+            const linkId = c.req.param("id");
+            const body = await c.req.json();
+            const { venue_address, available_seats } = body;
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            await pool.query(
+              "UPDATE generated_links SET venue_address = $1, available_seats = $2 WHERE id = $3",
+              [venue_address, available_seats, linkId]
+            );
+            
+            await pool.end();
+            return c.json({ success: true });
+          } catch (error) {
+            console.error("Error updating link:", error);
+            return c.json({ success: false }, 500);
+          }
+        },
+      },
+
+      // Event page by generated link code
+      {
+        path: "/e/:code",
+        method: "GET",
+        handler: async (c) => {
+          const fs = await import("fs");
+          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/event.html", "utf-8");
+          return c.html(html);
+        },
+      },
+
+      // Booking page for generated links
+      {
+        path: "/booking-link/:code",
+        method: "GET",
+        handler: async (c) => {
+          const fs = await import("fs");
+          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/booking.html", "utf-8");
+          return c.html(html);
+        },
+      },
+
+      // API to get event by link code
+      {
+        path: "/api/event-link/:code",
+        method: "GET",
+        handler: async (c) => {
+          try {
+            const linkCode = c.req.param("code");
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            const result = await pool.query(`
+              SELECT gl.*, et.name, et.description, et.image_url, et.category_id,
+                     c.name as city_name, cat.name_ru as category_name
+              FROM generated_links gl
+              JOIN event_templates et ON gl.event_template_id = et.id
+              JOIN cities c ON gl.city_id = c.id
+              JOIN categories cat ON et.category_id = cat.id
+              WHERE gl.link_code = $1 AND gl.is_active = true
+            `, [linkCode]);
+            
+            await pool.end();
+            
+            if (result.rows.length === 0) {
+              return c.json({ error: "Link not found or inactive" }, 404);
+            }
+            
+            const row = result.rows[0];
+            return c.json({
+              id: row.id,
+              linkCode: row.link_code,
+              name: row.name,
+              description: row.description,
+              imageUrl: row.image_url,
+              categoryId: row.category_id,
+              categoryName: row.category_name,
+              cityId: row.city_id,
+              cityName: row.city_name,
+              eventDate: row.event_date,
+              eventTime: row.event_time,
+              venueAddress: row.venue_address,
+              availableSeats: row.available_seats,
+              price: 2490 // Fixed minimum price
+            });
+          } catch (error) {
+            console.error("Error fetching event link:", error);
+            return c.json({ error: "Server error" }, 500);
+          }
         },
       },
     ],

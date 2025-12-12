@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Редактирование мероприятий - Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f5f5f5; min-height: 100vh; }
+    
+    .header {
+      background: linear-gradient(135deg, #4CAF50 0%, #ff9800 50%, #f44336 100%);
+      padding: 15px 30px;
+      display: flex;
+      align-items: center;
+      gap: 30px;
+    }
+    .logo { font-size: 20px; font-weight: 700; color: white; }
+    .nav { display: flex; gap: 25px; }
+    .nav a { color: rgba(255,255,255,0.9); text-decoration: none; font-size: 14px; padding: 8px 0; border-bottom: 2px solid transparent; }
+    .nav a:hover, .nav a.active { color: white; border-bottom-color: white; }
+    .site-link { margin-left: auto; color: #4CAF50; text-decoration: none; font-size: 14px; }
+    
+    .content { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+    .page-title { font-size: 24px; font-weight: 600; color: #333; margin-bottom: 20px; }
+    
+    .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+    .tab { padding: 10px 20px; background: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+    .tab.active { background: #4CAF50; color: white; }
+    
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
+    
+    .event-card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .event-card-header { display: flex; gap: 15px; margin-bottom: 15px; }
+    .event-image {
+      width: 80px; height: 80px;
+      border-radius: 8px;
+      background: #f0f0f0;
+      background-size: cover;
+      background-position: center;
+      flex-shrink: 0;
+    }
+    .event-info { flex: 1; }
+    .event-name { font-weight: 600; font-size: 15px; margin-bottom: 5px; }
+    .event-category { font-size: 12px; color: #666; }
+    .event-status { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; margin-top: 5px; }
+    .event-status.active { background: #e8f5e9; color: #4CAF50; }
+    .event-status.inactive { background: #ffebee; color: #f44336; }
+    
+    .event-actions { display: flex; gap: 10px; margin-top: 15px; }
+    .event-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+    }
+    .btn-edit { background: #e3f2fd; color: #1976d2; }
+    .btn-toggle { background: #fff3e0; color: #f57c00; }
+    .btn-toggle.active { background: #e8f5e9; color: #4CAF50; }
+    
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-overlay.show { display: flex; }
+    
+    .modal {
+      background: white;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-header h2 { font-size: 18px; }
+    .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #999; }
+    
+    .modal-body { padding: 20px; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-size: 14px; color: #333; margin-bottom: 8px; font-weight: 500; }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .form-group textarea { min-height: 100px; resize: vertical; }
+    .form-group input:focus, .form-group textarea:focus { outline: none; border-color: #4CAF50; }
+    
+    .image-preview {
+      width: 100%;
+      height: 150px;
+      border-radius: 8px;
+      background: #f0f0f0;
+      background-size: cover;
+      background-position: center;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #999;
+    }
+    
+    .modal-footer {
+      padding: 20px;
+      border-top: 1px solid #eee;
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+    .modal-btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-cancel { background: #f5f5f5; color: #666; }
+    .btn-save { background: #4CAF50; color: white; }
+    
+    .links-section { margin-top: 40px; }
+    .links-section h3 { font-size: 18px; margin-bottom: 15px; }
+    .link-card {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .link-info strong { display: block; margin-bottom: 3px; }
+    .link-info span { font-size: 13px; color: #666; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="logo">Generator</div>
+    <nav class="nav">
+      <a href="/generator">Генерация Шоу</a>
+      <a href="/admin">Генерация Билета</a>
+      <a href="/admin-events" class="active">Редактирование Мест</a>
+    </nav>
+    <a href="/" class="site-link">Сайт</a>
+  </header>
+  
+  <div class="content">
+    <h1 class="page-title">Редактирование мероприятий</h1>
+    
+    <div class="tabs" id="categoryTabs"></div>
+    
+    <div class="cards-grid" id="eventsGrid"></div>
+    
+    <div class="links-section">
+      <h3>Сгенерированные ссылки</h3>
+      <div id="linksContainer"></div>
+    </div>
+  </div>
+  
+  <div class="modal-overlay" id="editModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Редактировать мероприятие</h2>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editEventId">
+        <div class="form-group">
+          <label>Название</label>
+          <input type="text" id="editName">
+        </div>
+        <div class="form-group">
+          <label>Описание</label>
+          <textarea id="editDescription"></textarea>
+        </div>
+        <div class="form-group">
+          <label>URL изображения</label>
+          <div class="image-preview" id="imagePreview">Нет изображения</div>
+          <input type="text" id="editImageUrl" placeholder="https://..." onchange="updateImagePreview()">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn btn-cancel" onclick="closeModal()">Отмена</button>
+        <button class="modal-btn btn-save" onclick="saveEvent()">Сохранить</button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="modal-overlay" id="editLinkModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Редактировать ссылку</h2>
+        <button class="modal-close" onclick="closeLinkModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editLinkId">
+        <div class="form-group">
+          <label>Адрес проведения</label>
+          <input type="text" id="editVenueAddress" placeholder="ул. Маркова, 12">
+        </div>
+        <div class="form-group">
+          <label>Осталось мест</label>
+          <input type="number" id="editSeats" min="0">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn btn-cancel" onclick="closeLinkModal()">Отмена</button>
+        <button class="modal-btn btn-save" onclick="saveLinkChanges()">Сохранить</button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    let categories = [];
+    let eventTemplates = [];
+    let links = [];
+    let selectedCategory = null;
+    
+    async function init() {
+      await Promise.all([loadCategories(), loadLinks()]);
+    }
+    
+    async function loadCategories() {
+      try {
+        const res = await fetch('/api/generator/categories');
+        const data = await res.json();
+        categories = data.categories || [];
+        renderCategoryTabs();
+        if (categories.length > 0) {
+          selectCategory(categories[0].id);
+        }
+      } catch (err) {
+        console.error('Error loading categories:', err);
+      }
+    }
+    
+    async function loadEventTemplates(categoryId) {
+      try {
+        const res = await fetch(`/api/generator/event-templates?category_id=${categoryId}`);
+        const data = await res.json();
+        eventTemplates = data.templates || [];
+        renderEvents();
+      } catch (err) {
+        console.error('Error loading events:', err);
+      }
+    }
+    
+    async function loadLinks() {
+      try {
+        const res = await fetch('/api/generator/links');
+        const data = await res.json();
+        links = data.links || [];
+        renderLinks();
+      } catch (err) {
+        console.error('Error loading links:', err);
+      }
+    }
+    
+    function renderCategoryTabs() {
+      const container = document.getElementById('categoryTabs');
+      container.innerHTML = categories.map(cat => `
+        <button class="tab ${selectedCategory === cat.id ? 'active' : ''}" onclick="selectCategory(${cat.id})">
+          ${cat.name_ru}
+        </button>
+      `).join('');
+    }
+    
+    function selectCategory(categoryId) {
+      selectedCategory = categoryId;
+      renderCategoryTabs();
+      loadEventTemplates(categoryId);
+    }
+    
+    function renderEvents() {
+      const grid = document.getElementById('eventsGrid');
+      grid.innerHTML = eventTemplates.map(event => `
+        <div class="event-card">
+          <div class="event-card-header">
+            <div class="event-image" style="background-image: url('${event.image_url || ''}')"></div>
+            <div class="event-info">
+              <div class="event-name">${event.name}</div>
+              <div class="event-category">${getCategoryName(selectedCategory)}</div>
+              <span class="event-status ${event.is_active !== false ? 'active' : 'inactive'}">
+                ${event.is_active !== false ? 'Активно' : 'Выключено'}
+              </span>
+            </div>
+          </div>
+          <div class="event-actions">
+            <button class="event-btn btn-edit" onclick="openEditModal(${event.id})">Редактировать</button>
+            <button class="event-btn btn-toggle ${event.is_active !== false ? 'active' : ''}" 
+                    onclick="toggleEvent(${event.id}, ${event.is_active === false})">
+              ${event.is_active !== false ? 'Выключить' : 'Включить'}
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function renderLinks() {
+      const container = document.getElementById('linksContainer');
+      if (links.length === 0) {
+        container.innerHTML = '<p style="color:#999;text-align:center;padding:20px;">Нет сгенерированных ссылок</p>';
+        return;
+      }
+      
+      container.innerHTML = links.map(link => `
+        <div class="link-card">
+          <div class="link-info">
+            <strong>${link.event_name}</strong>
+            <span>${link.city_name} - ${formatDate(link.event_date)} ${link.event_time || ''}</span>
+          </div>
+          <div class="link-actions">
+            <button class="event-btn btn-edit" onclick="openLinkEditModal(${link.id})">Адрес</button>
+            <button class="event-btn btn-toggle ${link.is_active ? 'active' : ''}" 
+                    onclick="toggleLink(${link.id}, ${!link.is_active})">
+              ${link.is_active ? 'Активна' : 'Выключена'}
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function getCategoryName(categoryId) {
+      const cat = categories.find(c => c.id === categoryId);
+      return cat ? cat.name_ru : '';
+    }
+    
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      const date = new Date(dateStr);
+      const months = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+      return `${date.getDate()} ${months[date.getMonth()]}`;
+    }
+    
+    function openEditModal(eventId) {
+      const event = eventTemplates.find(e => e.id === eventId);
+      if (!event) return;
+      
+      document.getElementById('editEventId').value = event.id;
+      document.getElementById('editName').value = event.name;
+      document.getElementById('editDescription').value = event.description || '';
+      document.getElementById('editImageUrl').value = event.image_url || '';
+      updateImagePreview();
+      
+      document.getElementById('editModal').classList.add('show');
+    }
+    
+    function closeModal() {
+      document.getElementById('editModal').classList.remove('show');
+    }
+    
+    function updateImagePreview() {
+      const url = document.getElementById('editImageUrl').value;
+      const preview = document.getElementById('imagePreview');
+      if (url) {
+        preview.style.backgroundImage = `url('${url}')`;
+        preview.textContent = '';
+      } else {
+        preview.style.backgroundImage = 'none';
+        preview.textContent = 'Нет изображения';
+      }
+    }
+    
+    async function saveEvent() {
+      const eventId = document.getElementById('editEventId').value;
+      const name = document.getElementById('editName').value;
+      const description = document.getElementById('editDescription').value;
+      const imageUrl = document.getElementById('editImageUrl').value;
+      
+      try {
+        const res = await fetch(`/api/generator/event-templates/${eventId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, description, image_url: imageUrl })
+        });
+        
+        if (res.ok) {
+          closeModal();
+          await loadEventTemplates(selectedCategory);
+        } else {
+          alert('Ошибка сохранения');
+        }
+      } catch (err) {
+        console.error('Error saving event:', err);
+        alert('Ошибка соединения');
+      }
+    }
+    
+    async function toggleEvent(eventId, newStatus) {
+      try {
+        await fetch(`/api/generator/event-templates/${eventId}/toggle`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_active: newStatus })
+        });
+        await loadEventTemplates(selectedCategory);
+      } catch (err) {
+        console.error('Error toggling event:', err);
+      }
+    }
+    
+    function openLinkEditModal(linkId) {
+      const link = links.find(l => l.id === linkId);
+      if (!link) return;
+      
+      document.getElementById('editLinkId').value = link.id;
+      document.getElementById('editVenueAddress').value = link.venue_address || '';
+      document.getElementById('editSeats').value = link.available_seats || 100;
+      
+      document.getElementById('editLinkModal').classList.add('show');
+    }
+    
+    function closeLinkModal() {
+      document.getElementById('editLinkModal').classList.remove('show');
+    }
+    
+    async function saveLinkChanges() {
+      const linkId = document.getElementById('editLinkId').value;
+      const venueAddress = document.getElementById('editVenueAddress').value;
+      const seats = document.getElementById('editSeats').value;
+      
+      try {
+        const res = await fetch(`/api/generator/links/${linkId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ venue_address: venueAddress, available_seats: parseInt(seats) })
+        });
+        
+        if (res.ok) {
+          closeLinkModal();
+          await loadLinks();
+        } else {
+          alert('Ошибка сохранения');
+        }
+      } catch (err) {
+        console.error('Error saving link:', err);
+        alert('Ошибка соединения');
+      }
+    }
+    
+    async function toggleLink(linkId, newStatus) {
+      try {
+        await fetch(`/api/generator/links/${linkId}/toggle`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ is_active: newStatus })
+        });
+        await loadLinks();
+      } catch (err) {
+        console.error('Error toggling link:', err);
+      }
+    }
+    
+    init();
+  </script>
+</body>
+</html>
