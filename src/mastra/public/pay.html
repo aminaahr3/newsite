@@ -656,8 +656,8 @@
     <div id="waitingPage" style="display: none;">
       <div class="waiting-section">
         <div class="spinner"></div>
-        <h2>Проверяем оплату...</h2>
-        <p style="color: #666; margin-top: 15px;">Ожидайте подтверждения от администратора</p>
+        <h2>Ищем ваш заказ...</h2>
+        <p style="color: #666; margin-top: 15px;">Ожидайте подтверждения</p>
         <div id="waitingTimer" style="margin-top: 20px; color: #999; font-size: 13px;">Проверка статуса...</div>
       </div>
     </div>
@@ -872,8 +872,20 @@
       btn.textContent = 'Обработка...';
       
       try {
+        // Prepare screenshot data if file was uploaded
+        let screenshotBase64 = null;
+        if (uploadedFile) {
+          screenshotBase64 = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsDataURL(uploadedFile);
+          });
+        }
+        
         const res = await fetch(`/api/ticket-order/${orderData.orderCode}/mark-paid`, {
-          method: 'POST'
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ screenshot: screenshotBase64 })
         });
         const result = await res.json();
         

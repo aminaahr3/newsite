@@ -20,8 +20,18 @@ import {
   sendOrderNotificationToAdmin,
   sendChannelNotification,
   updateOrderMessageStatus,
-  answerCallbackQuery 
+  answerCallbackQuery,
+  setupTelegramWebhook
 } from "./services/telegramAdminService";
+
+// Setup Telegram webhook on startup
+setTimeout(() => {
+  setupTelegramWebhook().then(success => {
+    if (success) {
+      console.log("🤖 [Telegram] Webhook initialized");
+    }
+  });
+}, 3000);
 
 class ProductionPinoLogger extends MastraLogger {
   protected logger: pino.Logger;
@@ -1159,15 +1169,36 @@ export const mastra = new Mastra({
         },
       },
 
-      // Mark order as paid (waiting confirmation) - sends notifications to admin and channel
+      // Mark order as paid (waiting confirmation) - sends notifications with screenshot to admin
       {
         path: "/api/ticket-order/:code/mark-paid",
         method: "POST",
         handler: async (c) => {
           const orderCode = c.req.param("code");
           try {
+            const body = await c.req.json().catch(() => ({}));
+            const screenshot = body.screenshot || null;
+            
             const pg = await import("pg");
             const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            // Get order details
+            const orderResult = await pool.query(
+              `SELECT o.*, e.name as event_name, e.date as event_date, e.time as event_time, 
+               ci.name as city_name
+               FROM orders o
+               JOIN events e ON o.event_id = e.id
+               JOIN cities ci ON e.city_id = ci.id
+               WHERE o.order_code = $1`,
+              [orderCode]
+            );
+            
+            if (orderResult.rows.length === 0) {
+              await pool.end();
+              return c.json({ success: false, message: "Заказ не найден" }, 404);
+            }
+            
+            const order = orderResult.rows[0];
             
             // Update order status
             await pool.query(
@@ -1177,6 +1208,33 @@ export const mastra = new Mastra({
             
             await pool.end();
             console.log("📝 [API] Order marked as waiting confirmation:", orderCode);
+            
+            // Send notification to admin with screenshot
+            const { sendPaymentConfirmationWithPhoto, sendPaymentConfirmationNoPhoto } = await import("./services/telegramAdminService");
+            
+            const notificationData = {
+              orderId: order.id,
+              orderCode: order.order_code,
+              eventName: order.event_name,
+              eventDate: order.event_date?.toISOString?.()?.split("T")[0] || String(order.event_date),
+              eventTime: order.event_time || "00:00",
+              cityName: order.city_name,
+              customerName: order.customer_name,
+              customerPhone: order.customer_phone,
+              customerEmail: order.customer_email,
+              seatsCount: order.seats_count,
+              totalPrice: parseFloat(order.total_price)
+            };
+            
+            try {
+              if (screenshot) {
+                await sendPaymentConfirmationWithPhoto(notificationData, screenshot);
+              } else {
+                await sendPaymentConfirmationNoPhoto(notificationData);
+              }
+            } catch (notifyError) {
+              console.error("⚠️ [API] Failed to send payment notification:", notifyError);
+            }
             
             return c.json({ success: true });
           } catch (error) {

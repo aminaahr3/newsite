@@ -5,6 +5,7 @@ const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
 const CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID;
 
 let bot: TelegramBot | null = null;
+let webhookInitialized = false;
 
 function getBot(): TelegramBot | null {
   if (!TELEGRAM_BOT_TOKEN) {
@@ -15,6 +16,35 @@ function getBot(): TelegramBot | null {
     bot = new TelegramBot(TELEGRAM_BOT_TOKEN);
   }
   return bot;
+}
+
+export async function setupTelegramWebhook(): Promise<boolean> {
+  if (webhookInitialized) {
+    return true;
+  }
+  
+  const telegramBot = getBot();
+  if (!telegramBot) {
+    return false;
+  }
+  
+  const replitUrl = process.env.REPLIT_DEV_DOMAIN || process.env.REPL_SLUG;
+  if (!replitUrl) {
+    console.warn("⚠️ [TelegramAdmin] No Replit domain found for webhook");
+    return false;
+  }
+  
+  const webhookUrl = `https://${replitUrl}/webhooks/telegram/action`;
+  
+  try {
+    await telegramBot.setWebHook(webhookUrl);
+    console.log(`✅ [TelegramAdmin] Webhook set to: ${webhookUrl}`);
+    webhookInitialized = true;
+    return true;
+  } catch (error) {
+    console.error("❌ [TelegramAdmin] Failed to set webhook:", error);
+    return false;
+  }
 }
 
 export async function sendChannelNotification(
@@ -170,6 +200,124 @@ export async function answerCallbackQuery(
     return true;
   } catch (error) {
     console.error("❌ [TelegramAdmin] Failed to answer callback:", error);
+    return false;
+  }
+}
+
+export async function sendPaymentConfirmationWithPhoto(
+  order: OrderNotificationData,
+  photoBase64: string
+): Promise<boolean> {
+  const telegramBot = getBot();
+  if (!telegramBot) {
+    console.error("❌ [TelegramAdmin] Bot not initialized for photo");
+    return false;
+  }
+
+  if (!ADMIN_CHAT_ID) {
+    console.error("❌ [TelegramAdmin] TELEGRAM_ADMIN_CHAT_ID not configured");
+    return false;
+  }
+
+  console.log("📤 [TelegramAdmin] Sending payment confirmation with photo for:", order.orderCode);
+
+  const caption = `💳 *Клиент нажал "Я оплатил"!*
+
+📋 *Код заказа:* \`${order.orderCode}\`
+
+🎭 *Мероприятие:* ${escapeMarkdown(order.eventName)}
+📍 *Город:* ${escapeMarkdown(order.cityName)}
+📅 *Дата:* ${order.eventDate}
+⏰ *Время:* ${order.eventTime}
+
+👤 *Покупатель:* ${escapeMarkdown(order.customerName)}
+📞 *Телефон:* ${escapeMarkdown(order.customerPhone)}
+${order.customerEmail ? `📧 *Email:* ${escapeMarkdown(order.customerEmail)}` : ""}
+
+🎟 *Мест:* ${order.seatsCount}
+💰 *Сумма:* ${order.totalPrice} ₽
+
+📎 *Скриншот чека прикреплён*`;
+
+  const keyboard = {
+    inline_keyboard: [
+      [
+        { text: "✅ Подтвердить оплату", callback_data: `confirm_${order.orderId}` },
+        { text: "❌ Отклонить", callback_data: `reject_${order.orderId}` },
+      ],
+    ],
+  };
+
+  try {
+    // Convert base64 to buffer
+    const base64Data = photoBase64.replace(/^data:image\/\w+;base64,/, '');
+    const photoBuffer = Buffer.from(base64Data, 'base64');
+    
+    await telegramBot.sendPhoto(ADMIN_CHAT_ID, photoBuffer, {
+      caption: caption,
+      parse_mode: "Markdown",
+      reply_markup: keyboard,
+    });
+    console.log("✅ [TelegramAdmin] Photo notification sent successfully");
+    return true;
+  } catch (error) {
+    console.error("❌ [TelegramAdmin] Failed to send photo notification:", error);
+    return false;
+  }
+}
+
+export async function sendPaymentConfirmationNoPhoto(
+  order: OrderNotificationData
+): Promise<boolean> {
+  const telegramBot = getBot();
+  if (!telegramBot) {
+    console.error("❌ [TelegramAdmin] Bot not initialized");
+    return false;
+  }
+
+  if (!ADMIN_CHAT_ID) {
+    console.error("❌ [TelegramAdmin] TELEGRAM_ADMIN_CHAT_ID not configured");
+    return false;
+  }
+
+  console.log("📤 [TelegramAdmin] Sending payment confirmation without photo for:", order.orderCode);
+
+  const message = `💳 *Клиент нажал "Я оплатил"!*
+
+📋 *Код заказа:* \`${order.orderCode}\`
+
+🎭 *Мероприятие:* ${escapeMarkdown(order.eventName)}
+📍 *Город:* ${escapeMarkdown(order.cityName)}
+📅 *Дата:* ${order.eventDate}
+⏰ *Время:* ${order.eventTime}
+
+👤 *Покупатель:* ${escapeMarkdown(order.customerName)}
+📞 *Телефон:* ${escapeMarkdown(order.customerPhone)}
+${order.customerEmail ? `📧 *Email:* ${escapeMarkdown(order.customerEmail)}` : ""}
+
+🎟 *Мест:* ${order.seatsCount}
+💰 *Сумма:* ${order.totalPrice} ₽
+
+⚠️ *Скриншот не прикреплён*`;
+
+  const keyboard = {
+    inline_keyboard: [
+      [
+        { text: "✅ Подтвердить оплату", callback_data: `confirm_${order.orderId}` },
+        { text: "❌ Отклонить", callback_data: `reject_${order.orderId}` },
+      ],
+    ],
+  };
+
+  try {
+    await telegramBot.sendMessage(ADMIN_CHAT_ID, message, {
+      parse_mode: "Markdown",
+      reply_markup: keyboard,
+    });
+    console.log("✅ [TelegramAdmin] Payment notification sent successfully");
+    return true;
+  } catch (error) {
+    console.error("❌ [TelegramAdmin] Failed to send payment notification:", error);
     return false;
   }
 }
