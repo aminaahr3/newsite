@@ -1278,13 +1278,27 @@ export const mastra = new Mastra({
             const pg = await import("pg");
             const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
             
-            const result = await pool.query(
+            // First try regular orders (with event_id)
+            let result = await pool.query(
               `SELECT o.*, e.name as event_name, e.date, e.time, e.price
                FROM orders o
                JOIN events e ON o.event_id = e.id
                WHERE o.order_code = $1`,
               [orderCode]
             );
+            
+            // If not found, try generated link orders (with event_template_id)
+            if (result.rows.length === 0) {
+              result = await pool.query(
+                `SELECT o.*, et.name as event_name, gl.event_date as date, gl.event_time as time, 2990 as price
+                 FROM orders o
+                 JOIN event_templates et ON o.event_template_id = et.id
+                 LEFT JOIN generated_links gl ON gl.link_code = o.link_code
+                 WHERE o.order_code = $1`,
+                [orderCode]
+              );
+            }
+            
             await pool.end();
             
             if (result.rows.length === 0) {
@@ -1319,12 +1333,25 @@ export const mastra = new Mastra({
             const pg = await import("pg");
             const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
             
-            const result = await pool.query(
-              `SELECT aps.* FROM admin_payment_settings aps
-               JOIN orders o ON o.admin_id = aps.admin_id
-               WHERE o.order_code = $1`,
+            // Check if this is a generated link order
+            const orderCheck = await pool.query(
+              "SELECT event_template_id FROM orders WHERE order_code = $1",
               [orderCode]
             );
+            
+            let result;
+            if (orderCheck.rows.length > 0 && orderCheck.rows[0].event_template_id) {
+              // Generated link order - use global payment_settings
+              result = await pool.query("SELECT * FROM payment_settings ORDER BY id DESC LIMIT 1");
+            } else {
+              // Regular order - use admin_payment_settings
+              result = await pool.query(
+                `SELECT aps.* FROM admin_payment_settings aps
+                 JOIN orders o ON o.admin_id = aps.admin_id
+                 WHERE o.order_code = $1`,
+                [orderCode]
+              );
+            }
             await pool.end();
             
             if (result.rows.length === 0) {
@@ -1356,8 +1383,8 @@ export const mastra = new Mastra({
             const pg = await import("pg");
             const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
             
-            // Get order details
-            const orderResult = await pool.query(
+            // First try regular orders (with event_id)
+            let orderResult = await pool.query(
               `SELECT o.*, e.name as event_name, e.date as event_date, e.time as event_time, 
                ci.name as city_name
                FROM orders o
@@ -1366,6 +1393,19 @@ export const mastra = new Mastra({
                WHERE o.order_code = $1`,
               [orderCode]
             );
+            
+            // If not found, try generated link orders
+            if (orderResult.rows.length === 0) {
+              orderResult = await pool.query(
+                `SELECT o.*, et.name as event_name, gl.event_date, gl.event_time, c.name as city_name
+                 FROM orders o
+                 JOIN event_templates et ON o.event_template_id = et.id
+                 LEFT JOIN generated_links gl ON gl.link_code = o.link_code
+                 LEFT JOIN cities c ON gl.city_id = c.id
+                 WHERE o.order_code = $1`,
+                [orderCode]
+              );
+            }
             
             if (orderResult.rows.length === 0) {
               await pool.end();
