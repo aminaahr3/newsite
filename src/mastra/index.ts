@@ -358,15 +358,16 @@ export const mastra = new Mastra({
             // Generate order code
             const orderCode = `LNK-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
             
-            // Create order
+            // Create order (use event_template_id instead of event_id for generated links)
             const orderResult = await pool.query(
               `INSERT INTO orders (
-                event_id, customer_name, customer_phone, customer_email, 
+                event_id, event_template_id, link_code, customer_name, customer_phone, customer_email, 
                 seats_count, total_price, order_code, status, payment_status
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', 'pending')
+              ) VALUES (NULL, $1, $2, $3, $4, $5, $6, $7, $8, 'pending', 'pending')
               RETURNING id`,
               [
                 link.template_id,
+                body.linkCode,
                 body.customerName.trim(),
                 body.customerPhone.trim(),
                 body.customerEmail?.trim() || null,
