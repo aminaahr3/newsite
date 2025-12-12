@@ -244,9 +244,14 @@
           <textarea id="editDescription"></textarea>
         </div>
         <div class="form-group">
-          <label>URL изображения</label>
-          <div class="image-preview" id="imagePreview">Нет изображения</div>
-          <input type="text" id="editImageUrl" placeholder="https://..." onchange="updateImagePreview()">
+          <label>Фотографии мероприятия</label>
+          <div id="imagesContainer" style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-bottom: 10px;">
+            <p style="color: #999; font-size: 13px;">Загрузка...</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <input type="text" id="newImageUrl" placeholder="Вставьте URL изображения..." style="flex: 1;">
+            <button type="button" onclick="addImage()" style="padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer;">Добавить</button>
+          </div>
         </div>
         <div class="form-group">
           <label>Адрес по городам</label>
@@ -400,7 +405,7 @@
         <div class="link-card">
           <div class="link-info">
             <strong>${link.event_name}</strong>
-            <span>${link.city_name} - ${formatDate(link.event_date)} ${link.event_time || ''}</span>
+            <span>${link.city_name} - ${formatDate(link.event_date)} ${formatTime(link.event_time)}</span>
           </div>
           <div class="link-actions">
             <button class="event-btn btn-edit" onclick="openLinkEditModal(${link.id})">Адрес</button>
@@ -425,23 +430,105 @@
       return `${date.getDate()} ${months[date.getMonth()]}`;
     }
     
+    function formatTime(timeStr) {
+      if (!timeStr) return '';
+      const parts = timeStr.split(':');
+      return `${parts[0]}:${parts[1]}`;
+    }
+    
     let allCities = [];
     let eventAddresses = {};
+    let eventImages = [];
+    let currentEditEventId = null;
     
     async function openEditModal(eventId) {
       const event = eventTemplates.find(e => e.id === eventId);
       if (!event) return;
       
+      currentEditEventId = eventId;
       document.getElementById('editEventId').value = event.id;
       document.getElementById('editName').value = event.name;
       document.getElementById('editDescription').value = event.description || '';
-      document.getElementById('editImageUrl').value = event.image_url || '';
-      updateImagePreview();
+      document.getElementById('newImageUrl').value = '';
       
-      // Load cities and addresses
-      await loadCitiesForEvent(eventId);
+      // Load images and cities
+      await Promise.all([loadImagesForEvent(eventId), loadCitiesForEvent(eventId)]);
       
       document.getElementById('editModal').classList.add('show');
+    }
+    
+    async function loadImagesForEvent(eventId) {
+      const container = document.getElementById('imagesContainer');
+      container.innerHTML = '<p style="color: #999;">Загрузка...</p>';
+      
+      try {
+        const res = await fetch(`/api/generator/event-templates/${eventId}/images`);
+        const data = await res.json();
+        eventImages = data.images || [];
+        renderImages();
+      } catch (err) {
+        console.error('Error loading images:', err);
+        container.innerHTML = '<p style="color: #f44;">Ошибка загрузки</p>';
+      }
+    }
+    
+    function renderImages() {
+      const container = document.getElementById('imagesContainer');
+      if (eventImages.length === 0) {
+        container.innerHTML = '<p style="color: #999; text-align: center;">Нет изображений. Добавьте URL ниже.</p>';
+        return;
+      }
+      
+      container.innerHTML = eventImages.map((img, i) => `
+        <div style="display: flex; gap: 10px; margin-bottom: 10px; align-items: center; background: #f9f9f9; padding: 8px; border-radius: 8px;">
+          <img src="${img.image_url}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px;" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><rect fill=%22%23ddd%22 width=%22100%22 height=%22100%22/></svg>'">
+          <span style="flex: 1; font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${img.image_url}</span>
+          <button onclick="deleteImage(${img.id})" style="padding: 5px 10px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Удалить</button>
+        </div>
+      `).join('');
+    }
+    
+    async function addImage() {
+      const input = document.getElementById('newImageUrl');
+      const url = input.value.trim();
+      if (!url) {
+        alert('Введите URL изображения');
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/generator/event-templates/${currentEditEventId}/images`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image_url: url })
+        });
+        
+        if (res.ok) {
+          input.value = '';
+          await loadImagesForEvent(currentEditEventId);
+        } else {
+          alert('Ошибка добавления');
+        }
+      } catch (err) {
+        console.error('Error adding image:', err);
+        alert('Ошибка соединения');
+      }
+    }
+    
+    async function deleteImage(imageId) {
+      if (!confirm('Удалить это изображение?')) return;
+      
+      try {
+        const res = await fetch(`/api/generator/event-templates/${currentEditEventId}/images/${imageId}`, {
+          method: 'DELETE'
+        });
+        
+        if (res.ok) {
+          await loadImagesForEvent(currentEditEventId);
+        }
+      } catch (err) {
+        console.error('Error deleting image:', err);
+      }
     }
     
     async function loadCitiesForEvent(eventId) {
@@ -492,23 +579,10 @@
       document.getElementById('editModal').classList.remove('show');
     }
     
-    function updateImagePreview() {
-      const url = document.getElementById('editImageUrl').value;
-      const preview = document.getElementById('imagePreview');
-      if (url) {
-        preview.style.backgroundImage = `url('${url}')`;
-        preview.textContent = '';
-      } else {
-        preview.style.backgroundImage = 'none';
-        preview.textContent = 'Нет изображения';
-      }
-    }
-    
     async function saveEvent() {
       const eventId = document.getElementById('editEventId').value;
       const name = document.getElementById('editName').value;
       const description = document.getElementById('editDescription').value;
-      const imageUrl = document.getElementById('editImageUrl').value;
       
       // Collect city addresses
       const addresses = [];
@@ -520,11 +594,11 @@
       });
       
       try {
-        // Save event template
+        // Save event template (images are saved in real-time when adding/deleting)
         const res = await fetch(`/api/generator/event-templates/${eventId}/update`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, description, image_url: imageUrl })
+          body: JSON.stringify({ name, description })
         });
         
         // Save addresses

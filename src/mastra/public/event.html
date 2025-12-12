@@ -821,7 +821,8 @@
                 date: linkData.eventDate,
                 time: linkData.eventTime,
                 availableSeats: linkData.availableSeats,
-                coverImageUrl: linkData.imageUrl,
+                images: linkData.images || [],
+                coverImageUrl: linkData.imageUrl || (linkData.images && linkData.images[0]),
                 linkCode: linkData.linkCode,
                 cityId: linkData.cityId
               };
@@ -912,20 +913,58 @@
       const heroImage = event.coverImageUrl || defaultImages[0];
       
       let sessions = [];
+      const dayNames = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+      const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+      
+      // Format time as HH:MM (remove seconds if present)
+      function formatTimeHHMM(timeStr) {
+        if (!timeStr) return '12:00';
+        const parts = timeStr.split(':');
+        return `${parts[0]}:${parts[1]}`;
+      }
+      
       if (isGeneratedLink && event.date && event.time) {
         const eventDate = new Date(event.date);
-        const dayNames = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
-        const monthNames = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
         const dayName = dayNames[eventDate.getDay()];
         const dateStr = `${eventDate.getDate()} ${monthNames[eventDate.getMonth()]}`;
-        sessions = [{ day: `${dayName}, ${dateStr}`, time: event.time, isSelected: true }];
+        const formattedTime = formatTimeHHMM(event.time);
+        
+        // Main session from generated link (with stable ticket count)
+        sessions.push({ 
+          day: `${dayName}, ${dateStr}`, 
+          time: formattedTime, 
+          isMain: true,
+          seats: event.availableSeats || 50
+        });
+        
+        // Generate additional auto sessions (random tickets up to 20)
+        const autoTimes = ['11:00', '14:00', '17:00', '19:00'];
+        const nextDay = new Date(eventDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        
+        autoTimes.forEach(t => {
+          if (t !== formattedTime) {
+            sessions.push({
+              day: `${dayNames[nextDay.getDay()]}, ${nextDay.getDate()} ${monthNames[nextDay.getMonth()]}`,
+              time: t,
+              isMain: false,
+              seats: Math.floor(Math.random() * 20) + 1
+            });
+          }
+        });
       } else {
-        sessions = [
-          { day: 'Пятница', time: '17:00' },
-          { day: 'Суббота', time: '11:00' },
-          { day: 'Суббота', time: '14:00' },
-          { day: 'Суббота', time: '17:00' }
-        ];
+        // Default sessions for non-generated events
+        const today = new Date();
+        for (let i = 0; i < 4; i++) {
+          const d = new Date(today);
+          d.setDate(d.getDate() + i);
+          sessions.push({
+            day: `${dayNames[d.getDay()]}, ${d.getDate()} ${monthNames[d.getMonth()]}`,
+            time: ['11:00', '14:00', '17:00', '19:00'][i % 4],
+            isMain: false,
+            seats: Math.floor(Math.random() * 20) + 1
+          });
+        }
       }
       
       const recs = events.filter(e => e.id !== event.id).slice(0, 6);
@@ -944,9 +983,9 @@
             </div>
           </div>
           <div class="hero-gallery">
-            ${[1, 2, 3, 4].map(i => `
+            ${(event.images && event.images.length > 1 ? event.images.slice(1, 5) : [1, 2, 3, 4].map(i => defaultImages[i % defaultImages.length])).map(img => `
               <div class="hero-gallery-item">
-                <img src="${defaultImages[i % defaultImages.length]}" alt="">
+                <img src="${typeof img === 'string' ? img : defaultImages[img % defaultImages.length]}" alt="">
               </div>
             `).join('')}
           </div>
@@ -959,10 +998,11 @@
           </div>
           <div class="sessions-grid" id="sessionsGrid">
             ${sessions.map((s, i) => `
-              <div class="session-card" onclick="goToBooking('${getSessionDate(s.day)}', '${s.time}')">
+              <div class="session-card ${s.isMain ? 'main-session' : ''}" onclick="goToBooking('${getSessionDate(s.day)}', '${s.time}')">
                 <div class="session-price">От ${formatPrice(price)} ₽</div>
                 <div class="session-time">${s.day} ${s.time}</div>
                 <div class="session-address">${city}, ${venue}</div>
+                <div class="session-seats" style="font-size: 12px; color: #e53935; margin-top: 4px;">Осталось ${s.seats} мест</div>
               </div>
             `).join('')}
           </div>

@@ -1461,6 +1461,90 @@ export const mastra = new Mastra({
         },
       },
 
+      // Generator API - Get images for event template
+      {
+        path: "/api/generator/event-templates/:id/images",
+        method: "GET",
+        handler: async (c) => {
+          try {
+            const eventId = c.req.param("id");
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            const result = await pool.query(
+              "SELECT id, image_url, sort_order FROM event_template_images WHERE event_template_id = $1 ORDER BY sort_order",
+              [eventId]
+            );
+            
+            await pool.end();
+            return c.json({ images: result.rows });
+          } catch (error) {
+            console.error("Error fetching images:", error);
+            return c.json({ images: [] });
+          }
+        },
+      },
+
+      // Generator API - Add image to event template
+      {
+        path: "/api/generator/event-templates/:id/images",
+        method: "POST",
+        handler: async (c) => {
+          try {
+            const eventId = c.req.param("id");
+            const body = await c.req.json();
+            const { image_url } = body;
+            
+            if (!image_url) {
+              return c.json({ success: false, message: "URL обязателен" }, 400);
+            }
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            // Get max sort_order
+            const maxRes = await pool.query(
+              "SELECT COALESCE(MAX(sort_order), -1) + 1 as next_order FROM event_template_images WHERE event_template_id = $1",
+              [eventId]
+            );
+            const nextOrder = maxRes.rows[0].next_order;
+            
+            const result = await pool.query(
+              "INSERT INTO event_template_images (event_template_id, image_url, sort_order) VALUES ($1, $2, $3) RETURNING id",
+              [eventId, image_url, nextOrder]
+            );
+            
+            await pool.end();
+            return c.json({ success: true, id: result.rows[0].id });
+          } catch (error) {
+            console.error("Error adding image:", error);
+            return c.json({ success: false, message: "Ошибка" }, 500);
+          }
+        },
+      },
+
+      // Generator API - Delete image from event template
+      {
+        path: "/api/generator/event-templates/:id/images/:imageId",
+        method: "DELETE",
+        handler: async (c) => {
+          try {
+            const imageId = c.req.param("imageId");
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            await pool.query("DELETE FROM event_template_images WHERE id = $1", [imageId]);
+            
+            await pool.end();
+            return c.json({ success: true });
+          } catch (error) {
+            console.error("Error deleting image:", error);
+            return c.json({ success: false }, 500);
+          }
+        },
+      },
+
       // Generator API - Get addresses for event template
       {
         path: "/api/generator/event-templates/:id/addresses",
@@ -1659,6 +1743,17 @@ export const mastra = new Mastra({
         },
       },
 
+      // Booking page for regular events
+      {
+        path: "/booking/:id",
+        method: "GET",
+        handler: async (c) => {
+          const fs = await import("fs");
+          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/booking.html", "utf-8");
+          return c.html(html);
+        },
+      },
+
       // API to get event by link code
       {
         path: "/api/event-link/:code",
@@ -1671,7 +1766,7 @@ export const mastra = new Mastra({
             const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
             
             const result = await pool.query(`
-              SELECT gl.*, et.name, et.description, et.image_url, et.category_id,
+              SELECT gl.*, et.name, et.description, et.category_id, et.id as template_id,
                      c.name as city_name, cat.name_ru as category_name
               FROM generated_links gl
               JOIN event_templates et ON gl.event_template_id = et.id
@@ -1680,19 +1775,29 @@ export const mastra = new Mastra({
               WHERE gl.link_code = $1 AND gl.is_active = true
             `, [linkCode]);
             
-            await pool.end();
-            
             if (result.rows.length === 0) {
+              await pool.end();
               return c.json({ error: "Link not found or inactive" }, 404);
             }
             
             const row = result.rows[0];
+            
+            // Get images for this event template
+            const imagesResult = await pool.query(
+              "SELECT image_url FROM event_template_images WHERE event_template_id = $1 ORDER BY sort_order LIMIT 5",
+              [row.template_id]
+            );
+            const images = imagesResult.rows.map(r => r.image_url);
+            
+            await pool.end();
+            
             return c.json({
               id: row.id,
               linkCode: row.link_code,
               name: row.name,
               description: row.description,
-              imageUrl: row.image_url,
+              images: images,
+              imageUrl: images[0] || null,
               categoryId: row.category_id,
               categoryName: row.category_name,
               cityId: row.city_id,
