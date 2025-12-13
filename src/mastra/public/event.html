@@ -1279,9 +1279,11 @@
           <div class="recs-scroll">
             ${recommendations.map((r, i) => {
               const recRating = (8 + Math.random() * 1.5).toFixed(1);
+              const recImage = r.image_url || r.imageUrl || r.coverImageUrl;
               return `
                 <div class="rec-card" onclick="openEvent(${r.id})">
-                  <div class="rec-card-image" style="background: linear-gradient(135deg, #333 0%, #555 100%);">
+                  <div class="rec-card-image" style="${recImage ? '' : 'background: linear-gradient(135deg, #333 0%, #555 100%);'}">
+                    ${recImage ? `<img src="${recImage}" alt="${r.name}">` : ''}
                     <div class="rec-card-rating">${recRating}</div>
                   </div>
                   <div class="rec-card-title">${r.name}</div>
