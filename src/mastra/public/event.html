@@ -763,7 +763,7 @@
   </div>
 
   <script>
-    let event = null;
+    let eventData = null;
     let events = [];
     let categories = [];
     let selectedSessionData = null;
@@ -823,7 +823,7 @@
             const data = await res.json();
             if (data && !data.error) {
               isGeneratedLink = true;
-              event = {
+              eventData = {
                 id: data.id,
                 name: data.name,
                 description: data.description,
@@ -862,7 +862,7 @@
           if (linkRes.ok) {
             const linkData = await linkRes.json();
             if (linkData && !linkData.error) {
-              event = {
+              eventData = {
                 id: linkData.id,
                 name: linkData.name,
                 description: linkData.description,
@@ -924,7 +924,7 @@
             const templateData = await templateRes.json();
             if (templateData && !templateData.error) {
               isEventTemplate = true;
-              event = {
+              eventData = {
                 id: templateData.id,
                 name: templateData.name,
                 description: templateData.description,
@@ -942,14 +942,14 @@
             }
           }
           
-          if (!event) {
-            event = getDemoEvent();
+          if (!eventData) {
+            eventData = getDemoEvent();
           }
         }
       } catch (err) {
         console.error('Error loading data:', err);
-        event = getDemoEvent();
-        events = [event, ...getDemoRecommendations()];
+        eventData = getDemoEvent();
+        events = [eventData, ...getDemoRecommendations()];
       }
       
       renderPage();
@@ -1005,13 +1005,13 @@
     function renderPage() {
       renderCategoryNav();
       renderMainContent();
-      document.title = `${event.name} - Афиша`;
+      document.title = `${eventData.name} - Афиша`;
     }
     
     function renderCategoryNav() {
       const nav = document.getElementById('categoryNav');
       nav.innerHTML = categoryTabs.map((tab, i) => `
-        <a href="#" class="category-tab ${event.categoryName?.toUpperCase() === tab ? 'active' : ''}">${tab}</a>
+        <a href="#" class="category-tab ${eventData.categoryName?.toUpperCase() === tab ? 'active' : ''}">${tab}</a>
       `).join('') + '<div class="category-more">•••</div>';
     }
     
@@ -1019,9 +1019,9 @@
       const main = document.getElementById('mainContent');
       const rating = (7.5 + Math.random() * 2).toFixed(1);
       const price = 2490;
-      const venue = event.venue || '';
-      const city = event.cityName || '';
-      const heroImage = event.coverImageUrl || null;
+      const venue = eventData.venue || '';
+      const city = eventData.cityName || '';
+      const heroImage = eventData.coverImageUrl || null;
       
       let sessions = [];
       const dayNames = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
@@ -1034,18 +1034,18 @@
         return `${parts[0]}:${parts[1]}`;
       }
       
-      if (isGeneratedLink && event.date && event.time) {
-        const eventDate = new Date(event.date);
+      if (isGeneratedLink && eventData.date && eventData.time) {
+        const eventDate = new Date(eventData.date);
         const dayName = dayNames[eventDate.getDay()];
         const dateStr = `${eventDate.getDate()} ${monthNames[eventDate.getMonth()]}`;
-        const formattedTime = formatTimeHHMM(event.time);
+        const formattedTime = formatTimeHHMM(eventData.time);
         
         // Main session from generated link (with stable ticket count)
         sessions.push({ 
           day: `${dayName}, ${dateStr}`, 
           time: formattedTime, 
           isMain: true,
-          seats: event.availableSeats || 50
+          seats: eventData.availableSeats || 50
         });
         
         // Generate additional auto sessions (random tickets up to 20)
@@ -1078,24 +1078,24 @@
         }
       }
       
-      const recs = events.filter(e => e.id !== event.id).slice(0, 6);
+      const recs = events.filter(e => e.id !== eventData.id).slice(0, 6);
       const recommendations = recs.length > 0 ? recs : getDemoRecommendations();
       
       main.innerHTML = `
         <section class="hero-section">
           <div class="hero-main" ${!heroImage ? 'style="background: linear-gradient(135deg, #333 0%, #555 100%);"' : ''}>
-            ${heroImage ? `<img src="${heroImage}" alt="${event.name}">` : ''}
+            ${heroImage ? `<img src="${heroImage}" alt="${eventData.name}">` : ''}
             <div class="hero-overlay"></div>
             <div class="hero-rating">${rating}</div>
             <div class="hero-content">
-              <div class="hero-category">${(event.categoryName?.toUpperCase() || 'СОБЫТИЕ')} В ГОРОДЕ ${city.toUpperCase()}</div>
-              <h1 class="hero-title">${event.name}</h1>
+              <div class="hero-category">${(eventData.categoryName?.toUpperCase() || 'СОБЫТИЕ')} В ГОРОДЕ ${city.toUpperCase()}</div>
+              <h1 class="hero-title">${eventData.name}</h1>
               <button class="hero-btn" onclick="scrollToSessions()">Расписание и карты</button>
             </div>
           </div>
-          ${(event.images && event.images.length > 1) ? `
+          ${(eventData.images && eventData.images.length > 1) ? `
           <div class="hero-gallery">
-            ${event.images.slice(1, 5).map(img => `
+            ${eventData.images.slice(1, 5).map(img => `
               <div class="hero-gallery-item">
                 <img src="${img}" alt="">
               </div>
@@ -1125,8 +1125,8 @@
 
         <section class="about-section">
           <div class="about-label">Описание организатора</div>
-          <h2 class="about-title">О ${event.name}</h2>
-          <p class="about-text">${event.description || 'Описание мероприятия появится здесь. Это увлекательное событие, которое подарит вам незабываемые впечатления и эмоции.'}</p>
+          <h2 class="about-title">О ${eventData.name}</h2>
+          <p class="about-text">${eventData.description || 'Описание мероприятия появится здесь. Это увлекательное событие, которое подарит вам незабываемые впечатления и эмоции.'}</p>
         </section>
 
         <section class="age-section">
@@ -1184,8 +1184,8 @@
       btn.textContent = 'Оформление...';
       
       const orderData = {
-        eventId: event.id,
-        eventName: event.name,
+        eventId: eventData.id,
+        eventName: eventData.name,
         customerName: document.getElementById('customerName').value,
         customerEmail: document.getElementById('customerEmail').value,
         customerPhone: document.getElementById('customerPhone').value,
@@ -1227,7 +1227,7 @@
     
     function openEvent(id) {
       // Use new URL format with city slug
-      const slug = currentCitySlug || transliterate(event?.cityName || 'moskva');
+      const slug = currentCitySlug || transliterate(eventData?.cityName || 'moskva');
       window.location.href = `/${slug}/event/show/${id}?r=${Date.now()}`;
     }
     
@@ -1303,9 +1303,9 @@
       if (isGeneratedLink && linkCode) {
         window.location.href = `/booking-link/${linkCode}?date=${day}&time=${encodeURIComponent(time)}`;
       } else if (isEventTemplate) {
-        window.location.href = `/booking/${event.id}?date=${day}&time=${encodeURIComponent(time)}&template=1`;
+        window.location.href = `/booking/${eventData.id}?date=${day}&time=${encodeURIComponent(time)}&template=1`;
       } else {
-        window.location.href = `/booking/${event.id}?date=${day}&time=${encodeURIComponent(time)}`;
+        window.location.href = `/booking/${eventData.id}?date=${day}&time=${encodeURIComponent(time)}`;
       }
     }
     

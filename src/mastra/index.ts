@@ -1251,6 +1251,8 @@ export const mastra = new Mastra({
         handler: async (c) => {
           const fs = await import("fs");
           const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/event.html", "utf-8");
+          c.header("Cache-Control", "no-store, no-cache, must-revalidate");
+          c.header("Pragma", "no-cache");
           return c.html(html);
         },
       },
@@ -1262,6 +1264,8 @@ export const mastra = new Mastra({
         handler: async (c) => {
           const fs = await import("fs");
           const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/event.html", "utf-8");
+          c.header("Cache-Control", "no-store, no-cache, must-revalidate");
+          c.header("Pragma", "no-cache");
           return c.html(html);
         },
       },
@@ -1273,6 +1277,8 @@ export const mastra = new Mastra({
         handler: async (c) => {
           const fs = await import("fs");
           const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/event.html", "utf-8");
+          c.header("Cache-Control", "no-store, no-cache, must-revalidate");
+          c.header("Pragma", "no-cache");
           return c.html(html);
         },
       },
@@ -2428,17 +2434,6 @@ export const mastra = new Mastra({
             console.error("Error deleting link:", error);
             return c.json({ success: false }, 500);
           }
-        },
-      },
-
-      // Event page by generated link code
-      {
-        path: "/e/:code",
-        method: "GET",
-        handler: async (c) => {
-          const fs = await import("fs");
-          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/event.html", "utf-8");
-          return c.html(html);
         },
       },
 
