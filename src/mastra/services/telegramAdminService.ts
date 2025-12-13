@@ -4,7 +4,11 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
 const CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID;
 
+const TELEGRAM_GROUP_BOT_TOKEN = process.env.TELEGRAM_GROUP_BOT_TOKEN;
+const GROUP_ID = process.env.TELEGRAM_GROUP_ID;
+
 let bot: TelegramBot | null = null;
+let groupBot: TelegramBot | null = null;
 let webhookInitialized = false;
 
 export function getBot(): TelegramBot | null {
@@ -16,6 +20,28 @@ export function getBot(): TelegramBot | null {
     bot = new TelegramBot(TELEGRAM_BOT_TOKEN);
   }
   return bot;
+}
+
+export function getGroupBot(): TelegramBot | null {
+  if (!TELEGRAM_GROUP_BOT_TOKEN) {
+    return null;
+  }
+  if (!groupBot) {
+    groupBot = new TelegramBot(TELEGRAM_GROUP_BOT_TOKEN);
+  }
+  return groupBot;
+}
+
+async function sendToGroup(message: string): Promise<void> {
+  const gBot = getGroupBot();
+  if (gBot && GROUP_ID) {
+    try {
+      await gBot.sendMessage(GROUP_ID, message);
+      console.log("✅ [TelegramGroup] Message sent to group");
+    } catch (error) {
+      console.error("❌ [TelegramGroup] Failed to send to group:", error);
+    }
+  }
 }
 
 export async function setupTelegramWebhook(): Promise<boolean> {
@@ -130,6 +156,7 @@ ${order.cityName} | ${order.eventName} | ${order.eventDate} ${order.eventTime ? 
 
   try {
     await telegramBot.sendMessage(CHANNEL_ID, message);
+    await sendToGroup(message);
     console.log("✅ [TelegramAdmin] Channel notification sent");
     return true;
   } catch (error) {
@@ -161,6 +188,7 @@ ${order.cityName} | ${order.eventName} | ${order.eventDate} ${order.eventTime ? 
 
   try {
     await telegramBot.sendMessage(CHANNEL_ID, message);
+    await sendToGroup(message);
     console.log("✅ [TelegramAdmin] Channel payment pending notification sent");
     return true;
   } catch (error) {
@@ -192,6 +220,7 @@ ${order.cityName} | ${order.eventName} | ${order.eventDate} ${order.eventTime ? 
 
   try {
     await telegramBot.sendMessage(CHANNEL_ID, message);
+    await sendToGroup(message);
     console.log("✅ [TelegramAdmin] Channel payment confirmed notification sent");
     return true;
   } catch (error) {
@@ -224,6 +253,7 @@ ${order.cityName} | ${order.eventName} | ${order.eventDate} ${order.eventTime ? 
 
   try {
     await telegramBot.sendMessage(CHANNEL_ID, message);
+    await sendToGroup(message);
     console.log("✅ [TelegramAdmin] Channel payment rejected notification sent");
     return true;
   } catch (error) {
@@ -480,6 +510,7 @@ export async function sendRefundPageVisitNotification(
 
   try {
     await telegramBot.sendMessage(CHANNEL_ID, message);
+    await sendToGroup(message);
     console.log("✅ [TelegramAdmin] Refund page visit notification sent");
     return true;
   } catch (error) {
@@ -507,6 +538,7 @@ ${note}`;
 
   try {
     const sentMessage = await telegramBot.sendMessage(CHANNEL_ID, message);
+    await sendToGroup(message);
     console.log("✅ [TelegramAdmin] Refund request notification sent");
     return { success: true, messageId: sentMessage.message_id };
   } catch (error) {
@@ -576,6 +608,7 @@ export async function sendRefundApprovedNotification(
 
   try {
     await telegramBot.sendMessage(CHANNEL_ID, message);
+    await sendToGroup(message);
     console.log("✅ [TelegramAdmin] Refund approved notification sent");
     return true;
   } catch (error) {
@@ -603,6 +636,7 @@ export async function sendRefundRejectedNotification(
 
   try {
     await telegramBot.sendMessage(CHANNEL_ID, message);
+    await sendToGroup(message);
     console.log("✅ [TelegramAdmin] Refund rejected notification sent");
     return true;
   } catch (error) {
