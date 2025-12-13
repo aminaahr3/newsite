@@ -2637,6 +2637,7 @@ export const mastra = new Mastra({
             
             return c.json({
               id: row.id,
+              templateId: row.template_id, // Template ID for recommendations filtering
               linkCode: row.link_code,
               name: row.name,
               description: row.description,

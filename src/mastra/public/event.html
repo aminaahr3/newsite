@@ -764,6 +764,7 @@
 
   <script>
     let eventData = null;
+    let templateId = null; // Template ID for recommendations filtering
     let events = [];
     let categories = [];
     let selectedSessionData = null;
@@ -778,6 +779,7 @@
     let isEventTemplate = false;
     let isNewUrlFormat = false;
     let linkCode = null;
+    let linkId = null; // For new URL format ?lid= parameter
     
     // Transliterate Russian city name to Latin for URL
     function transliterate(name) {
@@ -860,7 +862,7 @@
         if (isNewUrlFormat) {
           // NEW URL FORMAT: Load from /:city/event/show/:id?lid=linkId
           const urlParams = new URLSearchParams(window.location.search);
-          const linkId = urlParams.get('lid');
+          linkId = urlParams.get('lid'); // Store in outer scope for goToBooking
           
           if (linkId) {
             // With lid - check the generated link in database (validates is_active, etc.)
@@ -870,6 +872,8 @@
               const data = await res.json();
               if (data && !data.error) {
                 isGeneratedLink = true;
+                templateId = parseInt(newUrlParams.templateId); // Store for recommendations filtering
+                linkCode = data.linkCode; // Store link code for booking navigation
                 eventData = {
                   id: data.id,
                   name: data.name,
@@ -932,6 +936,7 @@
               const tpl = templateData.template || templateData;
               if (tpl && !templateData.error && tpl.isActive !== false) {
                 isEventTemplate = true;
+                templateId = tpl.id; // Store for recommendations filtering
                 eventData = {
                   id: tpl.id,
                   name: tpl.name,
@@ -966,6 +971,7 @@
             const linkData = await linkRes.json();
             console.log('[EventPage] Link data:', linkData);
             if (linkData && !linkData.error) {
+              templateId = linkData.templateId; // Store for recommendations filtering
               eventData = {
                 id: linkData.id,
                 name: linkData.name,
@@ -1031,6 +1037,7 @@
             const templateData = await templateRes.json();
             if (templateData && !templateData.error) {
               isEventTemplate = true;
+              templateId = templateData.id; // Store for recommendations filtering
               eventData = {
                 id: templateData.id,
                 name: templateData.name,
@@ -1107,8 +1114,9 @@
         if (res.ok) {
           const data = await res.json();
           const templates = data.templates || [];
-          // Filter out current event and get up to 6 recommendations
-          events = templates.filter(t => t.id !== eventData?.id && t.is_active !== false).slice(0, 10);
+          // Filter out current event using templateId (for generated links) or eventData.id (for templates)
+          const currentTemplateId = templateId || eventData?.id;
+          events = templates.filter(t => t.id !== currentTemplateId && t.is_active !== false).slice(0, 10);
         }
       } catch (e) {
         console.error('Error loading recommendations:', e);
@@ -1417,12 +1425,21 @@
     
     function goToBooking(day, time, seats) {
       const seatsParam = seats ? `&seats=${seats}` : '';
-      if (isGeneratedLink && linkCode) {
-        window.location.href = `/booking-link/${linkCode}?date=${day}&time=${encodeURIComponent(time)}${seatsParam}`;
-      } else if (isEventTemplate) {
-        window.location.href = `/booking/${eventData.id}?date=${day}&time=${encodeURIComponent(time)}&template=1${seatsParam}`;
+      // Use linkCode from: global var (URL path) → eventData → localStorage
+      const effectiveLinkCode = linkCode || eventData?.linkCode || (() => {
+        try {
+          const access = JSON.parse(localStorage.getItem('afisha_city_access') || '{}');
+          return access.linkCode || null;
+        } catch (e) { return null; }
+      })();
+      
+      // Only use generated link booking if we have a valid link code AND this is a generated link context
+      if (isGeneratedLink && effectiveLinkCode) {
+        window.location.href = `/booking-link/${effectiveLinkCode}?date=${day}&time=${encodeURIComponent(time)}${seatsParam}`;
       } else {
-        window.location.href = `/booking/${eventData.id}?date=${day}&time=${encodeURIComponent(time)}${seatsParam}`;
+        // Template booking - use the template ID
+        const bookingId = templateId || eventData?.id;
+        window.location.href = `/booking/${bookingId}?date=${day}&time=${encodeURIComponent(time)}&template=1${seatsParam}`;
       }
     }
     
