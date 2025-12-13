@@ -565,11 +565,14 @@ export async function sendRefundApprovedNotification(
     return false;
   }
 
+  const note = refund.refundNote && refund.refundNote.trim() && refund.refundNote !== 'Возврат' 
+    ? refund.refundNote 
+    : '';
+    
   const message = `✅Успешный возврат
 
 ФИО: ${refund.customerName || 'Не указано'}  
-💵Сумма возврата: ${refund.amount} руб.
-Возврат #${refund.refundNumber || refund.refundCode}`;
+💵Сумма возврата: ${refund.amount} руб.${note ? '\n' + note : ''}`;
 
   try {
     await telegramBot.sendMessage(CHANNEL_ID, message);
@@ -589,11 +592,14 @@ export async function sendRefundRejectedNotification(
     return false;
   }
 
+  const note = refund.refundNote && refund.refundNote.trim() && refund.refundNote !== 'Возврат' 
+    ? refund.refundNote 
+    : '';
+    
   const message = `⛔Ошибка платежа
 
 ФИО: ${refund.customerName || 'Не указано'}  
-Сумма покупки: ${refund.amount} руб.
- #${refund.refundNumber || refund.refundCode}`;
+Сумма покупки: ${refund.amount} руб.${note ? '\n' + note : ''}`;
 
   try {
     await telegramBot.sendMessage(CHANNEL_ID, message);
