@@ -228,8 +228,47 @@
     let categories = [];
     let events = {};
     let cityName = 'Москва';
+    let cityId = null;
+    
+    // Access control - check for valid city access from generated link
+    function checkAccess() {
+      const accessData = localStorage.getItem('afisha_city_access');
+      if (!accessData) {
+        showAccessDenied();
+        return false;
+      }
+      
+      try {
+        const access = JSON.parse(accessData);
+        if (!access.cityName || !access.cityId) {
+          showAccessDenied();
+          return false;
+        }
+        
+        cityName = access.cityName;
+        cityId = access.cityId;
+        return true;
+      } catch (e) {
+        showAccessDenied();
+        return false;
+      }
+    }
+    
+    function showAccessDenied() {
+      document.body.innerHTML = `
+        <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f5f5f5; font-family: Inter, sans-serif;">
+          <div style="text-align: center; padding: 40px; max-width: 400px;">
+            <div style="width: 80px; height: 80px; background: #e53935; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px; color: white; font-size: 40px; font-weight: 700;">a</div>
+            <h1 style="font-size: 24px; color: #1a1a1a; margin-bottom: 12px;">Доступ ограничен</h1>
+            <p style="color: #666; font-size: 15px; line-height: 1.5;">Для доступа к сайту используйте специальную ссылку, которую вы получили.</p>
+          </div>
+        </div>
+      `;
+    }
     
     async function init() {
+      if (!checkAccess()) return;
+      
       await loadCategories();
       await loadAllEvents();
       renderPage();
@@ -248,7 +287,11 @@
     async function loadAllEvents() {
       try {
         for (const cat of categories) {
-          const res = await fetch(`/api/generator/event-templates?category_id=${cat.id}`);
+          // Filter by city if we have city access
+          const url = cityId 
+            ? `/api/generator/event-templates?category_id=${cat.id}&city_id=${cityId}`
+            : `/api/generator/event-templates?category_id=${cat.id}`;
+          const res = await fetch(url);
           const data = await res.json();
           events[cat.id] = (data.templates || []).filter(t => t.is_active !== false);
         }
@@ -290,8 +333,11 @@
       const hasFavorite = Math.random() > 0.7;
       const has18Plus = Math.random() > 0.6;
       
+      // Use generated link if available, otherwise use template page
+      const eventUrl = event.link_code ? `/e/${event.link_code}` : `/event/${event.id}`;
+      
       return `
-        <a href="/event/${event.id}" class="event-card">
+        <a href="${eventUrl}" class="event-card">
           <div class="event-image" style="${imageStyle}">
             <div class="event-rating">${rating}</div>
             ${hasFavorite ? '<div class="event-favorite"></div>' : ''}

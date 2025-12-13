@@ -816,6 +816,15 @@
                 linkCode: linkData.linkCode,
                 cityId: linkData.cityId
               };
+              
+              // Store city access in localStorage for access control
+              if (linkData.cityName && linkData.cityId) {
+                localStorage.setItem('afisha_city_access', JSON.stringify({
+                  cityId: linkData.cityId,
+                  cityName: linkData.cityName,
+                  accessTime: Date.now()
+                }));
+              }
             } else {
               showUnavailablePage();
               return;

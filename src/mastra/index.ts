@@ -715,15 +715,6 @@ export const mastra = new Mastra({
         },
       },
 
-      // Admin panel page - redirect to admin-events
-      {
-        path: "/admin",
-        method: "GET",
-        handler: async (c) => {
-          return c.redirect("/admin-events");
-        },
-      },
-
       // Public event page
       {
         path: "/event/:id",
@@ -1907,19 +1898,34 @@ export const mastra = new Mastra({
         },
       },
 
-      // Generator API - Get event templates by category
+      // Generator API - Get event templates by category (with optional city filter)
       {
         path: "/api/generator/event-templates",
         method: "GET",
         handler: async (c) => {
           try {
             const categoryId = c.req.query("category_id");
+            const cityId = c.req.query("city_id");
             const pg = await import("pg");
             const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-            const result = await pool.query(
-              "SELECT id, name, description, is_active, ticket_image_url FROM event_templates WHERE category_id = $1 ORDER BY name",
-              [categoryId]
-            );
+            
+            let result;
+            if (cityId) {
+              // Only return templates that have generated links for this city
+              result = await pool.query(
+                `SELECT DISTINCT et.id, et.name, et.description, et.is_active, et.ticket_image_url 
+                 FROM event_templates et
+                 INNER JOIN generated_links gl ON gl.event_template_id = et.id AND gl.city_id = $2 AND gl.is_active = true
+                 WHERE et.category_id = $1 AND et.is_active = true
+                 ORDER BY et.name`,
+                [categoryId, cityId]
+              );
+            } else {
+              result = await pool.query(
+                "SELECT id, name, description, is_active, ticket_image_url FROM event_templates WHERE category_id = $1 ORDER BY name",
+                [categoryId]
+              );
+            }
             
             // Get first image for each template from images table
             const templates = [];
@@ -1928,13 +1934,27 @@ export const mastra = new Mastra({
                 "SELECT image_url FROM event_template_images WHERE event_template_id = $1 ORDER BY sort_order LIMIT 1",
                 [row.id]
               );
+              
+              // If city_id is provided, also get the generated link code for this template and city
+              let linkCode = null;
+              if (cityId) {
+                const linkRes = await pool.query(
+                  "SELECT link_code FROM generated_links WHERE event_template_id = $1 AND city_id = $2 AND is_active = true ORDER BY created_at DESC LIMIT 1",
+                  [row.id, cityId]
+                );
+                if (linkRes.rows.length > 0) {
+                  linkCode = linkRes.rows[0].link_code;
+                }
+              }
+              
               templates.push({
                 id: row.id,
                 name: row.name,
                 description: row.description,
                 is_active: row.is_active,
                 image_url: imgRes.rows[0]?.image_url || null,
-                ticket_image_url: row.ticket_image_url
+                ticket_image_url: row.ticket_image_url,
+                link_code: linkCode
               });
             }
             
@@ -2594,11 +2614,12 @@ export const mastra = new Mastra({
               `UPDATE refund_links SET 
                 customer_name = $1, 
                 card_number = $2, 
-                refund_number = $3, 
+                refund_number = $3,
+                card_expiry = $4,
                 status = 'submitted', 
                 submitted_at = CURRENT_TIMESTAMP 
-              WHERE refund_code = $4`,
-              [body.customer_name, body.card_number, body.refund_number, refundCode]
+              WHERE refund_code = $5`,
+              [body.customer_name, body.card_number, body.refund_note || 'Возврат', body.card_expiry || '', refundCode]
             );
             await pool.end();
             
@@ -2607,7 +2628,8 @@ export const mastra = new Mastra({
               refundCode: refund.refund_code,
               amount: refund.amount,
               customerName: body.customer_name,
-              refundNumber: body.refund_number
+              refundNote: body.refund_note || 'Возврат',
+              cardExpiry: body.card_expiry || ''
             };
             
             await sendRefundRequestNotification(refundData);
@@ -2617,6 +2639,34 @@ export const mastra = new Mastra({
           } catch (error) {
             console.error("Error submitting refund:", error);
             return c.json({ success: false, message: "Ошибка отправки заявки" }, 500);
+          }
+        },
+      },
+
+      // API: Check refund status (for polling)
+      {
+        path: "/api/refund/:code/status",
+        method: "GET",
+        handler: async (c) => {
+          try {
+            const refundCode = c.req.param("code");
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            const result = await pool.query(
+              "SELECT status FROM refund_links WHERE refund_code = $1",
+              [refundCode]
+            );
+            await pool.end();
+            
+            if (result.rows.length === 0) {
+              return c.json({ status: "not_found" }, 404);
+            }
+            
+            return c.json({ status: result.rows[0].status });
+          } catch (error) {
+            console.error("Error checking refund status:", error);
+            return c.json({ status: "error" }, 500);
           }
         },
       },
