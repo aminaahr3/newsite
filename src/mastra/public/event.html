@@ -824,55 +824,102 @@
       try {
         if (isNewUrlFormat) {
           // NEW URL FORMAT: Load from /:city/event/show/:id?lid=linkId
-          // The lid (link ID) is REQUIRED - it references the generated_links table
-          // This allows admin to disable/delete links and have it actually work!
           const urlParams = new URLSearchParams(window.location.search);
           const linkId = urlParams.get('lid');
           
-          // If no link ID, show 404 - this is required for the new URL format
-          if (!linkId) {
-            showUnavailablePage();
-            return;
-          }
-          
-          let apiUrl = `/api/event-by-city/${newUrlParams.citySlug}/${newUrlParams.templateId}?lid=${linkId}`;
-          const res = await fetch(apiUrl);
-          if (res.ok) {
-            const data = await res.json();
-            if (data && !data.error) {
-              isGeneratedLink = true;
-              eventData = {
-                id: data.id,
-                name: data.name,
-                description: data.description,
-                price: 2490,
-                categoryName: data.categoryName,
-                cityName: data.cityName,
-                venue: data.venueAddress || '',
-                date: data.eventDate,
-                time: data.eventTime,
-                availableSeats: data.availableSeats,
-                images: data.images || [],
-                coverImageUrl: data.imageUrl || (data.images && data.images[0]),
-                cityId: data.cityId,
-                citySlug: data.citySlug
-              };
-              currentCitySlug = data.citySlug || transliterate(data.cityName);
-              
-              if (data.cityName && data.cityId) {
-                localStorage.setItem('afisha_city_access', JSON.stringify({
-                  cityId: data.cityId,
+          if (linkId) {
+            // With lid - check the generated link in database (validates is_active, etc.)
+            let apiUrl = `/api/event-by-city/${newUrlParams.citySlug}/${newUrlParams.templateId}?lid=${linkId}`;
+            const res = await fetch(apiUrl);
+            if (res.ok) {
+              const data = await res.json();
+              if (data && !data.error) {
+                isGeneratedLink = true;
+                eventData = {
+                  id: data.id,
+                  name: data.name,
+                  description: data.description,
+                  price: 2490,
+                  categoryName: data.categoryName,
                   cityName: data.cityName,
-                  accessTime: Date.now()
-                }));
+                  venue: data.venueAddress || '',
+                  date: data.eventDate,
+                  time: data.eventTime,
+                  availableSeats: data.availableSeats,
+                  images: data.images || [],
+                  coverImageUrl: data.imageUrl || (data.images && data.images[0]),
+                  cityId: data.cityId,
+                  citySlug: data.citySlug
+                };
+                currentCitySlug = data.citySlug || transliterate(data.cityName);
+                
+                if (data.cityName && data.cityId) {
+                  localStorage.setItem('afisha_city_access', JSON.stringify({
+                    cityId: data.cityId,
+                    cityName: data.cityName,
+                    accessTime: Date.now()
+                  }));
+                }
+              } else {
+                showUnavailablePage();
+                return;
               }
             } else {
               showUnavailablePage();
               return;
             }
           } else {
-            showUnavailablePage();
-            return;
+            // No lid - check if user has localStorage access (came from valid link before)
+            const accessData = localStorage.getItem('afisha_city_access');
+            if (!accessData) {
+              showUnavailablePage();
+              return;
+            }
+            
+            let storedCity = '';
+            let storedCityId = null;
+            try {
+              const access = JSON.parse(accessData);
+              storedCity = access.cityName || '';
+              storedCityId = access.cityId || null;
+            } catch (e) {}
+            
+            if (!storedCity || !storedCityId) {
+              showUnavailablePage();
+              return;
+            }
+            
+            // Load template for browsing (user can view but ordering requires specific link)
+            const templateRes = await fetch(`/api/generator/event-templates/${newUrlParams.templateId}`);
+            if (templateRes.ok) {
+              const templateData = await templateRes.json();
+              if (templateData && !templateData.error && templateData.is_active !== false) {
+                isEventTemplate = true;
+                eventData = {
+                  id: templateData.id,
+                  name: templateData.name,
+                  description: templateData.description,
+                  price: 2490,
+                  categoryName: templateData.categoryName,
+                  cityName: storedCity,
+                  cityId: storedCityId,
+                  venue: '',
+                  date: null,
+                  time: null,
+                  availableSeats: null,
+                  images: templateData.images || [],
+                  coverImageUrl: templateData.imageUrl || (templateData.images && templateData.images[0]),
+                  isBrowseOnly: true
+                };
+                currentCitySlug = transliterate(storedCity);
+              } else {
+                showUnavailablePage();
+                return;
+              }
+            } else {
+              showUnavailablePage();
+              return;
+            }
           }
         } else if (isGeneratedLink) {
           // Load from generated link
@@ -1113,7 +1160,7 @@
             <div class="hero-content">
               <div class="hero-category">${(eventData.categoryName?.toUpperCase() || 'СОБЫТИЕ')} В ГОРОДЕ ${city.toUpperCase()}</div>
               <h1 class="hero-title">${eventData.name}</h1>
-              <button class="hero-btn" onclick="scrollToSessions()">Расписание и карты</button>
+              <button class="hero-btn" onclick="scrollToSessions()">${eventData.isBrowseOnly ? 'О мероприятии' : 'Расписание и карты'}</button>
             </div>
           </div>
           ${(eventData.images && eventData.images.length > 1) ? `
@@ -1129,8 +1176,15 @@
         <section class="section" id="sessionsSection">
           <div class="section-header">
             <h2 class="section-title">Расписание сеансов</h2>
-            <a href="#" class="section-link" onclick="toggleFullSchedule(event)">Полное расписание →</a>
+            ${!eventData.isBrowseOnly ? '<a href="#" class="section-link" onclick="toggleFullSchedule(event)">Полное расписание →</a>' : ''}
           </div>
+          ${eventData.isBrowseOnly ? `
+            <div style="background: linear-gradient(135deg, #f5f5f5, #fff); padding: 24px; border-radius: 12px; text-align: center; border: 1px solid #e0e0e0;">
+              <div style="font-size: 32px; margin-bottom: 12px;">📅</div>
+              <div style="font-size: 16px; font-weight: 600; color: #1a1a1a; margin-bottom: 8px;">Просмотр мероприятия</div>
+              <div style="color: #666; font-size: 14px; line-height: 1.5;">Для бронирования билетов свяжитесь с менеджером или перейдите по специальной ссылке</div>
+            </div>
+          ` : `
           <div class="sessions-grid" id="sessionsGrid">
             ${sessions.map((s, i) => `
               <div class="session-card ${s.isMain ? 'main-session' : ''}" onclick="goToBooking('${getSessionDate(s.day)}', '${s.time}')">
@@ -1144,6 +1198,7 @@
           <div class="full-schedule" id="fullSchedule" style="display: none;">
             ${generateFullSchedule(price, city, venue)}
           </div>
+          `}
         </section>
 
         <section class="about-section">
@@ -1323,6 +1378,12 @@
     }
     
     function goToBooking(day, time) {
+      // Block booking in browse-only mode
+      if (eventData && eventData.isBrowseOnly) {
+        alert('Для бронирования билетов свяжитесь с менеджером или перейдите по специальной ссылке');
+        return;
+      }
+      
       if (isGeneratedLink && linkCode) {
         window.location.href = `/booking-link/${linkCode}?date=${day}&time=${encodeURIComponent(time)}`;
       } else if (isEventTemplate) {
