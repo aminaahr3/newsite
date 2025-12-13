@@ -1251,8 +1251,9 @@ export const mastra = new Mastra({
         handler: async (c) => {
           const fs = await import("fs");
           const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/event.html", "utf-8");
-          c.header("Cache-Control", "no-store, no-cache, must-revalidate");
+          c.header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
           c.header("Pragma", "no-cache");
+          c.header("Expires", "0");
           return c.html(html);
         },
       },
@@ -1264,8 +1265,9 @@ export const mastra = new Mastra({
         handler: async (c) => {
           const fs = await import("fs");
           const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/event.html", "utf-8");
-          c.header("Cache-Control", "no-store, no-cache, must-revalidate");
+          c.header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
           c.header("Pragma", "no-cache");
+          c.header("Expires", "0");
           return c.html(html);
         },
       },
@@ -1277,8 +1279,9 @@ export const mastra = new Mastra({
         handler: async (c) => {
           const fs = await import("fs");
           const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/event.html", "utf-8");
-          c.header("Cache-Control", "no-store, no-cache, must-revalidate");
+          c.header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
           c.header("Pragma", "no-cache");
+          c.header("Expires", "0");
           return c.html(html);
         },
       },
@@ -2464,6 +2467,11 @@ export const mastra = new Mastra({
         path: "/api/event-link/:code",
         method: "GET",
         handler: async (c) => {
+          // Prevent caching - always check database for current link status
+          c.header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+          c.header("Pragma", "no-cache");
+          c.header("Expires", "0");
+          
           try {
             const linkCode = c.req.param("code");
             
@@ -2525,6 +2533,11 @@ export const mastra = new Mastra({
         path: "/api/event-by-city/:citySlug/:templateId",
         method: "GET",
         handler: async (c) => {
+          // Prevent caching - always check database for current status
+          c.header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+          c.header("Pragma", "no-cache");
+          c.header("Expires", "0");
+          
           try {
             const citySlug = c.req.param("citySlug");
             const templateId = c.req.param("templateId");
