@@ -1270,13 +1270,21 @@
         const result = await res.json();
         
         if (result.success) {
-          // NEW URL FORMAT: /:citySlug/event/show/:templateId?r=timestamp
+          // NEW URL FORMAT: /:citySlug/event/show/:templateId?r=timestamp&s=seats
           const citySelect = document.getElementById('citySelect');
           const selectedOption = citySelect.options[citySelect.selectedIndex];
           const cityName = selectedOption ? selectedOption.textContent : '';
           const citySlug = transliterateCityName(cityName);
-          const timestamp = Date.now();
-          const link = `${window.location.origin}/${citySlug}/event/show/${eventId}?r=${timestamp}`;
+          
+          // Create timestamp from selected date and time
+          const [hours, minutes] = selectedTime.split(':').map(Number);
+          const eventTimestamp = new Date(selectedDate);
+          eventTimestamp.setHours(hours, minutes, 0, 0);
+          const timestamp = eventTimestamp.getTime();
+          
+          // Include seats in URL
+          const seatsParam = parseInt(seats) || 2;
+          const link = `${window.location.origin}/${citySlug}/event/show/${eventId}?r=${timestamp}&s=${seatsParam}`;
           document.getElementById('generatedLink').value = link;
           document.getElementById('resultSection').classList.add('show');
         } else {

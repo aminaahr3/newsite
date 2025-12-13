@@ -2542,6 +2542,7 @@ export const mastra = new Mastra({
             const citySlug = c.req.param("citySlug");
             const templateId = c.req.param("templateId");
             const timestamp = c.req.query("r");
+            const seatsParam = c.req.query("s");
             
             const pg = await import("pg");
             const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -2602,6 +2603,9 @@ export const mastra = new Mastra({
             
             await pool.end();
             
+            // Get seats from URL parameter (fixed value from generator)
+            const availableSeats = seatsParam ? parseInt(seatsParam) : 2;
+            
             return c.json({
               id: row.id,
               name: row.name,
@@ -2616,7 +2620,7 @@ export const mastra = new Mastra({
               eventDate: eventDate.toISOString().split('T')[0],
               eventTime: eventTime,
               venueAddress: row.venue_address || '',
-              availableSeats: Math.floor(Math.random() * 20) + 5,
+              availableSeats: availableSeats,
               price: 2490
             });
           } catch (error) {

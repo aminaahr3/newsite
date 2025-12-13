@@ -823,9 +823,15 @@
       
       try {
         if (isNewUrlFormat) {
-          // NEW URL FORMAT: Load from /:city/event/show/:id?r=timestamp
-          const timestamp = new URLSearchParams(window.location.search).get('r');
-          const apiUrl = `/api/event-by-city/${newUrlParams.citySlug}/${newUrlParams.templateId}${timestamp ? '?r=' + timestamp : ''}`;
+          // NEW URL FORMAT: Load from /:city/event/show/:id?r=timestamp&s=seats
+          const urlParams = new URLSearchParams(window.location.search);
+          const timestamp = urlParams.get('r');
+          const seats = urlParams.get('s');
+          let apiUrl = `/api/event-by-city/${newUrlParams.citySlug}/${newUrlParams.templateId}`;
+          const queryParams = [];
+          if (timestamp) queryParams.push(`r=${timestamp}`);
+          if (seats) queryParams.push(`s=${seats}`);
+          if (queryParams.length > 0) apiUrl += '?' + queryParams.join('&');
           const res = await fetch(apiUrl);
           if (res.ok) {
             const data = await res.json();
