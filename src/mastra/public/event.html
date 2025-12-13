@@ -836,6 +836,25 @@
         } else {
           // Regular event loading from template
           const eventId = getEventId();
+          
+          // Get city from localStorage
+          const accessData = localStorage.getItem('afisha_city_access');
+          let storedCity = '';
+          let storedCityId = null;
+          if (accessData) {
+            try {
+              const access = JSON.parse(accessData);
+              storedCity = access.cityName || '';
+              storedCityId = access.cityId || null;
+            } catch (e) {}
+          }
+          
+          // If no city access, show 404
+          if (!storedCity || !storedCityId) {
+            showUnavailablePage();
+            return;
+          }
+          
           const templateRes = await fetch(`/api/generator/event-templates/${eventId}`);
           
           if (templateRes.ok) {
@@ -848,7 +867,8 @@
                 description: templateData.description,
                 price: 2490,
                 categoryName: templateData.categoryName,
-                cityName: 'Москва',
+                cityName: storedCity,
+                cityId: storedCityId,
                 venue: '',
                 date: new Date().toISOString(),
                 availableSeats: 50,
@@ -875,24 +895,33 @@
       document.body.innerHTML = `
         <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f5f5f5; font-family: Inter, sans-serif;">
           <div style="text-align: center; padding: 40px;">
-            <div style="font-size: 80px; margin-bottom: 20px;">🚫</div>
-            <h1 style="font-size: 28px; color: #333; margin-bottom: 15px;">Страница недоступна</h1>
-            <p style="color: #666; font-size: 16px; margin-bottom: 30px;">Данное мероприятие больше недоступно или было удалено.</p>
-            <a href="/" style="display: inline-block; padding: 15px 30px; background: #E53935; color: white; text-decoration: none; border-radius: 8px; font-weight: 500;">На главную</a>
+            <div style="font-size: 120px; color: #ddd; font-weight: 700; line-height: 1;">404</div>
+            <h1 style="font-size: 24px; color: #1a1a1a; margin-bottom: 12px; margin-top: 20px;">Страница не найдена</h1>
+            <p style="color: #666; font-size: 15px; line-height: 1.5;">Запрашиваемая страница не существует или была удалена.</p>
           </div>
         </div>
       `;
     }
     
     function getDemoEvent() {
+      // Get city from localStorage if available
+      const accessData = localStorage.getItem('afisha_city_access');
+      let storedCity = '';
+      if (accessData) {
+        try {
+          const access = JSON.parse(accessData);
+          storedCity = access.cityName || '';
+        } catch (e) {}
+      }
+      
       return {
         id: 1,
         name: 'Профессиональный Тир',
         description: 'Добро пожаловать в тир, где атмосфера наполнена ароматом пороха, а удовлетворение от меткости — в центре внимания. Ощутите мощь и контроль, держа в руках реальное оружие, исследуя точность и мастерство стрельбы. Это мероприятие предоставляет уникальную возможность испытать волнение от выстрела, соблюдая все правила безопасности. Тир — это не только тренировка навыков стрельбы, но и встреча с энергией, которую приносит в себе каждый выстрел. Готовьтесь к захватывающему опыту, где меткость и концентрация приводят к непередаваемому удовлетворению.',
         price: 2490,
         categoryName: 'ЭКСТРИМ',
-        cityName: 'Москва',
-        venue: 'ул. Маркова, 12',
+        cityName: storedCity,
+        venue: '',
         date: new Date().toISOString(),
         availableSeats: 50,
         images: []
@@ -926,8 +955,8 @@
       const main = document.getElementById('mainContent');
       const rating = (7.5 + Math.random() * 2).toFixed(1);
       const price = 2490;
-      const venue = event.venue || 'ул. Маркова, 12';
-      const city = event.cityName || 'Москва';
+      const venue = event.venue || '';
+      const city = event.cityName || '';
       const heroImage = event.coverImageUrl || null;
       
       let sessions = [];
@@ -1020,7 +1049,7 @@
               <div class="session-card ${s.isMain ? 'main-session' : ''}" onclick="goToBooking('${getSessionDate(s.day)}', '${s.time}')">
                 <div class="session-price">От ${formatPrice(price)} ₽</div>
                 <div class="session-time">${s.day} ${s.time}</div>
-                <div class="session-address">${city}${venue ? ', ' + venue : ','}</div>
+                <div class="session-address">${city}${venue ? ', ' + venue : ''}</div>
                 <div class="session-seats" style="font-size: 12px; color: #e53935; margin-top: 4px;">Осталось ${s.seats} мест</div>
               </div>
             `).join('')}
