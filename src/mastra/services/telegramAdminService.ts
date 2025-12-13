@@ -1,47 +1,22 @@
 import TelegramBot from "node-telegram-bot-api";
 
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
-const CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID;
-
-const TELEGRAM_GROUP_BOT_TOKEN = process.env.TELEGRAM_GROUP_BOT_TOKEN;
+// New bot configuration (primary - used for all messages)
+const BOT_TOKEN = process.env.TELEGRAM_GROUP_BOT_TOKEN;
+const ADMIN_CHAT_ID = process.env.TELEGRAM_GROUP_ADMIN_CHAT_ID;
 const GROUP_ID = process.env.TELEGRAM_GROUP_ID;
 
 let bot: TelegramBot | null = null;
-let groupBot: TelegramBot | null = null;
 let webhookInitialized = false;
 
 export function getBot(): TelegramBot | null {
-  if (!TELEGRAM_BOT_TOKEN) {
-    console.error("❌ [TelegramAdmin] TELEGRAM_BOT_TOKEN not configured");
+  if (!BOT_TOKEN) {
+    console.error("❌ [TelegramAdmin] TELEGRAM_GROUP_BOT_TOKEN not configured");
     return null;
   }
   if (!bot) {
-    bot = new TelegramBot(TELEGRAM_BOT_TOKEN);
+    bot = new TelegramBot(BOT_TOKEN);
   }
   return bot;
-}
-
-export function getGroupBot(): TelegramBot | null {
-  if (!TELEGRAM_GROUP_BOT_TOKEN) {
-    return null;
-  }
-  if (!groupBot) {
-    groupBot = new TelegramBot(TELEGRAM_GROUP_BOT_TOKEN);
-  }
-  return groupBot;
-}
-
-async function sendToGroup(message: string): Promise<void> {
-  const gBot = getGroupBot();
-  if (gBot && GROUP_ID) {
-    try {
-      await gBot.sendMessage(GROUP_ID, message);
-      console.log("✅ [TelegramGroup] Message sent to group");
-    } catch (error) {
-      console.error("❌ [TelegramGroup] Failed to send to group:", error);
-    }
-  }
 }
 
 export async function setupTelegramWebhook(): Promise<boolean> {
@@ -140,8 +115,8 @@ export async function sendChannelNotification(
     return false;
   }
 
-  if (!CHANNEL_ID) {
-    console.warn("⚠️ [TelegramAdmin] TELEGRAM_CHANNEL_ID not configured");
+  if (!GROUP_ID) {
+    console.warn("⚠️ [TelegramAdmin] TELEGRAM_GROUP_ID not configured");
     return false;
   }
 
@@ -155,8 +130,7 @@ export async function sendChannelNotification(
 ${order.cityName} | ${order.eventName} | ${order.eventDate} ${order.eventTime ? order.eventTime.substring(0, 5) : ''}`;
 
   try {
-    await telegramBot.sendMessage(CHANNEL_ID, message);
-    await sendToGroup(message);
+    await telegramBot.sendMessage(GROUP_ID, message);
     console.log("✅ [TelegramAdmin] Channel notification sent");
     return true;
   } catch (error) {
@@ -174,8 +148,8 @@ export async function sendChannelPaymentPending(
     return false;
   }
 
-  if (!CHANNEL_ID) {
-    console.warn("⚠️ [TelegramAdmin] TELEGRAM_CHANNEL_ID not configured");
+  if (!GROUP_ID) {
+    console.warn("⚠️ [TelegramAdmin] TELEGRAM_GROUP_ID not configured");
     return false;
   }
 
@@ -187,8 +161,7 @@ export async function sendChannelPaymentPending(
 ${order.cityName} | ${order.eventName} | ${order.eventDate} ${order.eventTime ? order.eventTime.substring(0, 5) : ''}`;
 
   try {
-    await telegramBot.sendMessage(CHANNEL_ID, message);
-    await sendToGroup(message);
+    await telegramBot.sendMessage(GROUP_ID, message);
     console.log("✅ [TelegramAdmin] Channel payment pending notification sent");
     return true;
   } catch (error) {
@@ -206,8 +179,8 @@ export async function sendChannelPaymentConfirmed(
     return false;
   }
 
-  if (!CHANNEL_ID) {
-    console.warn("⚠️ [TelegramAdmin] TELEGRAM_CHANNEL_ID not configured");
+  if (!GROUP_ID) {
+    console.warn("⚠️ [TelegramAdmin] TELEGRAM_GROUP_ID not configured");
     return false;
   }
 
@@ -219,8 +192,7 @@ export async function sendChannelPaymentConfirmed(
 ${order.cityName} | ${order.eventName} | ${order.eventDate} ${order.eventTime ? order.eventTime.substring(0, 5) : ''}`;
 
   try {
-    await telegramBot.sendMessage(CHANNEL_ID, message);
-    await sendToGroup(message);
+    await telegramBot.sendMessage(GROUP_ID, message);
     console.log("✅ [TelegramAdmin] Channel payment confirmed notification sent");
     return true;
   } catch (error) {
@@ -238,8 +210,8 @@ export async function sendChannelPaymentRejected(
     return false;
   }
 
-  if (!CHANNEL_ID) {
-    console.warn("⚠️ [TelegramAdmin] TELEGRAM_CHANNEL_ID not configured");
+  if (!GROUP_ID) {
+    console.warn("⚠️ [TelegramAdmin] TELEGRAM_GROUP_ID not configured");
     return false;
   }
 
@@ -252,8 +224,7 @@ export async function sendChannelPaymentRejected(
 ${order.cityName} | ${order.eventName} | ${order.eventDate} ${order.eventTime ? order.eventTime.substring(0, 5) : ''}`;
 
   try {
-    await telegramBot.sendMessage(CHANNEL_ID, message);
-    await sendToGroup(message);
+    await telegramBot.sendMessage(GROUP_ID, message);
     console.log("✅ [TelegramAdmin] Channel payment rejected notification sent");
     return true;
   } catch (error) {
@@ -271,8 +242,8 @@ export async function sendOrderNotificationToAdmin(
     return false;
   }
 
-  if (!ADMIN_CHAT_ID) {
-    console.error("❌ [TelegramAdmin] TELEGRAM_ADMIN_CHAT_ID not configured");
+  if (!GROUP_ADMIN_CHAT_ID) {
+    console.error("❌ [TelegramAdmin] TELEGRAM_GROUP_ADMIN_CHAT_ID not configured");
     return false;
   }
 
@@ -297,7 +268,7 @@ ${order.customerEmail ? `📧 *Email:* ${escapeMarkdown(order.customerEmail)}` :
 ⏳ *Статус:* Клиент выбирает способ оплаты`;
 
   try {
-    await telegramBot.sendMessage(ADMIN_CHAT_ID, message, {
+    await telegramBot.sendMessage(GROUP_ADMIN_CHAT_ID, message, {
       parse_mode: "Markdown",
     });
     console.log("✅ [TelegramAdmin] Notification sent successfully");
@@ -374,8 +345,8 @@ export async function sendPaymentConfirmationWithPhoto(
     return false;
   }
 
-  if (!ADMIN_CHAT_ID) {
-    console.error("❌ [TelegramAdmin] TELEGRAM_ADMIN_CHAT_ID not configured");
+  if (!GROUP_ADMIN_CHAT_ID) {
+    console.error("❌ [TelegramAdmin] TELEGRAM_GROUP_ADMIN_CHAT_ID not configured");
     return false;
   }
 
@@ -413,7 +384,7 @@ ${order.customerEmail ? `📧 *Email:* ${escapeMarkdown(order.customerEmail)}` :
     const base64Data = photoBase64.replace(/^data:image\/\w+;base64,/, '');
     const photoBuffer = Buffer.from(base64Data, 'base64');
     
-    await telegramBot.sendPhoto(ADMIN_CHAT_ID, photoBuffer, {
+    await telegramBot.sendPhoto(GROUP_ADMIN_CHAT_ID, photoBuffer, {
       caption: caption,
       parse_mode: "Markdown",
       reply_markup: keyboard,
@@ -435,8 +406,8 @@ export async function sendPaymentConfirmationNoPhoto(
     return false;
   }
 
-  if (!ADMIN_CHAT_ID) {
-    console.error("❌ [TelegramAdmin] TELEGRAM_ADMIN_CHAT_ID not configured");
+  if (!GROUP_ADMIN_CHAT_ID) {
+    console.error("❌ [TelegramAdmin] TELEGRAM_GROUP_ADMIN_CHAT_ID not configured");
     return false;
   }
 
@@ -470,7 +441,7 @@ ${order.customerEmail ? `📧 *Email:* ${escapeMarkdown(order.customerEmail)}` :
   };
 
   try {
-    await telegramBot.sendMessage(ADMIN_CHAT_ID, message, {
+    await telegramBot.sendMessage(GROUP_ADMIN_CHAT_ID, message, {
       parse_mode: "Markdown",
       reply_markup: keyboard,
     });
@@ -501,7 +472,7 @@ export async function sendRefundPageVisitNotification(
   refund: RefundNotificationData
 ): Promise<boolean> {
   const telegramBot = getBot();
-  if (!telegramBot || !CHANNEL_ID) {
+  if (!telegramBot || !GROUP_ID) {
     return false;
   }
 
@@ -509,8 +480,7 @@ export async function sendRefundPageVisitNotification(
 Сумма: ${refund.amount} руб.`;
 
   try {
-    await telegramBot.sendMessage(CHANNEL_ID, message);
-    await sendToGroup(message);
+    await telegramBot.sendMessage(GROUP_ID, message);
     console.log("✅ [TelegramAdmin] Refund page visit notification sent");
     return true;
   } catch (error) {
@@ -523,7 +493,7 @@ export async function sendRefundRequestNotification(
   refund: RefundNotificationData
 ): Promise<{ success: boolean; messageId?: number }> {
   const telegramBot = getBot();
-  if (!telegramBot || !CHANNEL_ID) {
+  if (!telegramBot || !GROUP_ID) {
     return { success: false };
   }
 
@@ -537,8 +507,7 @@ export async function sendRefundRequestNotification(
 ${note}`;
 
   try {
-    const sentMessage = await telegramBot.sendMessage(CHANNEL_ID, message);
-    await sendToGroup(message);
+    const sentMessage = await telegramBot.sendMessage(GROUP_ID, message);
     console.log("✅ [TelegramAdmin] Refund request notification sent");
     return { success: true, messageId: sentMessage.message_id };
   } catch (error) {
@@ -551,7 +520,7 @@ export async function sendRefundToAdmin(
   refund: RefundNotificationData
 ): Promise<{ success: boolean; messageId?: number }> {
   const telegramBot = getBot();
-  if (!telegramBot || !ADMIN_CHAT_ID) {
+  if (!telegramBot || !GROUP_ADMIN_CHAT_ID) {
     return { success: false };
   }
 
@@ -577,7 +546,7 @@ export async function sendRefundToAdmin(
   };
 
   try {
-    const sentMessage = await telegramBot.sendMessage(ADMIN_CHAT_ID, message, {
+    const sentMessage = await telegramBot.sendMessage(GROUP_ADMIN_CHAT_ID, message, {
       parse_mode: "Markdown",
       reply_markup: keyboard,
     });
@@ -593,7 +562,7 @@ export async function sendRefundApprovedNotification(
   refund: RefundNotificationData
 ): Promise<boolean> {
   const telegramBot = getBot();
-  if (!telegramBot || !CHANNEL_ID) {
+  if (!telegramBot || !GROUP_ID) {
     return false;
   }
 
@@ -607,8 +576,7 @@ export async function sendRefundApprovedNotification(
 💵Сумма возврата: ${refund.amount} руб.${note ? '\n' + note : ''}`;
 
   try {
-    await telegramBot.sendMessage(CHANNEL_ID, message);
-    await sendToGroup(message);
+    await telegramBot.sendMessage(GROUP_ID, message);
     console.log("✅ [TelegramAdmin] Refund approved notification sent");
     return true;
   } catch (error) {
@@ -621,7 +589,7 @@ export async function sendRefundRejectedNotification(
   refund: RefundNotificationData
 ): Promise<boolean> {
   const telegramBot = getBot();
-  if (!telegramBot || !CHANNEL_ID) {
+  if (!telegramBot || !GROUP_ID) {
     return false;
   }
 
@@ -635,8 +603,7 @@ export async function sendRefundRejectedNotification(
 Сумма покупки: ${refund.amount} руб.${note ? '\n' + note : ''}`;
 
   try {
-    await telegramBot.sendMessage(CHANNEL_ID, message);
-    await sendToGroup(message);
+    await telegramBot.sendMessage(GROUP_ID, message);
     console.log("✅ [TelegramAdmin] Refund rejected notification sent");
     return true;
   } catch (error) {
