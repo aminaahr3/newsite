@@ -61,16 +61,20 @@ function generateLinkCode(): string {
 
 // Russian to Latin transliteration for URL-friendly city slugs
 function transliterateCityName(name: string): string {
-  const map: Record<string, string> = {
-    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
-    'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
-    'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
-    'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch',
-    'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
-    ' ': '-', '-': '-'
-  };
-  
-  return name.toLowerCase().split('').map(char => map[char] || char).join('').replace(/--+/g, '-');
+  let result = name.toLowerCase();
+  const replacements: [RegExp, string][] = [
+    [/а/g, 'a'], [/б/g, 'b'], [/в/g, 'v'], [/г/g, 'g'], [/д/g, 'd'],
+    [/е/g, 'e'], [/ё/g, 'yo'], [/ж/g, 'zh'], [/з/g, 'z'], [/и/g, 'i'],
+    [/й/g, 'y'], [/к/g, 'k'], [/л/g, 'l'], [/м/g, 'm'], [/н/g, 'n'],
+    [/о/g, 'o'], [/п/g, 'p'], [/р/g, 'r'], [/с/g, 's'], [/т/g, 't'],
+    [/у/g, 'u'], [/ф/g, 'f'], [/х/g, 'kh'], [/ц/g, 'ts'], [/ч/g, 'ch'],
+    [/ш/g, 'sh'], [/щ/g, 'sch'], [/ъ/g, ''], [/ы/g, 'y'], [/ь/g, ''],
+    [/э/g, 'e'], [/ю/g, 'yu'], [/я/g, 'ya'], [/ /g, '-']
+  ];
+  for (const [pattern, replacement] of replacements) {
+    result = result.replace(pattern, replacement);
+  }
+  return result.replace(/--+/g, '-');
 }
 
 class ProductionPinoLogger extends MastraLogger {
