@@ -569,7 +569,8 @@
       return {
         date: params.get('date'),
         time: params.get('time'),
-        isTemplate: params.get('template') === '1'
+        isTemplate: params.get('template') === '1',
+        seats: params.get('seats') ? parseInt(params.get('seats')) : null
       };
     }
     
@@ -634,7 +635,7 @@
                   categoryName: tpl.categoryName,
                   cityName: storedCity,
                   venue: '',
-                  availableSeats: 50
+                  availableSeats: params.seats || 50
                 };
               }
             }

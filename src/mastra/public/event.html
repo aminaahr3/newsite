@@ -1180,7 +1180,7 @@
           </div>
           <div class="sessions-grid" id="sessionsGrid">
             ${sessions.map((s, i) => `
-              <div class="session-card ${s.isMain ? 'main-session' : ''}" onclick="goToBooking('${getSessionDate(s.day)}', '${s.time}')">
+              <div class="session-card ${s.isMain ? 'main-session' : ''}" onclick="goToBooking('${getSessionDate(s.day)}', '${s.time}', ${s.seats})">
                 <div class="session-price">От ${formatPrice(price)} ₽</div>
                 <div class="session-time">${s.day} ${s.time}</div>
                 <div class="session-address">${city}${venue ? ', ' + venue : ''}</div>
@@ -1347,7 +1347,7 @@
             <div class="schedule-time">${s.time}</div>
             <div class="schedule-venue">${city}${venue ? ', ' + venue : ','}</div>
           </div>
-          <button class="schedule-price-btn" onclick="goToBooking('${s.isoDate}', '${s.time}')">От ${formatPrice(price)} ₽</button>
+          <button class="schedule-price-btn" onclick="goToBooking('${s.isoDate}', '${s.time}', ${s.seats || 20})">От ${formatPrice(price)} ₽</button>
         </div>
       `).join('');
     }
@@ -1369,13 +1369,14 @@
       }
     }
     
-    function goToBooking(day, time) {
+    function goToBooking(day, time, seats) {
+      const seatsParam = seats ? `&seats=${seats}` : '';
       if (isGeneratedLink && linkCode) {
-        window.location.href = `/booking-link/${linkCode}?date=${day}&time=${encodeURIComponent(time)}`;
+        window.location.href = `/booking-link/${linkCode}?date=${day}&time=${encodeURIComponent(time)}${seatsParam}`;
       } else if (isEventTemplate) {
-        window.location.href = `/booking/${eventData.id}?date=${day}&time=${encodeURIComponent(time)}&template=1`;
+        window.location.href = `/booking/${eventData.id}?date=${day}&time=${encodeURIComponent(time)}&template=1${seatsParam}`;
       } else {
-        window.location.href = `/booking/${eventData.id}?date=${day}&time=${encodeURIComponent(time)}`;
+        window.location.href = `/booking/${eventData.id}?date=${day}&time=${encodeURIComponent(time)}${seatsParam}`;
       }
     }
     
