@@ -1056,8 +1056,10 @@
       } catch (err) {
         console.error('Error loading data:', err);
         eventData = getDemoEvent();
-        events = [eventData, ...getDemoRecommendations()];
       }
+      
+      // Load recommendations from actual templates
+      await loadRecommendations();
       
       renderPage();
     }
@@ -1099,13 +1101,29 @@
       };
     }
     
+    async function loadRecommendations() {
+      try {
+        const res = await fetch('/api/generator/event-templates');
+        if (res.ok) {
+          const data = await res.json();
+          const templates = data.templates || [];
+          // Filter out current event and get up to 6 recommendations
+          events = templates.filter(t => t.id !== eventData?.id && t.is_active !== false).slice(0, 10);
+        }
+      } catch (e) {
+        console.error('Error loading recommendations:', e);
+      }
+    }
+    
     function getDemoRecommendations() {
+      // Return demo recommendations when API fails or returns empty
       return [
-        { id: 2, name: 'Прогулка на квадроциклах', categoryName: 'ЭКСТРИМ', price: 2490 },
-        { id: 3, name: 'Прогулка на лошадях', categoryName: 'ЭКСТРИМ', price: 2490 },
-        { id: 4, name: 'Пейнтбол', categoryName: 'ЭКСТРИМ', price: 2490 },
-        { id: 5, name: 'Аэротруба', categoryName: 'ЭКСТРИМ', price: 2490 },
-        { id: 6, name: 'Стрелковый клуб «Громовержец»', categoryName: 'ЭКСТРИМ', price: 2490 }
+        { id: 1, name: 'Профессиональный Тир' },
+        { id: 2, name: 'Квест Комната' },
+        { id: 3, name: 'Комната Гнева' },
+        { id: 4, name: 'Мастер-класс по живописи' },
+        { id: 5, name: 'Пейнтбол' },
+        { id: 6, name: 'Картинг' }
       ];
     }
     
@@ -1169,7 +1187,7 @@
               day: `${dayNames[nextDay.getDay()]}, ${nextDay.getDate()} ${monthNames[nextDay.getMonth()]}`,
               time: t,
               isMain: false,
-              seats: Math.floor(Math.random() * 20) + 1,
+              seats: eventData.availableSeats || 20,
               isoDate: nextDayIso
             });
           }
@@ -1185,7 +1203,7 @@
             day: `${dayNames[d.getDay()]}, ${d.getDate()} ${monthNames[d.getMonth()]}`,
             time: ['11:00', '14:00', '17:00', '19:00'][i % 4],
             isMain: false,
-            seats: Math.floor(Math.random() * 20) + 1,
+            seats: eventData.availableSeats || 20,
             isoDate: isoDate
           });
         }
@@ -1361,7 +1379,7 @@
           : ['17:00'];
         
         times.forEach(time => {
-          scheduleData.push({ dayNum, dayName, time, month: monthAbbr[date.getMonth()], isoDate, seats: Math.floor(Math.random() * 20) + 5 });
+          scheduleData.push({ dayNum, dayName, time, month: monthAbbr[date.getMonth()], isoDate, seats: eventData?.availableSeats || 20 });
         });
       }
       

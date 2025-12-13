@@ -643,10 +643,15 @@
                 venue: linkData.venueAddress || '',
                 date: linkData.eventDate,
                 time: linkData.eventTime,
-                availableSeats: linkData.availableSeats,
+                availableSeats: linkData.availableSeats || params.seats || 50,
                 linkCode: linkData.linkCode,
                 cityId: linkData.cityId
               };
+              
+              // Use seats from URL params if provided (passed from event page)
+              if (params.seats) {
+                event.availableSeats = params.seats;
+              }
             }
           }
           if (!event) {
@@ -709,6 +714,11 @@
           if (!event) {
             event = getDemoEvent();
           }
+          
+          // Apply URL seats param for all regular event types
+          if (params.seats && event) {
+            event.availableSeats = params.seats;
+          }
         }
         
         if (params.date) {
@@ -734,13 +744,21 @@
     }
     
     function getDemoEvent() {
+      const accessData = localStorage.getItem('afisha_city_access');
+      let storedCity = 'Москва';
+      if (accessData) {
+        try {
+          const access = JSON.parse(accessData);
+          storedCity = access.cityName || 'Москва';
+        } catch (e) {}
+      }
       return {
         id: 1,
-        name: 'Профессиональный Тир',
+        name: 'Мероприятие',
         price: 2490,
-        categoryName: 'ЭКСТРИМ',
-        cityName: 'Сыктывкар',
-        venue: 'ул. Маркова, 12',
+        categoryName: 'СОБЫТИЕ',
+        cityName: storedCity,
+        venue: '',
         availableSeats: 50
       };
     }
@@ -769,15 +787,28 @@
       
       const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate();
       
+      // Check if date was passed via URL (session-specific booking)
+      const urlParams = getUrlParams();
+      const hasUrlDate = !!urlParams.date;
+      
+      // Build available days: only URL date if provided, else 14-day window from today
       const availableDays = [];
-      for (let i = 1; i <= daysInMonth; i++) {
-        const checkDate = new Date(displayYear, displayMonth, i);
-        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        const maxDate = new Date(todayStart);
-        maxDate.setDate(maxDate.getDate() + 14);
-        
-        if (checkDate >= todayStart && checkDate <= maxDate) {
-          availableDays.push(i);
+      if (hasUrlDate && selectedFullDate) {
+        // Only the specific session date is available
+        if (displayMonth === selectedFullDate.getMonth() && displayYear === selectedFullDate.getFullYear()) {
+          availableDays.push(selectedFullDate.getDate());
+        }
+      } else {
+        // Standard 14-day availability window
+        for (let i = 1; i <= daysInMonth; i++) {
+          const checkDate = new Date(displayYear, displayMonth, i);
+          const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          const maxDate = new Date(todayStart);
+          maxDate.setDate(maxDate.getDate() + 14);
+          
+          if (checkDate >= todayStart && checkDate <= maxDate) {
+            availableDays.push(i);
+          }
         }
       }
       
@@ -786,7 +817,8 @@
         const isAvailable = availableDays.includes(day);
         const isSelected = selectedFullDate && 
           day === selectedFullDate.getDate() && 
-          displayMonth === selectedFullDate.getMonth();
+          displayMonth === selectedFullDate.getMonth() &&
+          displayYear === selectedFullDate.getFullYear();
         let className = 'calendar-day';
         
         if (isSelected) {
