@@ -604,8 +604,8 @@ export const mastra = new Mastra({
               `INSERT INTO orders (
                 event_id, event_template_id, customer_name, customer_phone, customer_email, 
                 seats_count, total_price, order_code, status, payment_status, tickets_json,
-                event_date, event_time
-              ) VALUES (NULL, $1, $2, $3, $4, $5, $6, $7, 'pending', 'pending', $8, $9, $10)
+                event_date, event_time, city_id
+              ) VALUES (NULL, $1, $2, $3, $4, $5, $6, $7, 'pending', 'pending', $8, $9, $10, $11)
               RETURNING id`,
               [
                 body.eventTemplateId,
@@ -617,7 +617,8 @@ export const mastra = new Mastra({
                 orderCode,
                 ticketsJson,
                 body.selectedDate || null,
-                body.selectedTime || null
+                body.selectedTime || null,
+                body.cityId || null
               ]
             );
             
@@ -1286,12 +1287,12 @@ export const mastra = new Mastra({
                      et.name as event_name, et.ticket_image_url, et.image_url,
                      COALESCE(o.event_date, gl.event_date) as event_date, 
                      COALESCE(o.event_time, gl.event_time) as event_time, 
-                     gl.city_id,
+                     COALESCE(o.city_id, gl.city_id) as city_id,
                      c.name as city_name
               FROM orders o
               JOIN event_templates et ON o.event_template_id = et.id
               LEFT JOIN generated_links gl ON o.link_code = gl.link_code
-              LEFT JOIN cities c ON gl.city_id = c.id
+              LEFT JOIN cities c ON COALESCE(o.city_id, gl.city_id) = c.id
               WHERE o.order_code = $1 AND o.event_template_id IS NOT NULL
             `, [orderCode]);
             
@@ -1854,10 +1855,12 @@ export const mastra = new Mastra({
                 `SELECT o.*, et.name as event_name, 
                  COALESCE(o.event_date, gl.event_date) as date, 
                  COALESCE(o.event_time, gl.event_time) as time, 
+                 c.name as city_name,
                  2990 as price
                  FROM orders o
                  JOIN event_templates et ON o.event_template_id = et.id
                  LEFT JOIN generated_links gl ON gl.link_code = o.link_code
+                 LEFT JOIN cities c ON COALESCE(o.city_id, gl.city_id) = c.id
                  WHERE o.order_code = $1`,
                 [orderCode]
               );
@@ -1968,7 +1971,7 @@ export const mastra = new Mastra({
                  FROM orders o
                  JOIN event_templates et ON o.event_template_id = et.id
                  LEFT JOIN generated_links gl ON gl.link_code = o.link_code
-                 LEFT JOIN cities c ON gl.city_id = c.id
+                 LEFT JOIN cities c ON COALESCE(o.city_id, gl.city_id) = c.id
                  WHERE o.order_code = $1`,
                 [orderCode]
               );
