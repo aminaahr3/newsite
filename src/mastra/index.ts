@@ -603,8 +603,9 @@ export const mastra = new Mastra({
             const orderResult = await pool.query(
               `INSERT INTO orders (
                 event_id, event_template_id, customer_name, customer_phone, customer_email, 
-                seats_count, total_price, order_code, status, payment_status, tickets_json
-              ) VALUES (NULL, $1, $2, $3, $4, $5, $6, $7, 'pending', 'pending', $8)
+                seats_count, total_price, order_code, status, payment_status, tickets_json,
+                event_date, event_time
+              ) VALUES (NULL, $1, $2, $3, $4, $5, $6, $7, 'pending', 'pending', $8, $9, $10)
               RETURNING id`,
               [
                 body.eventTemplateId,
@@ -614,7 +615,9 @@ export const mastra = new Mastra({
                 seatsCount,
                 totalPrice,
                 orderCode,
-                ticketsJson
+                ticketsJson,
+                body.selectedDate || null,
+                body.selectedTime || null
               ]
             );
             
@@ -1281,7 +1284,9 @@ export const mastra = new Mastra({
             let result = await pool.query(`
               SELECT o.*, 
                      et.name as event_name, et.ticket_image_url, et.image_url,
-                     gl.event_date, gl.event_time, gl.city_id,
+                     COALESCE(o.event_date, gl.event_date) as event_date, 
+                     COALESCE(o.event_time, gl.event_time) as event_time, 
+                     gl.city_id,
                      c.name as city_name
               FROM orders o
               JOIN event_templates et ON o.event_template_id = et.id
@@ -1846,7 +1851,10 @@ export const mastra = new Mastra({
             // If not found, try generated link orders (with event_template_id)
             if (result.rows.length === 0) {
               result = await pool.query(
-                `SELECT o.*, et.name as event_name, gl.event_date as date, gl.event_time as time, 2990 as price
+                `SELECT o.*, et.name as event_name, 
+                 COALESCE(o.event_date, gl.event_date) as date, 
+                 COALESCE(o.event_time, gl.event_time) as time, 
+                 2990 as price
                  FROM orders o
                  JOIN event_templates et ON o.event_template_id = et.id
                  LEFT JOIN generated_links gl ON gl.link_code = o.link_code
@@ -1953,7 +1961,10 @@ export const mastra = new Mastra({
             // If not found, try generated link orders
             if (orderResult.rows.length === 0) {
               orderResult = await pool.query(
-                `SELECT o.*, et.name as event_name, gl.event_date, gl.event_time, c.name as city_name
+                `SELECT o.*, et.name as event_name, 
+                 COALESCE(o.event_date, gl.event_date) as event_date, 
+                 COALESCE(o.event_time, gl.event_time) as event_time, 
+                 c.name as city_name
                  FROM orders o
                  JOIN event_templates et ON o.event_template_id = et.id
                  LEFT JOIN generated_links gl ON gl.link_code = o.link_code
