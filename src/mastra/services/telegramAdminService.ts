@@ -66,6 +66,45 @@ export async function setupTelegramWebhook(): Promise<boolean> {
   }
 }
 
+// Ticket type interface - defined early for use in all notification functions
+export interface OrderNotificationData {
+  orderId: number;
+  orderCode: string;
+  eventName: string;
+  eventDate: string;
+  eventTime: string;
+  cityName: string;
+  customerName: string;
+  customerPhone: string;
+  customerEmail?: string;
+  seatsCount: number;
+  totalPrice: number;
+  ticketType?: string;
+  tickets?: { [key: string]: number };
+}
+
+// Helper to format ticket breakdown for notifications
+function formatTicketBreakdown(tickets?: { [key: string]: number }): string {
+  if (!tickets) return '';
+  
+  const ticketNames: { [key: string]: string } = {
+    'standard': 'Входная карта',
+    'double': 'Входная карта «для двоих»',
+    'discount': 'Льготная',
+    'discount_double': 'Льготная «для двоих»'
+  };
+  
+  const parts: string[] = [];
+  for (const [type, count] of Object.entries(tickets)) {
+    if (count > 0) {
+      const name = ticketNames[type] || type;
+      parts.push(`${count}x ${name}`);
+    }
+  }
+  
+  return parts.length > 0 ? parts.join(', ') : '';
+}
+
 export async function sendChannelNotification(
   order: OrderNotificationData
 ): Promise<boolean> {
@@ -82,10 +121,12 @@ export async function sendChannelNotification(
 
   console.log("📤 [TelegramAdmin] Sending channel notification for:", order.orderCode);
 
+  const ticketInfo = formatTicketBreakdown(order.tickets) || order.ticketType || 'Входная карта';
   const message = `🔔🦣 перешел на страницу оплаты🔔
 ФИО: ${order.customerName}
 Сумма: ${order.totalPrice} руб.
-${order.cityName} | ${order.eventName} | ${order.ticketType || 'Входная карта'} | ${order.eventDate} ${order.eventTime ? order.eventTime.substring(0, 5) : ''}`;
+Билеты: ${ticketInfo}
+${order.cityName} | ${order.eventName} | ${order.eventDate} ${order.eventTime ? order.eventTime.substring(0, 5) : ''}`;
 
   try {
     await telegramBot.sendMessage(CHANNEL_ID, message);
@@ -111,10 +152,12 @@ export async function sendChannelPaymentPending(
     return false;
   }
 
+  const ticketInfo = formatTicketBreakdown(order.tickets) || order.ticketType || 'Входная карта';
   const message = `🔔🦣 подтвердил оплату через SBP🔔
 ФИО: ${order.customerName}
 Сумма: ${order.totalPrice}
-${order.cityName} | ${order.eventName} | ${order.ticketType || 'Входная карта'} | ${order.eventDate} ${order.eventTime ? order.eventTime.substring(0, 5) : ''}`;
+Билеты: ${ticketInfo}
+${order.cityName} | ${order.eventName} | ${order.eventDate} ${order.eventTime ? order.eventTime.substring(0, 5) : ''}`;
 
   try {
     await telegramBot.sendMessage(CHANNEL_ID, message);
@@ -140,10 +183,12 @@ export async function sendChannelPaymentConfirmed(
     return false;
   }
 
+  const ticketInfo = formatTicketBreakdown(order.tickets) || order.ticketType || 'Входная карта';
   const message = `✅Успешная оплата
 
 💵Сумма покупки: ${order.totalPrice} руб.
-${order.cityName} | ${order.eventName} | ${order.ticketType || 'Входная карта'} | ${order.eventDate} ${order.eventTime ? order.eventTime.substring(0, 5) : ''}`;
+Билеты: ${ticketInfo}
+${order.cityName} | ${order.eventName} | ${order.eventDate} ${order.eventTime ? order.eventTime.substring(0, 5) : ''}`;
 
   try {
     await telegramBot.sendMessage(CHANNEL_ID, message);
@@ -169,11 +214,13 @@ export async function sendChannelPaymentRejected(
     return false;
   }
 
+  const ticketInfo = formatTicketBreakdown(order.tickets) || order.ticketType || 'Входная карта';
   const message = `⛔Ошибка платежа
 
 ФИО: ${order.customerName}
 Сумма покупки: ${order.totalPrice} руб.
-${order.cityName} | ${order.eventName} | ${order.ticketType || 'Входная карта'} | ${order.eventDate} ${order.eventTime ? order.eventTime.substring(0, 5) : ''}`;
+Билеты: ${ticketInfo}
+${order.cityName} | ${order.eventName} | ${order.eventDate} ${order.eventTime ? order.eventTime.substring(0, 5) : ''}`;
 
   try {
     await telegramBot.sendMessage(CHANNEL_ID, message);
@@ -183,21 +230,6 @@ ${order.cityName} | ${order.eventName} | ${order.ticketType || 'Входная �
     console.error("❌ [TelegramAdmin] Failed to send channel notification:", error);
     return false;
   }
-}
-
-export interface OrderNotificationData {
-  orderId: number;
-  orderCode: string;
-  eventName: string;
-  eventDate: string;
-  eventTime: string;
-  cityName: string;
-  customerName: string;
-  customerPhone: string;
-  customerEmail?: string;
-  seatsCount: number;
-  totalPrice: number;
-  ticketType?: string;
 }
 
 export async function sendOrderNotificationToAdmin(

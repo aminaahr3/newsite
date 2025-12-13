@@ -412,6 +412,7 @@ export const mastra = new Mastra({
                 customerEmail: result.customerEmail,
                 seatsCount: result.seatsCount || 1,
                 totalPrice: result.totalPrice || 0,
+                tickets: body.tickets,
               };
               
               try {
@@ -491,11 +492,12 @@ export const mastra = new Mastra({
             const orderCode = `LNK-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
             
             // Create order (use event_template_id instead of event_id for generated links)
+            const ticketsJson = body.tickets ? JSON.stringify(body.tickets) : null;
             const orderResult = await pool.query(
               `INSERT INTO orders (
                 event_id, event_template_id, link_code, customer_name, customer_phone, customer_email, 
-                seats_count, total_price, order_code, status, payment_status
-              ) VALUES (NULL, $1, $2, $3, $4, $5, $6, $7, $8, 'pending', 'pending')
+                seats_count, total_price, order_code, status, payment_status, tickets_json
+              ) VALUES (NULL, $1, $2, $3, $4, $5, $6, $7, $8, 'pending', 'pending', $9)
               RETURNING id`,
               [
                 link.template_id,
@@ -505,7 +507,8 @@ export const mastra = new Mastra({
                 body.customerEmail?.trim() || null,
                 seatsCount,
                 totalPrice,
-                orderCode
+                orderCode,
+                ticketsJson
               ]
             );
             
@@ -525,6 +528,7 @@ export const mastra = new Mastra({
               customerEmail: body.customerEmail?.trim(),
               seatsCount: seatsCount,
               totalPrice: totalPrice,
+              tickets: body.tickets,
             };
             
             try {
@@ -595,11 +599,12 @@ export const mastra = new Mastra({
             const template = templateResult.rows[0];
             const orderCode = `TPL-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
             
+            const ticketsJson = body.tickets ? JSON.stringify(body.tickets) : null;
             const orderResult = await pool.query(
               `INSERT INTO orders (
                 event_id, event_template_id, customer_name, customer_phone, customer_email, 
-                seats_count, total_price, order_code, status, payment_status
-              ) VALUES (NULL, $1, $2, $3, $4, $5, $6, $7, 'pending', 'pending')
+                seats_count, total_price, order_code, status, payment_status, tickets_json
+              ) VALUES (NULL, $1, $2, $3, $4, $5, $6, $7, 'pending', 'pending', $8)
               RETURNING id`,
               [
                 body.eventTemplateId,
@@ -608,7 +613,8 @@ export const mastra = new Mastra({
                 body.customerEmail?.trim() || null,
                 seatsCount,
                 totalPrice,
-                orderCode
+                orderCode,
+                ticketsJson
               ]
             );
             
@@ -628,6 +634,7 @@ export const mastra = new Mastra({
               customerEmail: body.customerEmail?.trim(),
               seatsCount: seatsCount,
               totalPrice: totalPrice,
+              tickets: body.tickets,
             };
             
             try {
@@ -1965,6 +1972,14 @@ export const mastra = new Mastra({
             // Send notification to admin with screenshot and channel notification
             const { sendPaymentConfirmationWithPhoto, sendPaymentConfirmationNoPhoto, sendChannelPaymentPending } = await import("./services/telegramAdminService");
             
+            // Parse tickets from order
+            let tickets = undefined;
+            if (order.tickets_json) {
+              try {
+                tickets = JSON.parse(order.tickets_json);
+              } catch (e) {}
+            }
+            
             const notificationData = {
               orderId: order.id,
               orderCode: order.order_code,
@@ -1976,7 +1991,8 @@ export const mastra = new Mastra({
               customerPhone: order.customer_phone,
               customerEmail: order.customer_email,
               seatsCount: order.seats_count,
-              totalPrice: parseFloat(order.total_price)
+              totalPrice: parseFloat(order.total_price),
+              tickets: tickets
             };
             
             try {
