@@ -17,13 +17,28 @@ This is a ticket booking platform ("БИЛЕТИКС/Афиша") built with Mas
 - Responsive design for mobile/tablet
 
 ### Key Pages
-- `/` - Main homepage with event carousel and grid
+- `/` - Main homepage with event carousel and grid (requires access via generated link)
 - `/event/:id` - Event details and order form
 - `/e/:code` - Event page for generated links (format: LNK-XXXXXX)
 - `/booking-link/:code` - Booking page for generated links
-- `/admin` - Admin panel (password protected)
+- `/refund/:code` - Refund request page (format: RFD-XXXXXX)
 - `/generator` - Link generator for creating unique event URLs
 - `/admin-events` - Event templates management (images, descriptions, toggle on/off)
+
+### Access Control System
+- Site is only accessible via generated links
+- When user accesses `/e/:code`, their city access is stored in localStorage
+- Main homepage (`/`) checks for valid city access and blocks if not present
+- Users can only browse events that have generated links for their allowed city
+- API endpoint supports city filtering via `city_id` parameter
+
+### Refund System
+- Admin creates refund links via Telegram or admin panel
+- Refund page collects: name, card number, card expiry (MM/YY), note
+- After submission, page shows loading state and polls for admin decision
+- Admin approves/rejects via Telegram buttons
+- Page updates automatically: shows success or error message based on decision
+- Refund arrives in 5 minutes (not 3-5 days)
 
 ### Link Generator System
 The platform includes a link generator for creating unique event URLs:
