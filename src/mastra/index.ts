@@ -1332,10 +1332,18 @@ export const mastra = new Mastra({
               return c.json({ success: true, pending: true, message: "Payment pending confirmation" });
             }
             
+            let ticketsData = null;
+            if (order.tickets_json) {
+              try {
+                ticketsData = JSON.parse(order.tickets_json);
+              } catch (e) {}
+            }
+            
             return c.json({
               success: true,
               ticket: {
                 order_code: order.order_code,
+                orderId: order.id,
                 event_name: order.event_name || 'Мероприятие',
                 event_date: order.event_date,
                 event_time: order.event_time,
@@ -1343,7 +1351,8 @@ export const mastra = new Mastra({
                 customer_name: order.customer_name,
                 total_price: order.total_price,
                 ticket_image_url: order.ticket_image_url,
-                image_url: finalImageUrl
+                image_url: finalImageUrl,
+                tickets: ticketsData
               }
             });
           } catch (error) {

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Входная карта - AFISHA</title>
+  <title>Входные карты - AFISHA</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
@@ -14,13 +14,21 @@
       background: #f5f5f5; 
       min-height: 100vh;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      align-items: center;
       padding: 20px;
+    }
+    
+    .tickets-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 100%;
+      max-width: 400px;
     }
     
     .ticket {
       background: white;
-      max-width: 400px;
       width: 100%;
       border-radius: 16px;
       overflow: hidden;
@@ -90,7 +98,7 @@
       padding: 0;
     }
     
-    #barcode {
+    .ticket-barcode {
       width: 100%;
       height: 80px;
     }
@@ -164,6 +172,10 @@
     .loading {
       text-align: center;
       padding: 100px 20px;
+      background: white;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 400px;
     }
     
     .loading-spinner {
@@ -184,6 +196,10 @@
       text-align: center;
       padding: 100px 20px;
       color: #666;
+      background: white;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 400px;
     }
     
     .error-message h2 {
@@ -196,6 +212,10 @@
       text-align: center;
       padding: 60px 20px;
       color: #666;
+      background: white;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 400px;
     }
     
     .pending-icon {
@@ -213,98 +233,37 @@
       font-size: 14px;
       line-height: 1.6;
     }
+    
+    .ticket-count-badge {
+      background: #4CAF50;
+      color: white;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 15px;
+    }
   </style>
 </head>
 <body>
-  <div class="ticket" id="ticketContainer">
-    <div class="loading" id="loadingState">
-      <div class="loading-spinner"></div>
-      <p>Загрузка билета...</p>
-    </div>
-    
-    <div class="error-message" id="errorState" style="display: none;">
-      <h2>Билет не найден</h2>
-      <p>Проверьте правильность ссылки или обратитесь в поддержку</p>
-    </div>
-    
-    <div class="pending-message" id="pendingState" style="display: none;">
-      <div class="pending-icon">⏳</div>
-      <h2>Оплата на проверке</h2>
-      <p>Ваш платеж находится на проверке.<br>Билет будет доступен после подтверждения оплаты администратором.</p>
-    </div>
-    
-    <div id="ticketContent" style="display: none;">
-      <div class="ticket-header">
-        <div class="ticket-logo">AFISHA</div>
-        <div class="ticket-qr-section">
-          <div class="qr-code" id="qrCode"></div>
-          <div class="ticket-type">
-            <div class="ticket-type-title">Входная карта</div>
-            <div class="ticket-type-number">E-card #<span id="ticketNumber"></span></div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="ticket-image" id="ticketImage"></div>
-      
-      <div class="barcode-section">
-        <div class="barcode-container">
-          <svg id="barcode"></svg>
-        </div>
-      </div>
-      
-      <div class="event-title-section">
-        <div>
-          <div class="event-name" id="eventName"></div>
-          <div class="event-datetime" id="eventDateTime"></div>
-        </div>
-        <div class="age-badge">18+</div>
-      </div>
-      
-      <div class="divider"></div>
-      
-      <div class="ticket-details">
-        <div class="detail-row">
-          <div>
-            <div class="detail-label">Город</div>
-            <div class="detail-sublabel">City</div>
-          </div>
-          <div class="detail-value" id="cityName"></div>
-        </div>
-        
-        <div class="detail-row">
-          <div>
-            <div class="detail-label">Карта</div>
-            <div class="detail-sublabel">Cards</div>
-          </div>
-          <div class="detail-value">Входная карта</div>
-        </div>
-        
-        <div class="detail-row">
-          <div>
-            <div class="detail-label">Имя, фамилия</div>
-            <div class="detail-sublabel">Name</div>
-          </div>
-          <div class="detail-value" id="customerName"></div>
-        </div>
-        
-        <div class="detail-row">
-          <div>
-            <div class="detail-label">Номер заказа #</div>
-            <div class="detail-sublabel">Order number #</div>
-          </div>
-          <div class="detail-value" id="orderNumber"></div>
-        </div>
-        
-        <div class="detail-row">
-          <div>
-            <div class="detail-label">Стоимость</div>
-            <div class="detail-sublabel">Price</div>
-          </div>
-          <div class="detail-value" id="totalPrice"></div>
-        </div>
-      </div>
-    </div>
+  <div class="loading" id="loadingState">
+    <div class="loading-spinner"></div>
+    <p>Загрузка билетов...</p>
+  </div>
+  
+  <div class="error-message" id="errorState" style="display: none;">
+    <h2>Билет не найден</h2>
+    <p>Проверьте правильность ссылки или обратитесь в поддержку</p>
+  </div>
+  
+  <div class="pending-message" id="pendingState" style="display: none;">
+    <div class="pending-icon">⏳</div>
+    <h2>Оплата на проверке</h2>
+    <p>Ваш платеж находится на проверке.<br>Билет будет доступен после подтверждения оплаты администратором.</p>
+  </div>
+  
+  <div class="tickets-container" id="ticketsContainer" style="display: none;">
   </div>
 
   <script>
@@ -315,6 +274,20 @@
     const monthNames = ['Января', 'Февраля', 'Марта', 'Апреля', 'Мая', 'Июня', 
                         'Июля', 'Августа', 'Сентября', 'Октября', 'Ноября', 'Декабря'];
     
+    const ticketTypeNames = {
+      'standard': 'Входная карта',
+      'double': 'Входная карта «для двоих»',
+      'discount': 'Льготная входная карта',
+      'discount_double': 'Льготная входная карта «для двоих»'
+    };
+    
+    const ticketTypePrices = {
+      'standard': 2990,
+      'double': 4980,
+      'discount': 2490,
+      'discount_double': 3490
+    };
+    
     function formatDate(dateStr) {
       const date = new Date(dateStr);
       return `${date.getDate()} ${monthNames[date.getMonth()]}`;
@@ -323,6 +296,12 @@
     function formatTime(timeStr) {
       if (!timeStr) return '';
       return timeStr.substring(0, 5);
+    }
+    
+    function addHours(timeStr, hours) {
+      const [h, m] = timeStr.split(':').map(Number);
+      const newH = (h + hours) % 24;
+      return `${String(newH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
     }
     
     async function loadTicket() {
@@ -360,7 +339,7 @@
           return;
         }
         
-        displayTicket(data.ticket);
+        displayTickets(data.ticket);
       } catch (error) {
         console.error('Error loading ticket:', error);
         showError();
@@ -416,10 +395,11 @@
           order_code: 'DIR-' + ticketNum.slice(-6),
           orderId: parseInt(ticketNum.slice(-6)),
           image_url: template.image_url,
-          ticket_image_url: template.ticket_image_url
+          ticket_image_url: template.ticket_image_url,
+          tickets: { standard: 1 }
         };
         
-        displayTicket(ticket);
+        displayTickets(ticket);
       } catch (error) {
         console.error('Error loading direct ticket:', error);
         showError();
@@ -436,65 +416,188 @@
       document.getElementById('pendingState').style.display = 'block';
     }
     
-    function displayTicket(ticket) {
+    function displayTickets(ticketData) {
+      if (!ticketData) {
+        showError();
+        return;
+      }
+      
       document.getElementById('loadingState').style.display = 'none';
-      document.getElementById('ticketContent').style.display = 'block';
       
-      // Generate 8-digit ticket number starting from 34000000
-      const baseNum = 34000000;
-      const orderNum = parseInt(ticket.order_code.replace(/\D/g, '').slice(-6) || '0', 36) % 1000000;
-      const ticketNum = String(baseNum + orderNum + ticket.orderId || Date.now() % 1000000);
-      document.getElementById('ticketNumber').textContent = ticketNum;
+      const container = document.getElementById('ticketsContainer');
+      container.style.display = 'flex';
+      container.innerHTML = '';
       
-      // Always show event image if available
-      const imageUrl = ticket.ticket_image_url || ticket.image_url;
-      if (imageUrl) {
-        document.getElementById('ticketImage').style.backgroundImage = `url(${imageUrl})`;
-      } else {
-        document.getElementById('ticketImage').style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-      }
+      const tickets = ticketData.tickets || { standard: 1 };
       
-      document.getElementById('eventName').textContent = ticket.event_name || 'Мероприятие';
+      let ticketCards = [];
+      let ticketIndex = 0;
       
-      let dateTimeStr = '';
-      if (ticket.event_date) {
-        dateTimeStr = formatDate(ticket.event_date);
-      }
-      if (ticket.event_time) {
-        const endTime = addHours(ticket.event_time, 7);
-        dateTimeStr += ` ${formatTime(ticket.event_time)} - ${endTime}`;
-      }
-      document.getElementById('eventDateTime').textContent = dateTimeStr;
-      
-      document.getElementById('cityName').textContent = ticket.city_name || 'Москва';
-      document.getElementById('customerName').textContent = ticket.customer_name || '';
-      document.getElementById('orderNumber').textContent = ticketNum;
-      document.getElementById('totalPrice').textContent = `${ticket.total_price || 0} ₽`;
-      
-      JsBarcode("#barcode", ticketNum.toString(), {
-        format: "CODE128",
-        width: 4,
-        height: 70,
-        displayValue: true,
-        fontSize: 14,
-        margin: 0
-      });
-      
-      if (typeof QRCode !== 'undefined') {
-        const qrContainer = document.getElementById('qrCode');
-        QRCode.toCanvas(document.createElement('canvas'), ticketNum.toString(), { width: 60 }, function(error, canvas) {
-          if (!error) {
-            qrContainer.innerHTML = '';
-            qrContainer.appendChild(canvas);
+      for (const [ticketType, quantity] of Object.entries(tickets)) {
+        if (quantity > 0) {
+          for (let i = 0; i < quantity; i++) {
+            ticketCards.push({
+              type: ticketType,
+              typeName: ticketTypeNames[ticketType] || 'Входная карта',
+              price: ticketTypePrices[ticketType] || 2990,
+              index: ticketIndex++
+            });
           }
+        }
+      }
+      
+      if (ticketCards.length === 0) {
+        ticketCards.push({
+          type: 'standard',
+          typeName: 'Входная карта',
+          price: ticketData.total_price || 2990,
+          index: 0
         });
       }
+      
+      if (ticketCards.length > 1) {
+        const badge = document.createElement('div');
+        badge.className = 'ticket-count-badge';
+        badge.textContent = `${ticketCards.length} билет${ticketCards.length > 1 ? (ticketCards.length < 5 ? 'а' : 'ов') : ''}`;
+        container.appendChild(badge);
+      }
+      
+      ticketCards.forEach((card, idx) => {
+        const ticketEl = createTicketCard(ticketData, card, idx);
+        container.appendChild(ticketEl);
+      });
+      
+      setTimeout(() => {
+        ticketCards.forEach((card, idx) => {
+          const baseNum = 34000000;
+          const orderCodeStr = ticketData.order_code || '';
+          const orderNum = parseInt(orderCodeStr.replace(/\D/g, '').slice(-6) || '0', 36) % 1000000;
+          const ticketNum = String(baseNum + orderNum + (ticketData.orderId || 0) + idx);
+          
+          try {
+            JsBarcode(`#barcode-${idx}`, ticketNum, {
+              format: "CODE128",
+              width: 4,
+              height: 70,
+              displayValue: true,
+              fontSize: 14,
+              margin: 0
+            });
+          } catch (e) {
+            console.error('Barcode error:', e);
+          }
+          
+          if (typeof QRCode !== 'undefined') {
+            const qrContainer = document.getElementById(`qrCode-${idx}`);
+            if (qrContainer) {
+              QRCode.toCanvas(document.createElement('canvas'), ticketNum, { width: 60 }, function(error, canvas) {
+                if (!error && qrContainer) {
+                  qrContainer.innerHTML = '';
+                  qrContainer.appendChild(canvas);
+                }
+              });
+            }
+          }
+        });
+      }, 100);
     }
     
-    function addHours(timeStr, hours) {
-      const [h, m] = timeStr.split(':').map(Number);
-      const newH = (h + hours) % 24;
-      return `${String(newH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    function createTicketCard(ticketData, card, idx) {
+      const baseNum = 34000000;
+      const orderCodeStr = ticketData.order_code || '';
+      const orderNum = parseInt(orderCodeStr.replace(/\D/g, '').slice(-6) || '0', 36) % 1000000;
+      const ticketNum = String(baseNum + orderNum + (ticketData.orderId || 0) + idx);
+      
+      const imageUrl = ticketData.ticket_image_url || ticketData.image_url;
+      const imageStyle = imageUrl 
+        ? `background-image: url(${imageUrl})`
+        : 'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+      
+      let dateTimeStr = '';
+      if (ticketData.event_date) {
+        dateTimeStr = formatDate(ticketData.event_date);
+      }
+      if (ticketData.event_time) {
+        const endTime = addHours(ticketData.event_time, 7);
+        dateTimeStr += ` ${formatTime(ticketData.event_time)} - ${endTime}`;
+      }
+      
+      const ticketEl = document.createElement('div');
+      ticketEl.className = 'ticket';
+      ticketEl.innerHTML = `
+        <div class="ticket-header">
+          <div class="ticket-logo">AFISHA</div>
+          <div class="ticket-qr-section">
+            <div class="qr-code" id="qrCode-${idx}"></div>
+            <div class="ticket-type">
+              <div class="ticket-type-title">${card.typeName}</div>
+              <div class="ticket-type-number">E-card #${ticketNum}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="ticket-image" style="${imageStyle}"></div>
+        
+        <div class="barcode-section">
+          <div class="barcode-container">
+            <svg id="barcode-${idx}" class="ticket-barcode"></svg>
+          </div>
+        </div>
+        
+        <div class="event-title-section">
+          <div>
+            <div class="event-name">${ticketData.event_name || 'Мероприятие'}</div>
+            <div class="event-datetime">${dateTimeStr}</div>
+          </div>
+          <div class="age-badge">18+</div>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="ticket-details">
+          <div class="detail-row">
+            <div>
+              <div class="detail-label">Город</div>
+              <div class="detail-sublabel">City</div>
+            </div>
+            <div class="detail-value">${ticketData.city_name || 'Москва'}</div>
+          </div>
+          
+          <div class="detail-row">
+            <div>
+              <div class="detail-label">Карта</div>
+              <div class="detail-sublabel">Cards</div>
+            </div>
+            <div class="detail-value">${card.typeName}</div>
+          </div>
+          
+          <div class="detail-row">
+            <div>
+              <div class="detail-label">Имя, фамилия</div>
+              <div class="detail-sublabel">Name</div>
+            </div>
+            <div class="detail-value">${ticketData.customer_name || ''}</div>
+          </div>
+          
+          <div class="detail-row">
+            <div>
+              <div class="detail-label">Номер заказа #</div>
+              <div class="detail-sublabel">Order number #</div>
+            </div>
+            <div class="detail-value">${ticketNum}</div>
+          </div>
+          
+          <div class="detail-row">
+            <div>
+              <div class="detail-label">Стоимость</div>
+              <div class="detail-sublabel">Price</div>
+            </div>
+            <div class="detail-value">${card.price} ₽</div>
+          </div>
+        </div>
+      `;
+      
+      return ticketEl;
     }
     
     loadTicket();

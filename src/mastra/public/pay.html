@@ -1054,8 +1054,7 @@
         
         if (data.status === 'confirmed') {
           clearInterval(checkInterval);
-          orderData = data;
-          showSuccessPage();
+          window.location.href = `/ticket?order=${orderData.orderCode}`;
         } else if (data.status === 'rejected' || checkCount >= maxChecks) {
           clearInterval(checkInterval);
           showFailedPage();
