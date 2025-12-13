@@ -775,6 +775,7 @@
     
     let isGeneratedLink = false;
     let isEventTemplate = false;
+    let isNewUrlFormat = false;
     let linkCode = null;
     
     function getEventId() {
@@ -789,12 +790,64 @@
       return match ? match[1] : null;
     }
     
+    function getNewUrlParams() {
+      const path = window.location.pathname;
+      const match = path.match(/^\/([a-z-]+)\/event\/show\/(\d+)$/i);
+      if (match) {
+        return { citySlug: match[1], templateId: match[2] };
+      }
+      return null;
+    }
+    
     async function loadData() {
       linkCode = getLinkCode();
       isGeneratedLink = !!linkCode;
+      const newUrlParams = getNewUrlParams();
+      isNewUrlFormat = !!newUrlParams;
       
       try {
-        if (isGeneratedLink) {
+        if (isNewUrlFormat) {
+          // NEW URL FORMAT: Load from /:city/event/show/:id?r=timestamp
+          const timestamp = new URLSearchParams(window.location.search).get('r');
+          const apiUrl = `/api/event-by-city/${newUrlParams.citySlug}/${newUrlParams.templateId}${timestamp ? '?r=' + timestamp : ''}`;
+          const res = await fetch(apiUrl);
+          if (res.ok) {
+            const data = await res.json();
+            if (data && !data.error) {
+              isGeneratedLink = true;
+              event = {
+                id: data.id,
+                name: data.name,
+                description: data.description,
+                price: 2490,
+                categoryName: data.categoryName,
+                cityName: data.cityName,
+                venue: data.venueAddress || '',
+                date: data.eventDate,
+                time: data.eventTime,
+                availableSeats: data.availableSeats,
+                images: data.images || [],
+                coverImageUrl: data.imageUrl || (data.images && data.images[0]),
+                cityId: data.cityId,
+                citySlug: data.citySlug
+              };
+              
+              if (data.cityName && data.cityId) {
+                localStorage.setItem('afisha_city_access', JSON.stringify({
+                  cityId: data.cityId,
+                  cityName: data.cityName,
+                  accessTime: Date.now()
+                }));
+              }
+            } else {
+              showUnavailablePage();
+              return;
+            }
+          } else {
+            showUnavailablePage();
+            return;
+          }
+        } else if (isGeneratedLink) {
           // Load from generated link
           const linkRes = await fetch(`/api/event-link/${linkCode}`);
           if (linkRes.ok) {

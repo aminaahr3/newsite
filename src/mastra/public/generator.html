@@ -949,6 +949,19 @@
       renderTicketCalendar();
     }
     
+    // Russian to Latin transliteration for URL-friendly city slugs
+    function transliterateCityName(name) {
+      const map = {
+        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+        'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+        'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+        'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch',
+        'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+        ' ': '-', '-': '-'
+      };
+      return name.toLowerCase().split('').map(char => map[char] || char).join('').replace(/--+/g, '-');
+    }
+    
     init();
     
     async function loadCategories() {
@@ -1257,7 +1270,13 @@
         const result = await res.json();
         
         if (result.success) {
-          const link = `${window.location.origin}/e/${result.link_code}`;
+          // NEW URL FORMAT: /:citySlug/event/show/:templateId?r=timestamp
+          const citySelect = document.getElementById('citySelect');
+          const selectedOption = citySelect.options[citySelect.selectedIndex];
+          const cityName = selectedOption ? selectedOption.textContent : '';
+          const citySlug = transliterateCityName(cityName);
+          const timestamp = Date.now();
+          const link = `${window.location.origin}/${citySlug}/event/show/${eventId}?r=${timestamp}`;
           document.getElementById('generatedLink').value = link;
           document.getElementById('resultSection').classList.add('show');
         } else {

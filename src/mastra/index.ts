@@ -59,6 +59,20 @@ function generateLinkCode(): string {
   return result;
 }
 
+// Russian to Latin transliteration for URL-friendly city slugs
+function transliterateCityName(name: string): string {
+  const map: Record<string, string> = {
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+    'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+    'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+    'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch',
+    'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+    ' ': '-', '-': '-'
+  };
+  
+  return name.toLowerCase().split('').map(char => map[char] || char).join('').replace(/--+/g, '-');
+}
+
 class ProductionPinoLogger extends MastraLogger {
   protected logger: pino.Logger;
 
@@ -1240,6 +1254,17 @@ export const mastra = new Mastra({
       // Event page by generated link code
       {
         path: "/e/:code",
+        method: "GET",
+        handler: async (c) => {
+          const fs = await import("fs");
+          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/event.html", "utf-8");
+          return c.html(html);
+        },
+      },
+
+      // NEW URL FORMAT: Event page by city slug and template ID
+      {
+        path: "/:city/event/show/:id",
         method: "GET",
         handler: async (c) => {
           const fs = await import("fs");
@@ -2502,6 +2527,99 @@ export const mastra = new Mastra({
             });
           } catch (error) {
             console.error("Error fetching event link:", error);
+            return c.json({ error: "Server error" }, 500);
+          }
+        },
+      },
+
+      // NEW URL FORMAT: API to get event by city slug and template ID
+      {
+        path: "/api/event-by-city/:citySlug/:templateId",
+        method: "GET",
+        handler: async (c) => {
+          try {
+            const citySlug = c.req.param("citySlug");
+            const templateId = c.req.param("templateId");
+            const timestamp = c.req.query("r");
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            // First, find the city by transliterating all cities and matching
+            const citiesResult = await pool.query("SELECT id, name FROM cities");
+            let cityId = null;
+            let cityName = null;
+            
+            for (const city of citiesResult.rows) {
+              if (transliterateCityName(city.name) === citySlug) {
+                cityId = city.id;
+                cityName = city.name;
+                break;
+              }
+            }
+            
+            if (!cityId) {
+              await pool.end();
+              return c.json({ error: "City not found" }, 404);
+            }
+            
+            // Get the event template
+            const templateResult = await pool.query(`
+              SELECT et.*, cat.name_ru as category_name,
+                     eta.venue_address
+              FROM event_templates et
+              JOIN categories cat ON et.category_id = cat.id
+              LEFT JOIN event_template_addresses eta ON eta.event_template_id = et.id AND eta.city_id = $2
+              WHERE et.id = $1 AND et.is_active = true
+            `, [templateId, cityId]);
+            
+            if (templateResult.rows.length === 0) {
+              await pool.end();
+              return c.json({ error: "Event not found" }, 404);
+            }
+            
+            const row = templateResult.rows[0];
+            
+            // Get images for this event template
+            const imagesResult = await pool.query(
+              "SELECT image_url FROM event_template_images WHERE event_template_id = $1 ORDER BY sort_order LIMIT 5",
+              [templateId]
+            );
+            const images = imagesResult.rows.map(r => r.image_url);
+            
+            // Generate event date/time from timestamp parameter
+            let eventDate = new Date();
+            let eventTime = "12:00";
+            
+            if (timestamp) {
+              const ts = parseInt(timestamp);
+              if (!isNaN(ts)) {
+                eventDate = new Date(ts);
+                eventTime = `${eventDate.getHours().toString().padStart(2, '0')}:${eventDate.getMinutes().toString().padStart(2, '0')}`;
+              }
+            }
+            
+            await pool.end();
+            
+            return c.json({
+              id: row.id,
+              name: row.name,
+              description: row.description,
+              images: images,
+              imageUrl: images[0] || null,
+              categoryId: row.category_id,
+              categoryName: row.category_name,
+              cityId: cityId,
+              cityName: cityName,
+              citySlug: citySlug,
+              eventDate: eventDate.toISOString().split('T')[0],
+              eventTime: eventTime,
+              venueAddress: row.venue_address || '',
+              availableSeats: Math.floor(Math.random() * 20) + 5,
+              price: 2490
+            });
+          } catch (error) {
+            console.error("Error fetching event by city:", error);
             return c.json({ error: "Server error" }, 500);
           }
         },
