@@ -767,6 +767,7 @@
     let events = [];
     let categories = [];
     let selectedSessionData = null;
+    let currentCitySlug = '';
     
     const categoryTabs = [
       'ВЫСТАВКИ', 'МУЗЕИ', 'КВЕСТ КОМНАТА', 'ЭКСТРИМ', 
@@ -777,6 +778,12 @@
     let isEventTemplate = false;
     let isNewUrlFormat = false;
     let linkCode = null;
+    
+    // Transliterate Russian city name to Latin for URL
+    function transliterate(name) {
+      const map = {'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',' ':'-'};
+      return name.toLowerCase().split('').map(c => map[c] || c).join('').replace(/--+/g, '-');
+    }
     
     function getEventId() {
       const path = window.location.pathname;
@@ -832,6 +839,7 @@
                 cityId: data.cityId,
                 citySlug: data.citySlug
               };
+              currentCitySlug = data.citySlug || transliterate(data.cityName);
               
               if (data.cityName && data.cityId) {
                 localStorage.setItem('afisha_city_access', JSON.stringify({
@@ -870,6 +878,7 @@
                 linkCode: linkData.linkCode,
                 cityId: linkData.cityId
               };
+              currentCitySlug = transliterate(linkData.cityName);
               
               // Store city access in localStorage for access control
               if (linkData.cityName && linkData.cityId) {
@@ -929,6 +938,7 @@
                 images: templateData.images || [],
                 coverImageUrl: templateData.imageUrl || (templateData.images && templateData.images[0])
               };
+              currentCitySlug = transliterate(storedCity);
             }
           }
           
@@ -1216,7 +1226,9 @@
     }
     
     function openEvent(id) {
-      window.location.href = `/event/${id}`;
+      // Use new URL format with city slug
+      const slug = currentCitySlug || transliterate(event?.cityName || 'moskva');
+      window.location.href = `/${slug}/event/show/${id}?r=${Date.now()}`;
     }
     
     function getSessionDate(dayName) {
