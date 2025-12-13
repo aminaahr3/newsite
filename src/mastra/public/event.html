@@ -1184,7 +1184,7 @@
           isoDate: isoDate
         });
         
-        // Generate additional auto sessions (random tickets up to 20)
+        // Generate additional auto sessions (random tickets 1-16)
         const autoTimes = ['11:00', '14:00', '17:00', '19:00'];
         const nextDay = new Date(eventDate);
         nextDay.setDate(nextDay.getDate() + 1);
@@ -1196,13 +1196,13 @@
               day: `${dayNames[nextDay.getDay()]}, ${nextDay.getDate()} ${monthNames[nextDay.getMonth()]}`,
               time: t,
               isMain: false,
-              seats: eventData.availableSeats || 20,
+              seats: Math.floor(Math.random() * 16) + 1, // Random 1-16
               isoDate: nextDayIso
             });
           }
         });
       } else {
-        // Default sessions for non-generated events
+        // Default sessions for non-generated events (random tickets 1-16)
         const today = new Date();
         for (let i = 0; i < 4; i++) {
           const d = new Date(today);
@@ -1212,7 +1212,7 @@
             day: `${dayNames[d.getDay()]}, ${d.getDate()} ${monthNames[d.getMonth()]}`,
             time: ['11:00', '14:00', '17:00', '19:00'][i % 4],
             isMain: false,
-            seats: eventData.availableSeats || 20,
+            seats: Math.floor(Math.random() * 16) + 1, // Random 1-16
             isoDate: isoDate
           });
         }
@@ -1390,7 +1390,7 @@
           : ['17:00'];
         
         times.forEach(time => {
-          scheduleData.push({ dayNum, dayName, time, month: monthAbbr[date.getMonth()], isoDate, seats: eventData?.availableSeats || 20 });
+          scheduleData.push({ dayNum, dayName, time, month: monthAbbr[date.getMonth()], isoDate, seats: Math.floor(Math.random() * 16) + 1 });
         });
       }
       
