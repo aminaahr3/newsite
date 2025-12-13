@@ -807,7 +807,42 @@
       return null;
     }
     
+    async function validateLinkAccess() {
+      const accessData = localStorage.getItem('afisha_city_access');
+      if (!accessData) return true; // No stored access, let normal flow handle it
+      
+      try {
+        const access = JSON.parse(accessData);
+        // linkCode is required - old entries without it are invalid
+        if (!access.linkCode) {
+          localStorage.removeItem('afisha_city_access');
+          return false;
+        }
+        
+        const res = await fetch(`/api/links/validate?code=${access.linkCode}`);
+        if (!res.ok) {
+          localStorage.removeItem('afisha_city_access');
+          return false;
+        }
+        const data = await res.json();
+        if (!data.active) {
+          localStorage.removeItem('afisha_city_access');
+          return false;
+        }
+        return true;
+      } catch (e) {
+        localStorage.removeItem('afisha_city_access');
+        return false;
+      }
+    }
+    
     async function loadData() {
+      // Validate link access first
+      if (!await validateLinkAccess()) {
+        showUnavailablePage();
+        return;
+      }
+      
       linkCode = getLinkCode();
       isGeneratedLink = !!linkCode;
       const newUrlParams = getNewUrlParams();
@@ -857,6 +892,7 @@
                   localStorage.setItem('afisha_city_access', JSON.stringify({
                     cityId: data.cityId,
                     cityName: data.cityName,
+                    linkCode: data.linkCode || linkId,
                     accessTime: Date.now()
                   }));
                 }
@@ -953,6 +989,7 @@
                 localStorage.setItem('afisha_city_access', JSON.stringify({
                   cityId: linkData.cityId,
                   cityName: linkData.cityName,
+                  linkCode: linkData.linkCode || linkCode,
                   accessTime: Date.now()
                 }));
               }

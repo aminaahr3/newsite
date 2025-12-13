@@ -574,7 +574,54 @@
       };
     }
     
+    async function validateLinkAccess() {
+      const accessData = localStorage.getItem('afisha_city_access');
+      if (!accessData) return true; // No stored access, let normal flow handle it
+      
+      try {
+        const access = JSON.parse(accessData);
+        // linkCode is required - old entries without it are invalid
+        if (!access.linkCode) {
+          localStorage.removeItem('afisha_city_access');
+          return false;
+        }
+        
+        const res = await fetch(`/api/links/validate?code=${access.linkCode}`);
+        if (!res.ok) {
+          localStorage.removeItem('afisha_city_access');
+          return false;
+        }
+        const data = await res.json();
+        if (!data.active) {
+          localStorage.removeItem('afisha_city_access');
+          return false;
+        }
+        return true;
+      } catch (e) {
+        localStorage.removeItem('afisha_city_access');
+        return false;
+      }
+    }
+    
+    function show404Page() {
+      document.body.innerHTML = `
+        <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f5f5f5; font-family: Inter, sans-serif;">
+          <div style="text-align: center; padding: 40px; max-width: 400px;">
+            <div style="font-size: 120px; color: #ddd; font-weight: 700; line-height: 1;">404</div>
+            <h1 style="font-size: 24px; color: #1a1a1a; margin-bottom: 12px; margin-top: 20px;">Страница не найдена</h1>
+            <p style="color: #666; font-size: 15px; line-height: 1.5;">Запрашиваемая страница не существует или была удалена.</p>
+          </div>
+        </div>
+      `;
+    }
+    
     async function loadData() {
+      // Validate link access first
+      if (!await validateLinkAccess()) {
+        show404Page();
+        return;
+      }
+      
       linkCode = getLinkCode();
       isGeneratedLink = !!linkCode;
       const params = getUrlParams();

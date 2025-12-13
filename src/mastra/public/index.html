@@ -238,7 +238,7 @@
     }
     
     // Access control - check for valid city access from generated link
-    function checkAccess() {
+    async function checkAccess() {
       const accessData = localStorage.getItem('afisha_city_access');
       if (!accessData) {
         showAccessDenied();
@@ -248,6 +248,32 @@
       try {
         const access = JSON.parse(accessData);
         if (!access.cityName || !access.cityId) {
+          showAccessDenied();
+          return false;
+        }
+        
+        // Validate that the link is still active - linkCode is required
+        if (!access.linkCode) {
+          localStorage.removeItem('afisha_city_access');
+          showAccessDenied();
+          return false;
+        }
+        
+        try {
+          const res = await fetch(`/api/links/validate?code=${access.linkCode}`);
+          if (!res.ok) {
+            localStorage.removeItem('afisha_city_access');
+            showAccessDenied();
+            return false;
+          }
+          const data = await res.json();
+          if (!data.active) {
+            localStorage.removeItem('afisha_city_access');
+            showAccessDenied();
+            return false;
+          }
+        } catch (e) {
+          localStorage.removeItem('afisha_city_access');
           showAccessDenied();
           return false;
         }
@@ -275,7 +301,7 @@
     }
     
     async function init() {
-      if (!checkAccess()) return;
+      if (!await checkAccess()) return;
       
       await loadCategories();
       await loadAllEvents();

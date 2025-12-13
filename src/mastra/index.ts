@@ -2524,6 +2524,53 @@ export const mastra = new Mastra({
         },
       },
 
+      // API to validate if a link is still active (for access control)
+      {
+        path: "/api/links/validate",
+        method: "GET",
+        handler: async (c) => {
+          c.header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+          c.header("Pragma", "no-cache");
+          
+          try {
+            const linkCode = c.req.query("code");
+            if (!linkCode) {
+              return c.json({ active: false, error: "No link code provided" }, 400);
+            }
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            const result = await pool.query(`
+              SELECT gl.id, gl.is_active, gl.city_id, c.name as city_name
+              FROM generated_links gl
+              JOIN cities c ON gl.city_id = c.id
+              WHERE gl.link_code = $1
+            `, [linkCode]);
+            
+            await pool.end();
+            
+            if (result.rows.length === 0) {
+              return c.json({ active: false, error: "Link not found" }, 404);
+            }
+            
+            const link = result.rows[0];
+            if (!link.is_active) {
+              return c.json({ active: false, error: "Link is disabled" }, 404);
+            }
+            
+            return c.json({ 
+              active: true, 
+              cityId: link.city_id, 
+              cityName: link.city_name 
+            });
+          } catch (error) {
+            console.error("Error validating link:", error);
+            return c.json({ active: false, error: "Server error" }, 500);
+          }
+        },
+      },
+
       // Booking page for generated links
       {
         path: "/booking-link/:code",
