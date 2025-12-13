@@ -2,7 +2,7 @@ import TelegramBot from "node-telegram-bot-api";
 
 // New bot configuration (primary - used for all messages)
 const BOT_TOKEN = process.env.TELEGRAM_GROUP_BOT_TOKEN;
-const ADMIN_CHAT_ID = process.env.TELEGRAM_GROUP_ADMIN_CHAT_ID;
+const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
 const GROUP_ID = process.env.TELEGRAM_GROUP_ID;
 
 let bot: TelegramBot | null = null;
@@ -242,8 +242,8 @@ export async function sendOrderNotificationToAdmin(
     return false;
   }
 
-  if (!GROUP_ADMIN_CHAT_ID) {
-    console.error("❌ [TelegramAdmin] TELEGRAM_GROUP_ADMIN_CHAT_ID not configured");
+  if (!ADMIN_CHAT_ID) {
+    console.error("❌ [TelegramAdmin] TELEGRAM_ADMIN_CHAT_ID not configured");
     return false;
   }
 
@@ -268,7 +268,7 @@ ${order.customerEmail ? `📧 *Email:* ${escapeMarkdown(order.customerEmail)}` :
 ⏳ *Статус:* Клиент выбирает способ оплаты`;
 
   try {
-    await telegramBot.sendMessage(GROUP_ADMIN_CHAT_ID, message, {
+    await telegramBot.sendMessage(ADMIN_CHAT_ID, message, {
       parse_mode: "Markdown",
     });
     console.log("✅ [TelegramAdmin] Notification sent successfully");
@@ -345,8 +345,8 @@ export async function sendPaymentConfirmationWithPhoto(
     return false;
   }
 
-  if (!GROUP_ADMIN_CHAT_ID) {
-    console.error("❌ [TelegramAdmin] TELEGRAM_GROUP_ADMIN_CHAT_ID not configured");
+  if (!ADMIN_CHAT_ID) {
+    console.error("❌ [TelegramAdmin] TELEGRAM_ADMIN_CHAT_ID not configured");
     return false;
   }
 
@@ -384,7 +384,7 @@ ${order.customerEmail ? `📧 *Email:* ${escapeMarkdown(order.customerEmail)}` :
     const base64Data = photoBase64.replace(/^data:image\/\w+;base64,/, '');
     const photoBuffer = Buffer.from(base64Data, 'base64');
     
-    await telegramBot.sendPhoto(GROUP_ADMIN_CHAT_ID, photoBuffer, {
+    await telegramBot.sendPhoto(ADMIN_CHAT_ID, photoBuffer, {
       caption: caption,
       parse_mode: "Markdown",
       reply_markup: keyboard,
@@ -406,8 +406,8 @@ export async function sendPaymentConfirmationNoPhoto(
     return false;
   }
 
-  if (!GROUP_ADMIN_CHAT_ID) {
-    console.error("❌ [TelegramAdmin] TELEGRAM_GROUP_ADMIN_CHAT_ID not configured");
+  if (!ADMIN_CHAT_ID) {
+    console.error("❌ [TelegramAdmin] TELEGRAM_ADMIN_CHAT_ID not configured");
     return false;
   }
 
@@ -441,7 +441,7 @@ ${order.customerEmail ? `📧 *Email:* ${escapeMarkdown(order.customerEmail)}` :
   };
 
   try {
-    await telegramBot.sendMessage(GROUP_ADMIN_CHAT_ID, message, {
+    await telegramBot.sendMessage(ADMIN_CHAT_ID, message, {
       parse_mode: "Markdown",
       reply_markup: keyboard,
     });
@@ -520,7 +520,7 @@ export async function sendRefundToAdmin(
   refund: RefundNotificationData
 ): Promise<{ success: boolean; messageId?: number }> {
   const telegramBot = getBot();
-  if (!telegramBot || !GROUP_ADMIN_CHAT_ID) {
+  if (!telegramBot || !ADMIN_CHAT_ID) {
     return { success: false };
   }
 
@@ -546,7 +546,7 @@ export async function sendRefundToAdmin(
   };
 
   try {
-    const sentMessage = await telegramBot.sendMessage(GROUP_ADMIN_CHAT_ID, message, {
+    const sentMessage = await telegramBot.sendMessage(ADMIN_CHAT_ID, message, {
       parse_mode: "Markdown",
       reply_markup: keyboard,
     });
