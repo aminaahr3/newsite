@@ -63,6 +63,7 @@ export const manageOrderTool = createTool({
         status: z.string(),
         paymentStatus: z.string(),
         createdAt: z.string(),
+        tickets: z.record(z.number()).optional(),
       })
       .optional(),
     orders: z
@@ -173,6 +174,14 @@ export const manageOrderTool = createTool({
       }
 
       const row = orderResult.rows[0];
+      
+      let ticketsData: Record<string, number> | undefined = undefined;
+      if (row.tickets_json) {
+        try {
+          ticketsData = JSON.parse(row.tickets_json);
+        } catch (e) {}
+      }
+      
       const order = {
         id: row.id,
         orderCode: row.order_code,
@@ -190,6 +199,7 @@ export const manageOrderTool = createTool({
         status: row.status,
         paymentStatus: row.payment_status,
         createdAt: row.created_at?.toISOString() || "",
+        tickets: ticketsData,
       };
 
       if (context.action === "get") {

@@ -813,7 +813,8 @@ export const mastra = new Mastra({
                   customerName: result.order.customerName,
                   customerPhone: result.order.customerPhone,
                   seatsCount: result.order.seatsCount,
-                  totalPrice: result.order.totalPrice
+                  totalPrice: result.order.totalPrice,
+                  tickets: result.order.tickets
                 };
                 
                 if (action === "confirm") {
