@@ -823,15 +823,19 @@
       
       try {
         if (isNewUrlFormat) {
-          // NEW URL FORMAT: Load from /:city/event/show/:id?r=timestamp&s=seats
+          // NEW URL FORMAT: Load from /:city/event/show/:id?lid=linkId
+          // The lid (link ID) is REQUIRED - it references the generated_links table
+          // This allows admin to disable/delete links and have it actually work!
           const urlParams = new URLSearchParams(window.location.search);
-          const timestamp = urlParams.get('r');
-          const seats = urlParams.get('s');
-          let apiUrl = `/api/event-by-city/${newUrlParams.citySlug}/${newUrlParams.templateId}`;
-          const queryParams = [];
-          if (timestamp) queryParams.push(`r=${timestamp}`);
-          if (seats) queryParams.push(`s=${seats}`);
-          if (queryParams.length > 0) apiUrl += '?' + queryParams.join('&');
+          const linkId = urlParams.get('lid');
+          
+          // If no link ID, show 404 - this is required for the new URL format
+          if (!linkId) {
+            showUnavailablePage();
+            return;
+          }
+          
+          let apiUrl = `/api/event-by-city/${newUrlParams.citySlug}/${newUrlParams.templateId}?lid=${linkId}`;
           const res = await fetch(apiUrl);
           if (res.ok) {
             const data = await res.json();

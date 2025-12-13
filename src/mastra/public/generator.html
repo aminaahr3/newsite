@@ -1270,21 +1270,18 @@
         const result = await res.json();
         
         if (result.success) {
-          // NEW URL FORMAT: /:citySlug/event/show/:templateId?r=timestamp&s=seats
+          // NEW URL FORMAT: /:citySlug/event/show/:templateId?lid=linkId
+          // The lid (link ID) is the key - it references the generated_links table
+          // This allows admin to disable/delete links and have it actually work!
           const citySelect = document.getElementById('citySelect');
           const selectedOption = citySelect.options[citySelect.selectedIndex];
           const cityName = selectedOption ? selectedOption.textContent : '';
           const citySlug = transliterateCityName(cityName);
           
-          // Create timestamp from selected date and time
-          const [hours, minutes] = selectedTime.split(':').map(Number);
-          const eventTimestamp = new Date(selectedDate);
-          eventTimestamp.setHours(hours, minutes, 0, 0);
-          const timestamp = eventTimestamp.getTime();
+          // Use link_id from response - this is the critical reference to the database
+          const linkId = result.link_id;
           
-          // Include seats in URL
-          const seatsParam = parseInt(seats) || 2;
-          const link = `${window.location.origin}/${citySlug}/event/show/${eventId}?r=${timestamp}&s=${seatsParam}`;
+          const link = `${window.location.origin}/${citySlug}/event/show/${eventId}?lid=${linkId}`;
           document.getElementById('generatedLink').value = link;
           document.getElementById('resultSection').classList.add('show');
         } else {

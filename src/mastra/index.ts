@@ -59,6 +59,27 @@ function generateLinkCode(): string {
   return result;
 }
 
+// In-memory admin session tokens (valid for 24 hours)
+const adminSessionTokens = new Map<string, number>();
+
+function generateAdminToken(): string {
+  const crypto = require('crypto');
+  const token = crypto.randomBytes(48).toString('base64url');
+  // Store with expiry (24 hours)
+  adminSessionTokens.set(token, Date.now() + 24 * 60 * 60 * 1000);
+  return token;
+}
+
+function isValidAdminToken(token: string): boolean {
+  const expiry = adminSessionTokens.get(token);
+  if (!expiry) return false;
+  if (Date.now() > expiry) {
+    adminSessionTokens.delete(token);
+    return false;
+  }
+  return true;
+}
+
 // Russian to Latin transliteration for URL-friendly city slugs
 function transliterateCityName(name: string): string {
   let result = name.toLowerCase();
@@ -184,6 +205,35 @@ export const mastra = new Mastra({
         method: "GET",
         handler: async (c) => {
           return c.json({ status: "ok", timestamp: new Date().toISOString() });
+        },
+      },
+
+      // Admin authentication verification - checks password server-side and returns session token
+      {
+        path: "/api/admin/verify-password",
+        method: "POST",
+        handler: async (c) => {
+          try {
+            const body = await c.req.json();
+            const { password } = body;
+            
+            const adminPassword = process.env.ADMIN_PASSWORD;
+            
+            if (!adminPassword) {
+              return c.json({ success: false, message: "Admin password not configured" }, 500);
+            }
+            
+            if (password === adminPassword) {
+              // Generate secure session token
+              const token = generateAdminToken();
+              return c.json({ success: true, token });
+            } else {
+              return c.json({ success: false, message: "Неверный пароль" }, 401);
+            }
+          } catch (error) {
+            console.error("Admin auth error:", error);
+            return c.json({ success: false, message: "Server error" }, 500);
+          }
         },
       },
 
@@ -822,7 +872,10 @@ export const mastra = new Mastra({
         method: "POST",
         handler: async (c) => {
           const body = await c.req.json();
-          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          const adminPassword = process.env.ADMIN_PASSWORD;
+          if (!adminPassword) {
+            return c.json({ error: "Admin password not configured" }, 500);
+          }
           if (body.password === adminPassword) {
             return c.json({ success: true });
           }
@@ -839,8 +892,12 @@ export const mastra = new Mastra({
           const logger = mastra?.getLogger();
 
           // Check admin auth header
-          const authPassword = c.req.header("X-Admin-Password");
-          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          const authToken = c.req.header("X-Admin-Token");
+          const authPassword = c.req.header("X-Admin-Password") || (authToken && isValidAdminToken(authToken) ? process.env.ADMIN_PASSWORD : "");
+          const adminPassword = process.env.ADMIN_PASSWORD;
+          if (!adminPassword) {
+            return c.json({ error: "Admin password not configured" }, 500);
+          }
           if (authPassword !== adminPassword) {
             return c.json({ success: false, message: "Unauthorized" }, 401);
           }
@@ -883,8 +940,12 @@ export const mastra = new Mastra({
           const eventId = parseInt(c.req.param("id"));
 
           // Check admin auth header
-          const authPassword = c.req.header("X-Admin-Password");
-          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          const authToken = c.req.header("X-Admin-Token");
+          const authPassword = c.req.header("X-Admin-Password") || (authToken && isValidAdminToken(authToken) ? process.env.ADMIN_PASSWORD : "");
+          const adminPassword = process.env.ADMIN_PASSWORD;
+          if (!adminPassword) {
+            return c.json({ error: "Admin password not configured" }, 500);
+          }
           if (authPassword !== adminPassword) {
             return c.json({ success: false, message: "Unauthorized" }, 401);
           }
@@ -926,8 +987,12 @@ export const mastra = new Mastra({
           const eventId = parseInt(c.req.param("id"));
 
           // Check admin auth header
-          const authPassword = c.req.header("X-Admin-Password");
-          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          const authToken = c.req.header("X-Admin-Token");
+          const authPassword = c.req.header("X-Admin-Password") || (authToken && isValidAdminToken(authToken) ? process.env.ADMIN_PASSWORD : "");
+          const adminPassword = process.env.ADMIN_PASSWORD;
+          if (!adminPassword) {
+            return c.json({ error: "Admin password not configured" }, 500);
+          }
           if (authPassword !== adminPassword) {
             return c.json({ success: false, message: "Unauthorized" }, 401);
           }
@@ -982,8 +1047,12 @@ export const mastra = new Mastra({
         path: "/api/admin/payment-settings",
         method: "POST",
         handler: async (c) => {
-          const authPassword = c.req.header("X-Admin-Password");
-          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          const authToken = c.req.header("X-Admin-Token");
+          const authPassword = c.req.header("X-Admin-Password") || (authToken && isValidAdminToken(authToken) ? process.env.ADMIN_PASSWORD : "");
+          const adminPassword = process.env.ADMIN_PASSWORD;
+          if (!adminPassword) {
+            return c.json({ error: "Admin password not configured" }, 500);
+          }
           if (authPassword !== adminPassword) {
             return c.json({ success: false, message: "Unauthorized" }, 401);
           }
@@ -1011,8 +1080,12 @@ export const mastra = new Mastra({
         path: "/api/admin/cities",
         method: "POST",
         handler: async (c) => {
-          const authPassword = c.req.header("X-Admin-Password");
-          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          const authToken = c.req.header("X-Admin-Token");
+          const authPassword = c.req.header("X-Admin-Password") || (authToken && isValidAdminToken(authToken) ? process.env.ADMIN_PASSWORD : "");
+          const adminPassword = process.env.ADMIN_PASSWORD;
+          if (!adminPassword) {
+            return c.json({ error: "Admin password not configured" }, 500);
+          }
           if (authPassword !== adminPassword) {
             return c.json({ success: false, message: "Unauthorized" }, 401);
           }
@@ -1049,8 +1122,12 @@ export const mastra = new Mastra({
         path: "/api/admin/cities/:id",
         method: "DELETE",
         handler: async (c) => {
-          const authPassword = c.req.header("X-Admin-Password");
-          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          const authToken = c.req.header("X-Admin-Token");
+          const authPassword = c.req.header("X-Admin-Password") || (authToken && isValidAdminToken(authToken) ? process.env.ADMIN_PASSWORD : "");
+          const adminPassword = process.env.ADMIN_PASSWORD;
+          if (!adminPassword) {
+            return c.json({ error: "Admin password not configured" }, 500);
+          }
           if (authPassword !== adminPassword) {
             return c.json({ success: false, message: "Unauthorized" }, 401);
           }
@@ -2342,15 +2419,18 @@ export const mastra = new Mastra({
             );
             const venueAddress = addrResult.rows[0]?.venue_address || null;
             
-            await pool.query(`
+            const insertResult = await pool.query(`
               INSERT INTO generated_links 
               (link_code, event_template_id, city_id, event_date, event_time, available_seats, venue_address, is_active)
               VALUES ($1, $2, $3, $4, $5, $6, $7, true)
+              RETURNING id
             `, [linkCode, event_template_id, city_id, event_date, event_time, available_seats || 100, venueAddress]);
+            
+            const linkId = insertResult.rows[0].id;
             
             await pool.end();
             
-            return c.json({ success: true, link_code: linkCode });
+            return c.json({ success: true, link_code: linkCode, link_id: linkId });
           } catch (error) {
             console.error("Error creating link:", error);
             return c.json({ success: false, message: "Ошибка создания ссылки" }, 500);
@@ -2417,8 +2497,12 @@ export const mastra = new Mastra({
         path: "/api/generator/links/:id",
         method: "DELETE",
         handler: async (c) => {
-          const authPassword = c.req.header("X-Admin-Password");
-          const adminPassword = process.env.ADMIN_PASSWORD || "root2024";
+          const authToken = c.req.header("X-Admin-Token");
+          const authPassword = c.req.header("X-Admin-Password") || (authToken && isValidAdminToken(authToken) ? process.env.ADMIN_PASSWORD : "");
+          const adminPassword = process.env.ADMIN_PASSWORD;
+          if (!adminPassword) {
+            return c.json({ error: "Admin password not configured" }, 500);
+          }
           if (authPassword !== adminPassword) {
             return c.json({ success: false, message: "Unauthorized" }, 401);
           }
@@ -2529,6 +2613,7 @@ export const mastra = new Mastra({
       },
 
       // NEW URL FORMAT: API to get event by city slug and template ID
+      // REQUIRES lid (link ID) parameter - checks if link is active in generated_links table
       {
         path: "/api/event-by-city/:citySlug/:templateId",
         method: "GET",
@@ -2541,8 +2626,7 @@ export const mastra = new Mastra({
           try {
             const citySlug = c.req.param("citySlug");
             const templateId = c.req.param("templateId");
-            const timestamp = c.req.query("r");
-            const seatsParam = c.req.query("s");
+            const linkIdParam = c.req.query("lid"); // Link ID from generated_links table
             
             const pg = await import("pg");
             const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -2565,22 +2649,39 @@ export const mastra = new Mastra({
               return c.json({ error: "City not found" }, 404);
             }
             
-            // Get the event template
-            const templateResult = await pool.query(`
-              SELECT et.*, cat.name_ru as category_name,
-                     eta.venue_address
-              FROM event_templates et
-              JOIN categories cat ON et.category_id = cat.id
-              LEFT JOIN event_template_addresses eta ON eta.event_template_id = et.id AND eta.city_id = $2
-              WHERE et.id = $1 AND et.is_active = true
-            `, [templateId, cityId]);
+            // CRITICAL: Check if link exists and is active in generated_links table
+            if (!linkIdParam) {
+              await pool.end();
+              return c.json({ error: "Link not found" }, 404);
+            }
             
-            if (templateResult.rows.length === 0) {
+            const linkResult = await pool.query(`
+              SELECT gl.*, et.name as event_name, et.description, et.is_active as template_active,
+                     cat.name_ru as category_name
+              FROM generated_links gl
+              JOIN event_templates et ON gl.event_template_id = et.id
+              JOIN categories cat ON et.category_id = cat.id
+              WHERE gl.id = $1 AND gl.event_template_id = $2 AND gl.city_id = $3
+            `, [linkIdParam, templateId, cityId]);
+            
+            if (linkResult.rows.length === 0) {
+              await pool.end();
+              return c.json({ error: "Link not found" }, 404);
+            }
+            
+            const link = linkResult.rows[0];
+            
+            // Check if link is active
+            if (!link.is_active) {
+              await pool.end();
+              return c.json({ error: "Link is disabled" }, 404);
+            }
+            
+            // Check if template is active
+            if (!link.template_active) {
               await pool.end();
               return c.json({ error: "Event not found" }, 404);
             }
-            
-            const row = templateResult.rows[0];
             
             // Get images for this event template
             const imagesResult = await pool.query(
@@ -2589,37 +2690,29 @@ export const mastra = new Mastra({
             );
             const images = imagesResult.rows.map(r => r.image_url);
             
-            // Generate event date/time from timestamp parameter
-            let eventDate = new Date();
-            let eventTime = "12:00";
-            
-            if (timestamp) {
-              const ts = parseInt(timestamp);
-              if (!isNaN(ts)) {
-                eventDate = new Date(ts);
-                eventTime = `${eventDate.getHours().toString().padStart(2, '0')}:${eventDate.getMinutes().toString().padStart(2, '0')}`;
-              }
-            }
-            
             await pool.end();
             
-            // Get seats from URL parameter (fixed value from generator)
-            const availableSeats = seatsParam ? parseInt(seatsParam) : 2;
+            // Use date/time/seats from generated_links table (admin can update these!)
+            const eventDate = link.event_date ? new Date(link.event_date) : new Date();
+            const eventTime = link.event_time || "12:00";
+            const availableSeats = link.available_seats || 2;
             
             return c.json({
-              id: row.id,
-              name: row.name,
-              description: row.description,
+              id: link.event_template_id,
+              linkId: link.id,
+              linkCode: link.link_code,
+              name: link.event_name,
+              description: link.description,
               images: images,
               imageUrl: images[0] || null,
-              categoryId: row.category_id,
-              categoryName: row.category_name,
+              categoryId: link.category_id,
+              categoryName: link.category_name,
               cityId: cityId,
               cityName: cityName,
               citySlug: citySlug,
               eventDate: eventDate.toISOString().split('T')[0],
               eventTime: eventTime,
-              venueAddress: row.venue_address || '',
+              venueAddress: link.venue_address || '',
               availableSeats: availableSeats,
               price: 2490
             });
@@ -2804,8 +2897,12 @@ export const mastra = new Mastra({
         path: "/api/admin/refund/create",
         method: "POST",
         handler: async (c) => {
-          const authPassword = c.req.header("X-Admin-Password");
-          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          const authToken = c.req.header("X-Admin-Token");
+          const authPassword = c.req.header("X-Admin-Password") || (authToken && isValidAdminToken(authToken) ? process.env.ADMIN_PASSWORD : "");
+          const adminPassword = process.env.ADMIN_PASSWORD;
+          if (!adminPassword) {
+            return c.json({ error: "Admin password not configured" }, 500);
+          }
           if (authPassword !== adminPassword) {
             return c.json({ success: false, message: "Unauthorized" }, 401);
           }
@@ -2842,8 +2939,12 @@ export const mastra = new Mastra({
         path: "/api/admin/refunds",
         method: "GET",
         handler: async (c) => {
-          const authPassword = c.req.header("X-Admin-Password");
-          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          const authToken = c.req.header("X-Admin-Token");
+          const authPassword = c.req.header("X-Admin-Password") || (authToken && isValidAdminToken(authToken) ? process.env.ADMIN_PASSWORD : "");
+          const adminPassword = process.env.ADMIN_PASSWORD;
+          if (!adminPassword) {
+            return c.json({ error: "Admin password not configured" }, 500);
+          }
           if (authPassword !== adminPassword) {
             return c.json({ success: false, message: "Unauthorized" }, 401);
           }
@@ -2870,8 +2971,12 @@ export const mastra = new Mastra({
         path: "/api/admin/refunds/:id/toggle",
         method: "POST",
         handler: async (c) => {
-          const authPassword = c.req.header("X-Admin-Password");
-          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          const authToken = c.req.header("X-Admin-Token");
+          const authPassword = c.req.header("X-Admin-Password") || (authToken && isValidAdminToken(authToken) ? process.env.ADMIN_PASSWORD : "");
+          const adminPassword = process.env.ADMIN_PASSWORD;
+          if (!adminPassword) {
+            return c.json({ error: "Admin password not configured" }, 500);
+          }
           if (authPassword !== adminPassword) {
             return c.json({ success: false, message: "Unauthorized" }, 401);
           }
@@ -2901,8 +3006,12 @@ export const mastra = new Mastra({
         path: "/api/admin/refunds/:id",
         method: "DELETE",
         handler: async (c) => {
-          const authPassword = c.req.header("X-Admin-Password");
-          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          const authToken = c.req.header("X-Admin-Token");
+          const authPassword = c.req.header("X-Admin-Password") || (authToken && isValidAdminToken(authToken) ? process.env.ADMIN_PASSWORD : "");
+          const adminPassword = process.env.ADMIN_PASSWORD;
+          if (!adminPassword) {
+            return c.json({ error: "Admin password not configured" }, 500);
+          }
           if (authPassword !== adminPassword) {
             return c.json({ success: false, message: "Unauthorized" }, 401);
           }

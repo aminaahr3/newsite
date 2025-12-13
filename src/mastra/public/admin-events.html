@@ -363,20 +363,48 @@
     let eventTemplates = [];
     let links = [];
     let selectedCategory = null;
-    const ADMIN_PASSWORD = 'root2024';
     
-    function checkAuth() {
+    async function checkAuth() {
       const password = document.getElementById('authPassword').value;
-      if (password === ADMIN_PASSWORD || sessionStorage.getItem('adminAuth') === 'true') {
-        sessionStorage.setItem('adminAuth', 'true');
+      
+      // Check if already authenticated in this session with valid token
+      const existingToken = sessionStorage.getItem('adminToken');
+      if (existingToken) {
         document.getElementById('authOverlay').style.display = 'none';
         init();
-      } else {
+        return;
+      }
+      
+      // Verify password server-side and get session token
+      try {
+        const res = await fetch('/api/admin/verify-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success && data.token) {
+          sessionStorage.setItem('adminToken', data.token);
+          document.getElementById('authOverlay').style.display = 'none';
+          init();
+        } else {
+          document.getElementById('authError').style.display = 'block';
+        }
+      } catch (err) {
+        console.error('Auth error:', err);
+        document.getElementById('authError').textContent = 'Ошибка соединения';
         document.getElementById('authError').style.display = 'block';
       }
     }
     
-    if (sessionStorage.getItem('adminAuth') === 'true') {
+    // Helper to get auth headers for API calls
+    function getAuthHeaders() {
+      return { 'X-Admin-Token': sessionStorage.getItem('adminToken') || '' };
+    }
+    
+    if (sessionStorage.getItem('adminToken')) {
       document.getElementById('authOverlay').style.display = 'none';
       init();
     }
@@ -390,7 +418,7 @@
     async function loadRefunds() {
       try {
         const res = await fetch('/api/admin/refunds', {
-          headers: { 'X-Admin-Password': ADMIN_PASSWORD }
+          headers: getAuthHeaders()
         });
         const data = await res.json();
         refunds = data.refunds || [];
@@ -457,7 +485,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-Admin-Password': ADMIN_PASSWORD
+            ...getAuthHeaders()
           },
           body: JSON.stringify({ amount })
         });
@@ -495,7 +523,7 @@
       try {
         await fetch(`/api/admin/refunds/${id}/toggle`, {
           method: 'POST',
-          headers: { 'X-Admin-Password': ADMIN_PASSWORD }
+          headers: getAuthHeaders()
         });
         await loadRefunds();
       } catch (err) {
@@ -509,7 +537,7 @@
       try {
         await fetch(`/api/admin/refunds/${id}`, {
           method: 'DELETE',
-          headers: { 'X-Admin-Password': ADMIN_PASSWORD }
+          headers: getAuthHeaders()
         });
         await loadRefunds();
       } catch (err) {
@@ -541,7 +569,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-Admin-Password': ADMIN_PASSWORD
+            ...getAuthHeaders()
           },
           body: JSON.stringify({ cardNumber, cardHolderName, bankName, sbpEnabled })
         });
@@ -596,7 +624,7 @@
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'X-Admin-Password': ADMIN_PASSWORD
+            ...getAuthHeaders()
           },
           body: JSON.stringify({ name })
         });
@@ -620,7 +648,7 @@
       try {
         const res = await fetch(`/api/admin/cities/${cityId}`, {
           method: 'DELETE',
-          headers: { 'X-Admin-Password': ADMIN_PASSWORD }
+          headers: getAuthHeaders()
         });
         
         if (res.ok) {
@@ -745,7 +773,7 @@
       try {
         const res = await fetch('/api/generator/links/' + linkId, {
           method: 'DELETE',
-          headers: { 'X-Admin-Password': ADMIN_PASSWORD }
+          headers: getAuthHeaders()
         });
         
         if (res.ok) {
@@ -772,7 +800,7 @@
         for (const link of links) {
           const res = await fetch('/api/generator/links/' + link.id, {
             method: 'DELETE',
-            headers: { 'X-Admin-Password': ADMIN_PASSWORD }
+            headers: getAuthHeaders()
           });
           if (res.ok) deleted++;
         }
