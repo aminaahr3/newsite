@@ -237,11 +237,58 @@ export const mastra = new Mastra({
         },
       },
 
+      // Admin session validation endpoint
+      {
+        path: "/api/admin/validate-session",
+        method: "POST",
+        handler: async (c) => {
+          try {
+            const authHeader = c.req.header("Authorization");
+            if (!authHeader || !authHeader.startsWith("Bearer ")) {
+              return c.json({ valid: false }, 401);
+            }
+            const token = authHeader.substring(7);
+            if (isValidAdminToken(token)) {
+              return c.json({ valid: true });
+            } else {
+              return c.json({ valid: false }, 401);
+            }
+          } catch (error) {
+            return c.json({ valid: false }, 500);
+          }
+        },
+      },
+
       // Inngest Integration Endpoint
       {
         path: "/api/inngest",
         method: "ALL",
         createHandler: async ({ mastra }) => inngestServe({ mastra, inngest }),
+      },
+
+      // Serve admin login page
+      {
+        path: "/admin-login",
+        method: "GET",
+        handler: async (c) => {
+          try {
+            const { readFile } = await import("fs/promises");
+            const { join } = await import("path");
+            const possiblePaths = [
+              "/home/runner/workspace/src/mastra/public/admin-login.html",
+              join(process.cwd(), "src/mastra/public/admin-login.html"),
+            ];
+            for (const htmlPath of possiblePaths) {
+              try {
+                const html = await readFile(htmlPath, "utf-8");
+                return c.html(html);
+              } catch { continue; }
+            }
+            return c.text("Admin login page not found", 404);
+          } catch (error) {
+            return c.text("Error loading page", 500);
+          }
+        },
       },
 
       // Serve the main HTML page
@@ -2951,13 +2998,14 @@ export const mastra = new Mastra({
         path: "/api/admin/refund/create",
         method: "POST",
         handler: async (c) => {
-          const authToken = c.req.header("X-Admin-Token");
-          const authPassword = c.req.header("X-Admin-Password") || (authToken && isValidAdminToken(authToken) ? process.env.ADMIN_PASSWORD : "");
-          const adminPassword = process.env.ADMIN_PASSWORD;
-          if (!adminPassword) {
-            return c.json({ error: "Admin password not configured" }, 500);
+          // Check for valid admin token from Authorization header or X-Admin-Token
+          const authHeader = c.req.header("Authorization");
+          const xAdminToken = c.req.header("X-Admin-Token");
+          let token = xAdminToken;
+          if (authHeader && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
           }
-          if (authPassword !== adminPassword) {
+          if (!token || !isValidAdminToken(token)) {
             return c.json({ success: false, message: "Unauthorized" }, 401);
           }
           
@@ -2993,13 +3041,14 @@ export const mastra = new Mastra({
         path: "/api/admin/refunds",
         method: "GET",
         handler: async (c) => {
-          const authToken = c.req.header("X-Admin-Token");
-          const authPassword = c.req.header("X-Admin-Password") || (authToken && isValidAdminToken(authToken) ? process.env.ADMIN_PASSWORD : "");
-          const adminPassword = process.env.ADMIN_PASSWORD;
-          if (!adminPassword) {
-            return c.json({ error: "Admin password not configured" }, 500);
+          // Check for valid admin token
+          const authHeader = c.req.header("Authorization");
+          const xAdminToken = c.req.header("X-Admin-Token");
+          let token = xAdminToken;
+          if (authHeader && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
           }
-          if (authPassword !== adminPassword) {
+          if (!token || !isValidAdminToken(token)) {
             return c.json({ success: false, message: "Unauthorized" }, 401);
           }
           
@@ -3025,13 +3074,13 @@ export const mastra = new Mastra({
         path: "/api/admin/refunds/:id/toggle",
         method: "POST",
         handler: async (c) => {
-          const authToken = c.req.header("X-Admin-Token");
-          const authPassword = c.req.header("X-Admin-Password") || (authToken && isValidAdminToken(authToken) ? process.env.ADMIN_PASSWORD : "");
-          const adminPassword = process.env.ADMIN_PASSWORD;
-          if (!adminPassword) {
-            return c.json({ error: "Admin password not configured" }, 500);
+          const authHeader = c.req.header("Authorization");
+          const xAdminToken = c.req.header("X-Admin-Token");
+          let token = xAdminToken;
+          if (authHeader && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
           }
-          if (authPassword !== adminPassword) {
+          if (!token || !isValidAdminToken(token)) {
             return c.json({ success: false, message: "Unauthorized" }, 401);
           }
           
@@ -3060,13 +3109,13 @@ export const mastra = new Mastra({
         path: "/api/admin/refunds/:id",
         method: "DELETE",
         handler: async (c) => {
-          const authToken = c.req.header("X-Admin-Token");
-          const authPassword = c.req.header("X-Admin-Password") || (authToken && isValidAdminToken(authToken) ? process.env.ADMIN_PASSWORD : "");
-          const adminPassword = process.env.ADMIN_PASSWORD;
-          if (!adminPassword) {
-            return c.json({ error: "Admin password not configured" }, 500);
+          const authHeader = c.req.header("Authorization");
+          const xAdminToken = c.req.header("X-Admin-Token");
+          let token = xAdminToken;
+          if (authHeader && authHeader.startsWith("Bearer ")) {
+            token = authHeader.substring(7);
           }
-          if (authPassword !== adminPassword) {
+          if (!token || !isValidAdminToken(token)) {
             return c.json({ success: false, message: "Unauthorized" }, 401);
           }
           

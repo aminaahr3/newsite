@@ -364,50 +364,74 @@
     let links = [];
     let selectedCategory = null;
     
-    async function checkAuth() {
-      const password = document.getElementById('authPassword').value;
+    // Check auth on page load - redirect to login if no valid token
+    async function checkAuthAndInit() {
+      const token = localStorage.getItem('adminToken');
       
-      // Check if already authenticated in this session with valid token
-      const existingToken = sessionStorage.getItem('adminToken');
-      if (existingToken) {
-        document.getElementById('authOverlay').style.display = 'none';
-        init();
+      if (!token) {
+        window.location.href = '/admin-login?redirect=/admin-events';
         return;
       }
       
-      // Verify password server-side and get session token
+      // Validate token with server
+      try {
+        const res = await fetch('/api/admin/validate-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          }
+        });
+        
+        const data = await res.json();
+        
+        if (data.valid) {
+          document.getElementById('authOverlay').style.display = 'none';
+          init();
+        } else {
+          localStorage.removeItem('adminToken');
+          window.location.href = '/admin-login?redirect=/admin-events';
+        }
+      } catch (err) {
+        console.error('Auth validation error:', err);
+        localStorage.removeItem('adminToken');
+        window.location.href = '/admin-login?redirect=/admin-events';
+      }
+    }
+    
+    // Legacy checkAuth for overlay form (if somehow shown)
+    async function checkAuth() {
+      const password = document.getElementById('authPassword').value;
       try {
         const res = await fetch('/api/admin/verify-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ password })
         });
-        
         const data = await res.json();
-        
         if (data.success && data.token) {
-          sessionStorage.setItem('adminToken', data.token);
+          localStorage.setItem('adminToken', data.token);
           document.getElementById('authOverlay').style.display = 'none';
           init();
         } else {
           document.getElementById('authError').style.display = 'block';
         }
       } catch (err) {
-        console.error('Auth error:', err);
-        document.getElementById('authError').textContent = 'Ошибка соединения';
         document.getElementById('authError').style.display = 'block';
       }
     }
     
     // Helper to get auth headers for API calls
     function getAuthHeaders() {
-      return { 'X-Admin-Token': sessionStorage.getItem('adminToken') || '' };
+      const token = localStorage.getItem('adminToken');
+      return { 
+        'Authorization': 'Bearer ' + (token || ''),
+        'X-Admin-Token': token || ''
+      };
     }
     
-    if (sessionStorage.getItem('adminToken')) {
-      document.getElementById('authOverlay').style.display = 'none';
-      init();
-    }
+    // Start auth check
+    checkAuthAndInit();
     
     async function init() {
       await Promise.all([loadCategories(), loadLinks(), loadPaymentSettings(), loadCities(), loadRefunds()]);
