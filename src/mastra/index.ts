@@ -1402,8 +1402,11 @@ export const mastra = new Mastra({
         path: "/event/:id",
         method: "GET",
         handler: async (c) => {
-          const fs = await import("fs");
-          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/event.html", "utf-8");
+          const { readFile } = await import("fs/promises");
+          const html = await readFile(
+      new URL("./public/event.html", import.meta.url),
+      "utf-8"
+    );
           c.header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
           c.header("Pragma", "no-cache");
           c.header("Expires", "0");
