@@ -19,11 +19,20 @@ This is a ticket booking platform ("БИЛЕТИКС/Афиша") built with Mas
 ### Key Pages
 - `/` - Main homepage with event carousel and grid (requires access via generated link)
 - `/event/:id` - Event details and order form
-- `/e/:code` - Event page for generated links (format: LNK-XXXXXX)
+- `/e/:code` - Event page for generated links (legacy format: LNK-XXXXXX)
+- `/:city/event/show/:id` - Event page with NEW URL format (e.g., `/moskva/event/show/34?r=1765529600316`)
 - `/booking-link/:code` - Booking page for generated links
 - `/refund/:code` - Refund request page (format: RFD-XXXXXX)
-- `/generator` - Link generator for creating unique event URLs
+- `/generator` - Link generator for creating unique event URLs (now uses new URL format)
 - `/admin-events` - Event templates management (images, descriptions, toggle on/off)
+
+### NEW URL Format System
+- **New format**: `/:citySlug/event/show/:templateId?r=timestamp`
+- **Example**: `/moskva/event/show/34?r=1765529600316` (Moscow, event template 34)
+- **City slugs**: Russian city names are transliterated to Latin (Москва → moskva, Санкт-Петербург → sankt-peterburg)
+- **Timestamp**: `?r=` parameter contains Unix timestamp for uniqueness and date/time info
+- **API endpoint**: `/api/event-by-city/:citySlug/:templateId` returns event data by city and template
+- **Backward compatibility**: Old `/e/LNK-XXXXXX` format still works
 
 ### Access Control System
 - Site is only accessible via generated links
