@@ -575,7 +575,7 @@ export const mastra = new Mastra({
               eventName: template.name,
               eventDate: body.selectedDate || "",
               eventTime: body.selectedTime || "",
-              cityName: "Москва",
+              cityName: body.cityName || "Москва",
               customerName: body.customerName.trim(),
               customerPhone: body.customerPhone.trim(),
               customerEmail: body.customerEmail?.trim(),

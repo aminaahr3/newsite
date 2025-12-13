@@ -1109,13 +1109,15 @@
         const dayName = dayNames[eventDate.getDay()];
         const dateStr = `${eventDate.getDate()} ${monthNames[eventDate.getMonth()]}`;
         const formattedTime = formatTimeHHMM(eventData.time);
+        const isoDate = eventDate.toISOString().split('T')[0];
         
         // Main session from generated link (with stable ticket count)
         sessions.push({ 
           day: `${dayName}, ${dateStr}`, 
           time: formattedTime, 
           isMain: true,
-          seats: eventData.availableSeats || 50
+          seats: eventData.availableSeats || 50,
+          isoDate: isoDate
         });
         
         // Generate additional auto sessions (random tickets up to 20)
@@ -1125,11 +1127,13 @@
         
         autoTimes.forEach(t => {
           if (t !== formattedTime) {
+            const nextDayIso = nextDay.toISOString().split('T')[0];
             sessions.push({
               day: `${dayNames[nextDay.getDay()]}, ${nextDay.getDate()} ${monthNames[nextDay.getMonth()]}`,
               time: t,
               isMain: false,
-              seats: Math.floor(Math.random() * 20) + 1
+              seats: Math.floor(Math.random() * 20) + 1,
+              isoDate: nextDayIso
             });
           }
         });
@@ -1139,11 +1143,13 @@
         for (let i = 0; i < 4; i++) {
           const d = new Date(today);
           d.setDate(d.getDate() + i);
+          const isoDate = d.toISOString().split('T')[0];
           sessions.push({
             day: `${dayNames[d.getDay()]}, ${d.getDate()} ${monthNames[d.getMonth()]}`,
             time: ['11:00', '14:00', '17:00', '19:00'][i % 4],
             isMain: false,
-            seats: Math.floor(Math.random() * 20) + 1
+            seats: Math.floor(Math.random() * 20) + 1,
+            isoDate: isoDate
           });
         }
       }
@@ -1180,7 +1186,7 @@
           </div>
           <div class="sessions-grid" id="sessionsGrid">
             ${sessions.map((s, i) => `
-              <div class="session-card ${s.isMain ? 'main-session' : ''}" onclick="goToBooking('${getSessionDate(s.day)}', '${s.time}', ${s.seats})">
+              <div class="session-card ${s.isMain ? 'main-session' : ''}" onclick="goToBooking('${s.isoDate}', '${s.time}', ${s.seats})">
                 <div class="session-price">От ${formatPrice(price)} ₽</div>
                 <div class="session-time">${s.day} ${s.time}</div>
                 <div class="session-address">${city}${venue ? ', ' + venue : ''}</div>
@@ -1301,21 +1307,6 @@
       window.location.href = `/${slug}/event/show/${id}?r=${Date.now()}`;
     }
     
-    function getSessionDate(dayName) {
-      const today = new Date();
-      const dayOfWeek = today.getDay();
-      const targetDays = { 'Пятница': 5, 'Суббота': 6, 'Воскресенье': 0 };
-      const target = targetDays[dayName];
-      if (target === undefined) return today.toISOString().split('T')[0];
-      
-      let offset = target - dayOfWeek;
-      if (offset <= 0) offset += 7;
-      
-      const date = new Date(today);
-      date.setDate(today.getDate() + offset);
-      return date.toISOString().split('T')[0];
-    }
-    
     function generateFullSchedule(price, city, venue) {
       const today = new Date();
       const scheduleData = [];
@@ -1333,7 +1324,7 @@
           : ['17:00'];
         
         times.forEach(time => {
-          scheduleData.push({ dayNum, dayName, time, month: monthAbbr[date.getMonth()], isoDate });
+          scheduleData.push({ dayNum, dayName, time, month: monthAbbr[date.getMonth()], isoDate, seats: Math.floor(Math.random() * 20) + 5 });
         });
       }
       
