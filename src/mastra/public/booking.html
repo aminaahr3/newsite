@@ -721,15 +721,27 @@
           }
         }
         
+        // Set selected date from URL params or event data
         if (params.date) {
           const parsedDate = new Date(params.date + 'T12:00:00');
           if (!isNaN(parsedDate.getTime())) {
             selectedFullDate = parsedDate;
             selectedDate = parsedDate.getDate();
           }
+        } else if (event?.date) {
+          // Use event's stored date if URL date not provided
+          const parsedDate = new Date(event.date);
+          if (!isNaN(parsedDate.getTime())) {
+            selectedFullDate = parsedDate;
+            selectedDate = parsedDate.getDate();
+          }
         }
+        
+        // Set selected time from URL params or event data
         if (params.time) {
           selectedTime = params.time;
+        } else if (event?.time) {
+          selectedTime = event.time;
         }
       } catch (err) {
         console.error('Error loading data:', err);
@@ -787,28 +799,22 @@
       
       const daysInMonth = new Date(displayYear, displayMonth + 1, 0).getDate();
       
-      // Check if date was passed via URL (session-specific booking)
+      // Check if we have a specific date (from URL or event data)
       const urlParams = getUrlParams();
-      const hasUrlDate = !!urlParams.date;
+      const hasSpecificDate = !!urlParams.date || !!event?.date;
       
-      // Build available days: only URL date if provided, else 14-day window from today
+      // Build available days based on session data
       const availableDays = [];
-      if (hasUrlDate && selectedFullDate) {
-        // Only the specific session date is available
+      if (hasSpecificDate && selectedFullDate) {
+        // Only the specific session date is available (session-specific booking)
         if (displayMonth === selectedFullDate.getMonth() && displayYear === selectedFullDate.getFullYear()) {
           availableDays.push(selectedFullDate.getDate());
         }
       } else {
-        // Standard 14-day availability window
-        for (let i = 1; i <= daysInMonth; i++) {
-          const checkDate = new Date(displayYear, displayMonth, i);
-          const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-          const maxDate = new Date(todayStart);
-          maxDate.setDate(maxDate.getDate() + 14);
-          
-          if (checkDate >= todayStart && checkDate <= maxDate) {
-            availableDays.push(i);
-          }
+        // Fallback: only today is available if no session data
+        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        if (displayMonth === todayStart.getMonth() && displayYear === todayStart.getFullYear()) {
+          availableDays.push(todayStart.getDate());
         }
       }
       
