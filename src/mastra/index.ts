@@ -1439,10 +1439,31 @@ export const mastra = new Mastra({
         method: "GET",
         handler: async (c) => {
           const fs = await import("fs");
-          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/generator.html", "utf-8");
-          return c.html(html);
+          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/const fs = await import("fs");
+
+const html = fs.readFileSync(
+  new URL("./public/generator.html", import.meta.url),
+  "utf-8"
+);
+
         },
       },
+
+      // Generator page
+     {
+  path: "/generator",
+  method: "GET",
+  handler: async (c) => {
+    const fs = await import("fs");
+
+    const html = fs.readFileSync(
+      new URL("./public/generator.html", import.meta.url),
+      "utf-8"
+    );
+
+    return c.html(html);
+  },
+},
       
       // Admin Events page
       {
