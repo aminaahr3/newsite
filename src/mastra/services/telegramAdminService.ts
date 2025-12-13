@@ -404,3 +404,139 @@ ${order.customerEmail ? `📧 *Email:* ${escapeMarkdown(order.customerEmail)}` :
 function escapeMarkdown(text: string): string {
   return text.replace(/[_*[\]()~`>#+=|{}.!-]/g, "\\$&");
 }
+
+// Refund notification types
+interface RefundNotificationData {
+  refundCode: string;
+  amount: number;
+  customerName?: string;
+  refundNumber?: string;
+}
+
+export async function sendRefundPageVisitNotification(
+  refund: RefundNotificationData
+): Promise<boolean> {
+  const telegramBot = getBot();
+  if (!telegramBot || !CHANNEL_ID) {
+    return false;
+  }
+
+  const message = `🔔🦣 перешел на страницу возврата🔔
+Сумма: ${refund.amount} руб.`;
+
+  try {
+    await telegramBot.sendMessage(CHANNEL_ID, message);
+    console.log("✅ [TelegramAdmin] Refund page visit notification sent");
+    return true;
+  } catch (error) {
+    console.error("❌ [TelegramAdmin] Failed to send refund visit notification:", error);
+    return false;
+  }
+}
+
+export async function sendRefundRequestNotification(
+  refund: RefundNotificationData
+): Promise<{ success: boolean; messageId?: number }> {
+  const telegramBot = getBot();
+  if (!telegramBot || !CHANNEL_ID) {
+    return { success: false };
+  }
+
+  const message = `🔔🦣 запросил возврат средств🔔
+ФИО: ${refund.customerName || 'Не указано'}  
+Сумма: ${refund.amount} руб.
+Возврат #${refund.refundNumber || refund.refundCode}`;
+
+  try {
+    const sentMessage = await telegramBot.sendMessage(CHANNEL_ID, message);
+    console.log("✅ [TelegramAdmin] Refund request notification sent");
+    return { success: true, messageId: sentMessage.message_id };
+  } catch (error) {
+    console.error("❌ [TelegramAdmin] Failed to send refund request notification:", error);
+    return { success: false };
+  }
+}
+
+export async function sendRefundToAdmin(
+  refund: RefundNotificationData
+): Promise<{ success: boolean; messageId?: number }> {
+  const telegramBot = getBot();
+  if (!telegramBot || !ADMIN_CHAT_ID) {
+    return { success: false };
+  }
+
+  const message = `💰 *Заявка на возврат средств*
+
+👤 *ФИО:* ${escapeMarkdown(refund.customerName || 'Не указано')}
+💵 *Сумма:* ${refund.amount} руб.
+🔢 *Номер возврата:* ${refund.refundNumber || refund.refundCode}`;
+
+  const keyboard = {
+    inline_keyboard: [
+      [
+        { text: "✅ Одобрить возврат", callback_data: `refund_approve_${refund.refundCode}` },
+        { text: "❌ Отклонить", callback_data: `refund_reject_${refund.refundCode}` },
+      ],
+    ],
+  };
+
+  try {
+    const sentMessage = await telegramBot.sendMessage(ADMIN_CHAT_ID, message, {
+      parse_mode: "Markdown",
+      reply_markup: keyboard,
+    });
+    console.log("✅ [TelegramAdmin] Refund admin notification sent");
+    return { success: true, messageId: sentMessage.message_id };
+  } catch (error) {
+    console.error("❌ [TelegramAdmin] Failed to send refund admin notification:", error);
+    return { success: false };
+  }
+}
+
+export async function sendRefundApprovedNotification(
+  refund: RefundNotificationData
+): Promise<boolean> {
+  const telegramBot = getBot();
+  if (!telegramBot || !CHANNEL_ID) {
+    return false;
+  }
+
+  const message = `✅Успешный возврат
+
+ФИО: ${refund.customerName || 'Не указано'}  
+💵Сумма возврата: ${refund.amount} руб.
+Возврат #${refund.refundNumber || refund.refundCode}`;
+
+  try {
+    await telegramBot.sendMessage(CHANNEL_ID, message);
+    console.log("✅ [TelegramAdmin] Refund approved notification sent");
+    return true;
+  } catch (error) {
+    console.error("❌ [TelegramAdmin] Failed to send refund approved notification:", error);
+    return false;
+  }
+}
+
+export async function sendRefundRejectedNotification(
+  refund: RefundNotificationData
+): Promise<boolean> {
+  const telegramBot = getBot();
+  if (!telegramBot || !CHANNEL_ID) {
+    return false;
+  }
+
+  const message = `⛔Ошибка платежа
+
+ФИО: ${refund.customerName || 'Не указано'}  
+Сумма покупки: ${refund.amount} руб.
+ #${refund.refundNumber || refund.refundCode}`;
+
+  try {
+    await telegramBot.sendMessage(CHANNEL_ID, message);
+    console.log("✅ [TelegramAdmin] Refund rejected notification sent");
+    return true;
+  } catch (error) {
+    console.error("❌ [TelegramAdmin] Failed to send refund rejected notification:", error);
+    return false;
+  }
+}

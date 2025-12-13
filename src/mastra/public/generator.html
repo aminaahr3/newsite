@@ -610,7 +610,11 @@
               </div>
               <div class="time-section">
                 <span class="time-label">Время (МСК)</span>
-                <div class="time-buttons" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 15px; margin: 10px 0;">
+                  <input type="time" id="timeInput" class="time-input" value="12:00" style="width: 120px !important; font-size: 16px !important;">
+                  <span style="color: #666; font-size: 12px;">Введите любое время</span>
+                </div>
+                <div class="time-buttons" style="display: flex; flex-wrap: wrap; gap: 8px;">
                   <button type="button" class="time-btn" onclick="setTime('10:00')">10:00</button>
                   <button type="button" class="time-btn" onclick="setTime('11:00')">11:00</button>
                   <button type="button" class="time-btn" onclick="setTime('12:00')">12:00</button>
@@ -624,7 +628,6 @@
                   <button type="button" class="time-btn" onclick="setTime('20:00')">20:00</button>
                   <button type="button" class="time-btn" onclick="setTime('21:00')">21:00</button>
                 </div>
-                <input type="time" id="timeInput" class="time-input" value="12:00">
               </div>
               <div class="picker-actions">
                 <button class="picker-btn reset" onclick="resetDateTime()">Сбросить</button>
@@ -699,7 +702,11 @@
               </div>
               <div class="time-section">
                 <span class="time-label">Время (МСК)</span>
-                <div class="time-buttons" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 15px; margin: 10px 0;">
+                  <input type="time" id="ticketTimeInput" class="time-input" value="12:00" style="width: 120px !important; font-size: 16px !important;">
+                  <span style="color: #666; font-size: 12px;">Введите любое время</span>
+                </div>
+                <div class="time-buttons" style="display: flex; flex-wrap: wrap; gap: 8px;">
                   <button type="button" class="time-btn ticket-time-btn" onclick="setTicketTime('10:00')">10:00</button>
                   <button type="button" class="time-btn ticket-time-btn" onclick="setTicketTime('11:00')">11:00</button>
                   <button type="button" class="time-btn ticket-time-btn" onclick="setTicketTime('12:00')">12:00</button>
@@ -713,7 +720,6 @@
                   <button type="button" class="time-btn ticket-time-btn" onclick="setTicketTime('20:00')">20:00</button>
                   <button type="button" class="time-btn ticket-time-btn" onclick="setTicketTime('21:00')">21:00</button>
                 </div>
-                <input type="time" id="ticketTimeInput" class="time-input" value="12:00">
               </div>
               <div class="picker-actions">
                 <button class="picker-btn reset" onclick="resetTicketDateTime()">Сбросить</button>
