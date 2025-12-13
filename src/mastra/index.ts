@@ -2025,11 +2025,17 @@ export const mastra = new Mastra({
             const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
             
             let result;
-            // Return all active templates for the category (regardless of city)
-            result = await pool.query(
-              "SELECT id, name, description, is_active, ticket_image_url FROM event_templates WHERE category_id = $1 AND is_active = true ORDER BY name",
-              [categoryId]
-            );
+            // If category_id provided, filter by category; otherwise return all active templates
+            if (categoryId) {
+              result = await pool.query(
+                "SELECT id, name, description, is_active, ticket_image_url FROM event_templates WHERE category_id = $1 AND is_active = true ORDER BY name",
+                [categoryId]
+              );
+            } else {
+              result = await pool.query(
+                "SELECT id, name, description, is_active, ticket_image_url FROM event_templates WHERE is_active = true ORDER BY name"
+              );
+            }
             
             // Get first image for each template from images table
             const templates = [];
