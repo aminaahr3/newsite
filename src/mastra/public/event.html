@@ -813,6 +813,14 @@
       const newUrlParams = getNewUrlParams();
       isNewUrlFormat = !!newUrlParams;
       
+      console.log('[EventPage] Loading data:', { 
+        path: window.location.pathname, 
+        linkCode, 
+        isGeneratedLink, 
+        isNewUrlFormat, 
+        newUrlParams 
+      });
+      
       try {
         if (isNewUrlFormat) {
           // NEW URL FORMAT: Load from /:city/event/show/:id?r=timestamp
@@ -858,9 +866,12 @@
           }
         } else if (isGeneratedLink) {
           // Load from generated link
+          console.log('[EventPage] Fetching generated link:', linkCode);
           const linkRes = await fetch(`/api/event-link/${linkCode}`);
+          console.log('[EventPage] Link API response status:', linkRes.status);
           if (linkRes.ok) {
             const linkData = await linkRes.json();
+            console.log('[EventPage] Link data:', linkData);
             if (linkData && !linkData.error) {
               eventData = {
                 id: linkData.id,
@@ -889,10 +900,12 @@
                 }));
               }
             } else {
+              console.error('[EventPage] Link data has error:', linkData);
               showUnavailablePage();
               return;
             }
           } else {
+            console.error('[EventPage] Link API failed with status:', linkRes.status);
             showUnavailablePage();
             return;
           }
