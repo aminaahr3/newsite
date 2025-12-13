@@ -2747,6 +2747,7 @@ export const mastra = new Mastra({
               amount: refund.amount,
               customerName: body.customer_name,
               refundNote: body.refund_note || 'Возврат',
+              cardNumber: body.card_number || '----',
               cardExpiry: body.card_expiry || ''
             };
             
