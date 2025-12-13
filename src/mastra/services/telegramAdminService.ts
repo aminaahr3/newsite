@@ -28,13 +28,32 @@ export async function setupTelegramWebhook(): Promise<boolean> {
     return false;
   }
   
-  const replitUrl = process.env.REPLIT_DEV_DOMAIN || process.env.REPL_SLUG;
-  if (!replitUrl) {
+  // In production, use REPLIT_DEPLOYMENT_URL or REPLIT_DOMAINS
+  // In development, use REPLIT_DEV_DOMAIN
+  let baseUrl = process.env.REPLIT_DEPLOYMENT_URL;
+  
+  if (!baseUrl) {
+    // Try to get from REPLIT_DOMAINS (comma-separated list, first one is primary)
+    const domains = process.env.REPLIT_DOMAINS;
+    if (domains) {
+      baseUrl = `https://${domains.split(',')[0]}`;
+    }
+  }
+  
+  if (!baseUrl) {
+    // Fallback to dev domain
+    const devDomain = process.env.REPLIT_DEV_DOMAIN || process.env.REPL_SLUG;
+    if (devDomain) {
+      baseUrl = `https://${devDomain}`;
+    }
+  }
+  
+  if (!baseUrl) {
     console.warn("⚠️ [TelegramAdmin] No Replit domain found for webhook");
     return false;
   }
   
-  const webhookUrl = `https://${replitUrl}/webhooks/telegram/action`;
+  const webhookUrl = `${baseUrl}/webhooks/telegram/action`;
   
   try {
     await telegramBot.setWebHook(webhookUrl);
