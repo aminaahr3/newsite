@@ -1388,8 +1388,11 @@ export const mastra = new Mastra({
         path: "/payment",
         method: "GET",
         handler: async (c) => {
-          const fs = await import("fs");
-          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/payment.html", "utf-8");
+          const { readFile } = await import("fs/promises");
+          const html = await readFile(
+      new URL("./public/payment.html", import.meta.url),
+      "utf-8"
+    );
           return c.html(html);
         },
       },
