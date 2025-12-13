@@ -672,10 +672,12 @@
                 // Get city from localStorage
                 const accessData = localStorage.getItem('afisha_city_access');
                 let storedCity = 'Москва';
+                let storedCityId = null;
                 if (accessData) {
                   try {
                     const access = JSON.parse(accessData);
                     storedCity = access.cityName || 'Москва';
+                    storedCityId = access.cityId || null;
                   } catch (e) {}
                 }
                 
@@ -686,6 +688,7 @@
                   price: 2490,
                   categoryName: tpl.categoryName,
                   cityName: storedCity,
+                  cityId: storedCityId,
                   venue: '',
                   availableSeats: params.seats || 50
                 };
