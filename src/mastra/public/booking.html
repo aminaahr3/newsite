@@ -614,14 +614,25 @@
             const templateRes = await fetch(`/api/generator/event-templates/${eventId}`);
             if (templateRes.ok) {
               const templateData = await templateRes.json();
-              if (templateData && !templateData.error) {
+              const tpl = templateData.template || templateData;
+              if (tpl && !templateData.error) {
+                // Get city from localStorage
+                const accessData = localStorage.getItem('afisha_city_access');
+                let storedCity = 'Москва';
+                if (accessData) {
+                  try {
+                    const access = JSON.parse(accessData);
+                    storedCity = access.cityName || 'Москва';
+                  } catch (e) {}
+                }
+                
                 event = {
-                  id: templateData.id,
-                  name: templateData.name,
-                  description: templateData.description,
+                  id: tpl.id,
+                  name: tpl.name,
+                  description: tpl.description,
                   price: 2490,
-                  categoryName: templateData.categoryName,
-                  cityName: 'Москва',
+                  categoryName: tpl.categoryName,
+                  cityName: storedCity,
                   venue: '',
                   availableSeats: 50
                 };
