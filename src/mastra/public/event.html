@@ -1145,7 +1145,7 @@
       const nav = document.getElementById('categoryNav');
       nav.innerHTML = categoryTabs.map((tab, i) => `
         <a href="#" class="category-tab ${eventData.categoryName?.toUpperCase() === tab ? 'active' : ''}">${tab}</a>
-      `).join('') + '<div class="category-more">•••</div>';
+      `).join('');
     }
     
     function renderMainContent() {
