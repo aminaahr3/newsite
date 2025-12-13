@@ -893,22 +893,23 @@
             const templateRes = await fetch(`/api/generator/event-templates/${newUrlParams.templateId}`);
             if (templateRes.ok) {
               const templateData = await templateRes.json();
-              if (templateData && !templateData.error && templateData.is_active !== false) {
+              const tpl = templateData.template || templateData;
+              if (tpl && !templateData.error && tpl.isActive !== false) {
                 isEventTemplate = true;
                 eventData = {
-                  id: templateData.id,
-                  name: templateData.name,
-                  description: templateData.description,
+                  id: tpl.id,
+                  name: tpl.name,
+                  description: tpl.description,
                   price: 2490,
-                  categoryName: templateData.categoryName,
+                  categoryName: tpl.categoryName,
                   cityName: storedCity,
                   cityId: storedCityId,
                   venue: '',
                   date: new Date().toISOString(),
                   time: '12:00',
                   availableSeats: 50,
-                  images: templateData.images || [],
-                  coverImageUrl: templateData.imageUrl || (templateData.images && templateData.images[0])
+                  images: tpl.images || [],
+                  coverImageUrl: tpl.image_url || (tpl.images && tpl.images[0])
                 };
                 currentCitySlug = transliterate(storedCity);
               } else {
