@@ -229,6 +229,13 @@
     let events = {};
     let cityName = 'Москва';
     let cityId = null;
+    let citySlug = '';
+    
+    // Transliterate Russian city name to Latin for URL
+    function transliterate(name) {
+      const map = {'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'yo','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'sch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya',' ':'-'};
+      return name.toLowerCase().split('').map(c => map[c] || c).join('').replace(/--+/g, '-');
+    }
     
     // Access control - check for valid city access from generated link
     function checkAccess() {
@@ -247,6 +254,7 @@
         
         cityName = access.cityName;
         cityId = access.cityId;
+        citySlug = transliterate(cityName);
         return true;
       } catch (e) {
         showAccessDenied();
@@ -333,8 +341,8 @@
       const hasFavorite = Math.random() > 0.7;
       const has18Plus = Math.random() > 0.6;
       
-      // Use generated link if available, otherwise use template page
-      const eventUrl = event.link_code ? `/e/${event.link_code}` : `/event/${event.id}`;
+      // Use new URL format: /:citySlug/event/show/:id?r=timestamp
+      const eventUrl = `/${citySlug}/event/show/${event.id}?r=${Date.now()}`;
       
       return `
         <a href="${eventUrl}" class="event-card">

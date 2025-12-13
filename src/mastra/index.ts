@@ -1939,22 +1939,11 @@ export const mastra = new Mastra({
             const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
             
             let result;
-            if (cityId) {
-              // Only return templates that have generated links for this city
-              result = await pool.query(
-                `SELECT DISTINCT et.id, et.name, et.description, et.is_active, et.ticket_image_url 
-                 FROM event_templates et
-                 INNER JOIN generated_links gl ON gl.event_template_id = et.id AND gl.city_id = $2 AND gl.is_active = true
-                 WHERE et.category_id = $1 AND et.is_active = true
-                 ORDER BY et.name`,
-                [categoryId, cityId]
-              );
-            } else {
-              result = await pool.query(
-                "SELECT id, name, description, is_active, ticket_image_url FROM event_templates WHERE category_id = $1 ORDER BY name",
-                [categoryId]
-              );
-            }
+            // Return all active templates for the category (regardless of city)
+            result = await pool.query(
+              "SELECT id, name, description, is_active, ticket_image_url FROM event_templates WHERE category_id = $1 AND is_active = true ORDER BY name",
+              [categoryId]
+            );
             
             // Get first image for each template from images table
             const templates = [];
