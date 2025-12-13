@@ -268,6 +268,25 @@
         </div>
       </div>
     </div>
+    
+    <div class="links-section" style="margin-top: 40px;">
+      <h3>Генератор ссылок возврата</h3>
+      <div style="background: white; padding: 20px; border-radius: 12px; max-width: 600px;">
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+          <input type="number" id="refundAmount" placeholder="Сумма возврата (руб.)" min="100" style="flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px;">
+          <button onclick="createRefundLink()" style="padding: 12px 24px; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">Создать ссылку</button>
+        </div>
+        <div id="newRefundLink" style="display: none; background: #e8f5e9; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+          <p style="margin-bottom: 10px; font-weight: 500; color: #4CAF50;">Ссылка создана!</p>
+          <input type="text" id="newRefundUrl" readonly style="width: 100%; padding: 10px; border: 1px solid #4CAF50; border-radius: 6px; font-size: 13px; margin-bottom: 10px;">
+          <button onclick="copyRefundLink()" style="padding: 8px 16px; background: #4CAF50; color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;">Копировать</button>
+        </div>
+        <h4 style="font-size: 14px; margin-bottom: 10px; color: #333;">Активные ссылки возврата</h4>
+        <div id="refundsList" style="max-height: 400px; overflow-y: auto;">
+          <p style="color: #999; font-size: 13px;">Загрузка...</p>
+        </div>
+      </div>
+    </div>
   </div>
   
   <div class="modal-overlay" id="editModal">
@@ -363,7 +382,139 @@
     }
     
     async function init() {
-      await Promise.all([loadCategories(), loadLinks(), loadPaymentSettings(), loadCities()]);
+      await Promise.all([loadCategories(), loadLinks(), loadPaymentSettings(), loadCities(), loadRefunds()]);
+    }
+    
+    let refunds = [];
+    
+    async function loadRefunds() {
+      try {
+        const res = await fetch('/api/admin/refunds', {
+          headers: { 'X-Admin-Password': ADMIN_PASSWORD }
+        });
+        const data = await res.json();
+        refunds = data.refunds || [];
+        renderRefundsList();
+      } catch (err) {
+        console.error('Error loading refunds:', err);
+      }
+    }
+    
+    function renderRefundsList() {
+      const container = document.getElementById('refundsList');
+      if (refunds.length === 0) {
+        container.innerHTML = '<p style="color: #999; font-size: 13px;">Нет ссылок возврата</p>';
+        return;
+      }
+      
+      container.innerHTML = refunds.map(r => {
+        const statusColors = {
+          pending: '#ff9800',
+          submitted: '#2196f3',
+          approved: '#4CAF50',
+          rejected: '#f44336'
+        };
+        const statusTexts = {
+          pending: 'Ожидает',
+          submitted: 'Отправлена',
+          approved: 'Одобрен',
+          rejected: 'Отклонён'
+        };
+        const statusColor = statusColors[r.status] || '#666';
+        const statusText = statusTexts[r.status] || r.status;
+        const createdDate = new Date(r.created_at).toLocaleString('ru-RU');
+        
+        return `
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; background: ${r.is_active ? '#fff' : '#f9f9f9'};">
+            <div style="flex: 1;">
+              <div style="font-weight: 600; font-size: 15px; color: #333;">${r.amount.toLocaleString('ru-RU')} ₽</div>
+              <div style="font-size: 12px; color: #666; margin-top: 2px;">${r.refund_code}</div>
+              <div style="font-size: 11px; color: #999; margin-top: 2px;">${createdDate}</div>
+              ${r.customer_name ? `<div style="font-size: 12px; color: #333; margin-top: 4px;">👤 ${r.customer_name}</div>` : ''}
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="padding: 4px 10px; border-radius: 12px; font-size: 11px; background: ${statusColor}20; color: ${statusColor};">${statusText}</span>
+              <button onclick="copyRefundUrl('${r.refund_code}')" style="padding: 6px 12px; background: #e3f2fd; color: #1976d2; border: none; border-radius: 6px; cursor: pointer; font-size: 11px;">📋 Копировать</button>
+              <button onclick="toggleRefund(${r.id})" style="padding: 6px 12px; background: ${r.is_active ? '#fff3e0' : '#e8f5e9'}; color: ${r.is_active ? '#f57c00' : '#4CAF50'}; border: none; border-radius: 6px; cursor: pointer; font-size: 11px;">${r.is_active ? 'Выкл' : 'Вкл'}</button>
+              <button onclick="deleteRefund(${r.id})" style="padding: 6px 12px; background: #ffebee; color: #f44336; border: none; border-radius: 6px; cursor: pointer; font-size: 11px;">✕</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    async function createRefundLink() {
+      const amountInput = document.getElementById('refundAmount');
+      const amount = parseInt(amountInput.value);
+      
+      if (!amount || amount < 100) {
+        alert('Укажите сумму возврата (минимум 100 руб.)');
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/admin/refund/create', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Admin-Password': ADMIN_PASSWORD
+          },
+          body: JSON.stringify({ amount })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          const refundUrl = `${window.location.origin}/refund/${data.refund_code}`;
+          document.getElementById('newRefundUrl').value = refundUrl;
+          document.getElementById('newRefundLink').style.display = 'block';
+          amountInput.value = '';
+          await loadRefunds();
+        } else {
+          alert(data.message || 'Ошибка создания ссылки');
+        }
+      } catch (err) {
+        console.error('Error creating refund:', err);
+        alert('Ошибка создания ссылки');
+      }
+    }
+    
+    function copyRefundLink() {
+      const url = document.getElementById('newRefundUrl').value;
+      navigator.clipboard.writeText(url);
+      alert('Ссылка скопирована!');
+    }
+    
+    function copyRefundUrl(code) {
+      const url = `${window.location.origin}/refund/${code}`;
+      navigator.clipboard.writeText(url);
+      alert('Ссылка скопирована!');
+    }
+    
+    async function toggleRefund(id) {
+      try {
+        await fetch(`/api/admin/refunds/${id}/toggle`, {
+          method: 'POST',
+          headers: { 'X-Admin-Password': ADMIN_PASSWORD }
+        });
+        await loadRefunds();
+      } catch (err) {
+        console.error('Error toggling refund:', err);
+      }
+    }
+    
+    async function deleteRefund(id) {
+      if (!confirm('Удалить эту ссылку возврата?')) return;
+      
+      try {
+        await fetch(`/api/admin/refunds/${id}`, {
+          method: 'DELETE',
+          headers: { 'X-Admin-Password': ADMIN_PASSWORD }
+        });
+        await loadRefunds();
+      } catch (err) {
+        console.error('Error deleting refund:', err);
+      }
     }
     
     async function loadPaymentSettings() {

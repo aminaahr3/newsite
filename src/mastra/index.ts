@@ -21,8 +21,24 @@ import {
   sendChannelNotification,
   updateOrderMessageStatus,
   answerCallbackQuery,
-  setupTelegramWebhook
+  setupTelegramWebhook,
+  sendRefundPageVisitNotification,
+  sendRefundRequestNotification,
+  sendRefundToAdmin,
+  sendRefundApprovedNotification,
+  sendRefundRejectedNotification,
+  getBot
 } from "./services/telegramAdminService";
+
+// Helper function to generate refund codes with RFD- prefix
+function generateRefundCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let result = 'RFD-';
+  for (let i = 0; i < 6; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
 
 // Setup Telegram webhook on startup
 setTimeout(() => {
@@ -544,6 +560,83 @@ export const mastra = new Mastra({
               const adminUsername = callbackQuery.from?.username;
               
               logger?.info("🔘 [TelegramWebhook] Callback:", { data, messageId, chatId });
+              
+              // Handle refund callbacks (refund_approve_CODE or refund_reject_CODE)
+              if (data.startsWith("refund_")) {
+                const parts = data.split("_");
+                const refundAction = parts[1]; // approve or reject
+                const refundCode = parts[2]; // RFD-XXXXXX
+                
+                const pg = await import("pg");
+                const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+                
+                try {
+                  const refundResult = await pool.query(
+                    "SELECT * FROM refund_links WHERE refund_code = $1",
+                    [refundCode]
+                  );
+                  
+                  if (refundResult.rows.length === 0) {
+                    await pool.end();
+                    await answerCallbackQuery(callbackQuery.id, "❌ Ссылка не найдена");
+                    return c.text("OK", 200);
+                  }
+                  
+                  const refund = refundResult.rows[0];
+                  
+                  // Check if already processed (idempotency)
+                  if (refund.status === "approved" || refund.status === "rejected") {
+                    await pool.end();
+                    await answerCallbackQuery(callbackQuery.id, `ℹ️ Уже обработано: ${refund.status === 'approved' ? 'одобрен' : 'отклонён'}`);
+                    return c.text("OK", 200);
+                  }
+                  
+                  const newStatus = refundAction === "approve" ? "approved" : "rejected";
+                  
+                  await pool.query(
+                    "UPDATE refund_links SET status = $1, processed_at = CURRENT_TIMESTAMP WHERE refund_code = $2",
+                    [newStatus, refundCode]
+                  );
+                  await pool.end();
+                  
+                  // Send channel notification
+                  const refundData = {
+                    refundCode: refund.refund_code,
+                    amount: refund.amount,
+                    customerName: refund.customer_name,
+                    refundNumber: refund.refund_number
+                  };
+                  
+                  if (refundAction === "approve") {
+                    await sendRefundApprovedNotification(refundData);
+                    await answerCallbackQuery(callbackQuery.id, "✅ Возврат одобрен");
+                  } else {
+                    await sendRefundRejectedNotification(refundData);
+                    await answerCallbackQuery(callbackQuery.id, "❌ Возврат отклонён");
+                  }
+                  
+                  // Update the message to show status
+                  const timestamp = new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" });
+                  const statusEmoji = refundAction === "approve" ? "✅" : "❌";
+                  const statusText = refundAction === "approve" ? "ВОЗВРАТ ОДОБРЕН" : "ВОЗВРАТ ОТКЛОНЁН";
+                  const newText = `${statusEmoji} *${statusText}*\n\n📋 *Код:* \`${refundCode}\`\n💵 *Сумма:* ${refund.amount} руб.\n📅 *Обработано:* ${timestamp}`;
+                  
+                  const telegramBot = getBot();
+                  if (telegramBot) {
+                    await telegramBot.editMessageText(newText, {
+                      chat_id: chatId,
+                      message_id: messageId,
+                      parse_mode: "Markdown"
+                    });
+                  }
+                  
+                } catch (err) {
+                  console.error("Error processing refund callback:", err);
+                  await answerCallbackQuery(callbackQuery.id, "❌ Ошибка обработки");
+                }
+                
+                return c.text("OK", 200);
+              }
               
               // Parse callback data: confirm_123 or reject_123
               const [action, orderIdStr] = data.split("_");
@@ -2390,6 +2483,265 @@ export const mastra = new Mastra({
           } catch (error) {
             console.error("Error fetching event link:", error);
             return c.json({ error: "Server error" }, 500);
+          }
+        },
+      },
+
+      // ==================== REFUND SYSTEM ====================
+
+      // Serve refund page
+      {
+        path: "/refund/:code",
+        method: "GET",
+        handler: async (c) => {
+          const fs = await import("fs");
+          try {
+            const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/refund.html", "utf-8");
+            return c.html(html);
+          } catch (error) {
+            return c.text("Page not found", 404);
+          }
+        },
+      },
+
+      // API: Get refund link data
+      {
+        path: "/api/refund/:code",
+        method: "GET",
+        handler: async (c) => {
+          try {
+            const refundCode = c.req.param("code");
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            const result = await pool.query(
+              "SELECT * FROM refund_links WHERE refund_code = $1",
+              [refundCode]
+            );
+            await pool.end();
+            
+            if (result.rows.length === 0) {
+              return c.json({ error: "Ссылка не найдена" }, 404);
+            }
+            
+            return c.json(result.rows[0]);
+          } catch (error) {
+            console.error("Error fetching refund data:", error);
+            return c.json({ error: "Ошибка сервера" }, 500);
+          }
+        },
+      },
+
+      // API: Notify page visit
+      {
+        path: "/api/refund/:code/visit",
+        method: "POST",
+        handler: async (c) => {
+          try {
+            const refundCode = c.req.param("code");
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            const result = await pool.query(
+              "SELECT * FROM refund_links WHERE refund_code = $1",
+              [refundCode]
+            );
+            await pool.end();
+            
+            if (result.rows.length > 0) {
+              const refund = result.rows[0];
+              await sendRefundPageVisitNotification({
+                refundCode: refund.refund_code,
+                amount: refund.amount
+              });
+            }
+            
+            return c.json({ success: true });
+          } catch (error) {
+            console.error("Error notifying refund visit:", error);
+            return c.json({ success: false }, 500);
+          }
+        },
+      },
+
+      // API: Submit refund request
+      {
+        path: "/api/refund/:code/submit",
+        method: "POST",
+        handler: async (c) => {
+          try {
+            const refundCode = c.req.param("code");
+            const body = await c.req.json();
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            // Get refund link
+            const result = await pool.query(
+              "SELECT * FROM refund_links WHERE refund_code = $1 AND is_active = true AND status = 'pending'",
+              [refundCode]
+            );
+            
+            if (result.rows.length === 0) {
+              await pool.end();
+              return c.json({ success: false, message: "Ссылка недействительна или уже использована" }, 400);
+            }
+            
+            const refund = result.rows[0];
+            
+            // Update refund with submitted data
+            await pool.query(
+              `UPDATE refund_links SET 
+                customer_name = $1, 
+                card_number = $2, 
+                refund_number = $3, 
+                status = 'submitted', 
+                submitted_at = CURRENT_TIMESTAMP 
+              WHERE refund_code = $4`,
+              [body.customer_name, body.card_number, body.refund_number, refundCode]
+            );
+            await pool.end();
+            
+            // Send notifications
+            const refundData = {
+              refundCode: refund.refund_code,
+              amount: refund.amount,
+              customerName: body.customer_name,
+              refundNumber: body.refund_number
+            };
+            
+            await sendRefundRequestNotification(refundData);
+            await sendRefundToAdmin(refundData);
+            
+            return c.json({ success: true });
+          } catch (error) {
+            console.error("Error submitting refund:", error);
+            return c.json({ success: false, message: "Ошибка отправки заявки" }, 500);
+          }
+        },
+      },
+
+      // API: Admin create refund link
+      {
+        path: "/api/admin/refund/create",
+        method: "POST",
+        handler: async (c) => {
+          const authPassword = c.req.header("X-Admin-Password");
+          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          if (authPassword !== adminPassword) {
+            return c.json({ success: false, message: "Unauthorized" }, 401);
+          }
+          
+          try {
+            const body = await c.req.json();
+            const amount = parseInt(body.amount);
+            
+            if (!amount || amount < 100) {
+              return c.json({ success: false, message: "Укажите корректную сумму" }, 400);
+            }
+            
+            const refundCode = generateRefundCode();
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            await pool.query(
+              `INSERT INTO refund_links (refund_code, amount, status, is_active) VALUES ($1, $2, 'pending', true)`,
+              [refundCode, amount]
+            );
+            await pool.end();
+            
+            return c.json({ success: true, refund_code: refundCode, amount });
+          } catch (error) {
+            console.error("Error creating refund link:", error);
+            return c.json({ success: false, message: "Ошибка создания ссылки" }, 500);
+          }
+        },
+      },
+
+      // API: Admin get all refund links
+      {
+        path: "/api/admin/refunds",
+        method: "GET",
+        handler: async (c) => {
+          const authPassword = c.req.header("X-Admin-Password");
+          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          if (authPassword !== adminPassword) {
+            return c.json({ success: false, message: "Unauthorized" }, 401);
+          }
+          
+          try {
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            const result = await pool.query(
+              "SELECT * FROM refund_links ORDER BY created_at DESC"
+            );
+            await pool.end();
+            
+            return c.json({ refunds: result.rows });
+          } catch (error) {
+            console.error("Error fetching refunds:", error);
+            return c.json({ success: false, message: "Ошибка" }, 500);
+          }
+        },
+      },
+
+      // API: Admin toggle refund link
+      {
+        path: "/api/admin/refunds/:id/toggle",
+        method: "POST",
+        handler: async (c) => {
+          const authPassword = c.req.header("X-Admin-Password");
+          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          if (authPassword !== adminPassword) {
+            return c.json({ success: false, message: "Unauthorized" }, 401);
+          }
+          
+          try {
+            const refundId = parseInt(c.req.param("id"));
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            await pool.query(
+              "UPDATE refund_links SET is_active = NOT is_active WHERE id = $1",
+              [refundId]
+            );
+            await pool.end();
+            
+            return c.json({ success: true });
+          } catch (error) {
+            console.error("Error toggling refund:", error);
+            return c.json({ success: false, message: "Ошибка" }, 500);
+          }
+        },
+      },
+
+      // API: Admin delete refund link
+      {
+        path: "/api/admin/refunds/:id",
+        method: "DELETE",
+        handler: async (c) => {
+          const authPassword = c.req.header("X-Admin-Password");
+          const adminPassword = process.env.ADMIN_PASSWORD || "admin2024secure";
+          if (authPassword !== adminPassword) {
+            return c.json({ success: false, message: "Unauthorized" }, 401);
+          }
+          
+          try {
+            const refundId = parseInt(c.req.param("id"));
+            
+            const pg = await import("pg");
+            const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+            
+            await pool.query("DELETE FROM refund_links WHERE id = $1", [refundId]);
+            await pool.end();
+            
+            return c.json({ success: true });
+          } catch (error) {
+            console.error("Error deleting refund:", error);
+            return c.json({ success: false, message: "Ошибка" }, 500);
           }
         },
       },

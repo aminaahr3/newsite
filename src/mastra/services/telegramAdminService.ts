@@ -7,7 +7,7 @@ const CHANNEL_ID = process.env.TELEGRAM_CHANNEL_ID;
 let bot: TelegramBot | null = null;
 let webhookInitialized = false;
 
-function getBot(): TelegramBot | null {
+export function getBot(): TelegramBot | null {
   if (!TELEGRAM_BOT_TOKEN) {
     console.error("❌ [TelegramAdmin] TELEGRAM_BOT_TOKEN not configured");
     return null;
