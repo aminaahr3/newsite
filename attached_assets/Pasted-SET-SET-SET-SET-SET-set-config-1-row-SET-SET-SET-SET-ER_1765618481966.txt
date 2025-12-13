@@ -1,0 +1,231 @@
+SET
+SET
+SET
+SET
+SET
+ set_config 
+------------
+ 
+(1 row)
+
+SET
+SET
+SET
+SET
+ERROR:  duplicate key value violates unique constraint "categories_pkey"
+DETAIL:  Key (id)=(1) already exists.
+ERROR:  duplicate key value violates unique constraint "categories_pkey"
+DETAIL:  Key (id)=(2) already exists.
+ERROR:  duplicate key value violates unique constraint "categories_pkey"
+DETAIL:  Key (id)=(3) already exists.
+ERROR:  duplicate key value violates unique constraint "categories_pkey"
+DETAIL:  Key (id)=(4) already exists.
+ERROR:  duplicate key value violates unique constraint "categories_pkey"
+DETAIL:  Key (id)=(5) already exists.
+ERROR:  duplicate key value violates unique constraint "categories_pkey"
+DETAIL:  Key (id)=(6) already exists.
+ERROR:  duplicate key value violates unique constraint "categories_pkey"
+DETAIL:  Key (id)=(7) already exists.
+ERROR:  duplicate key value violates unique constraint "categories_pkey"
+DETAIL:  Key (id)=(8) already exists.
+ERROR:  duplicate key value violates unique constraint "categories_pkey"
+DETAIL:  Key (id)=(9) already exists.
+ERROR:  duplicate key value violates unique constraint "categories_pkey"
+DETAIL:  Key (id)=(10) already exists.
+ERROR:  duplicate key value violates unique constraint "categories_pkey"
+DETAIL:  Key (id)=(11) already exists.
+ERROR:  duplicate key value violates unique constraint "categories_pkey"
+DETAIL:  Key (id)=(12) already exists.
+ERROR:  duplicate key value violates unique constraint "categories_pkey"
+DETAIL:  Key (id)=(13) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(1) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(2) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(3) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(4) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(5) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(6) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(7) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(8) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(9) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(10) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(11) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(12) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(13) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(14) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(15) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(16) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(17) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(18) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(19) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(20) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(21) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(22) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(23) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(24) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(25) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(26) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(27) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(28) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(29) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(30) already exists.
+ERROR:  duplicate key value violates unique constraint "cities_pkey"
+DETAIL:  Key (id)=(31) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(4) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(2) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(1) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(3) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(5) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(6) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(7) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(24) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(8) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(9) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(10) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(11) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(12) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(13) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(14) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(15) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(16) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(17) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(18) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(19) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(20) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(21) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(22) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(23) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(25) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(26) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(27) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(28) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(29) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(30) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(31) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(32) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(33) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(34) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(35) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(36) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(37) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(38) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(39) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(40) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(41) already exists.
+ERROR:  duplicate key value violates unique constraint "event_templates_pkey"
+DETAIL:  Key (id)=(42) already exists.
+ERROR:  duplicate key value violates unique constraint "event_template_addresses_pkey"
+DETAIL:  Key (id)=(2) already exists.
+ERROR:  duplicate key value violates unique constraint "event_template_addresses_pkey"
+DETAIL:  Key (id)=(3) already exists.
+ERROR:  duplicate key value violates unique constraint "event_template_images_pkey"
+DETAIL:  Key (id)=(3) already exists.
+ERROR:  duplicate key value violates unique constraint "event_template_images_pkey"
+DETAIL:  Key (id)=(4) already exists.
+ERROR:  duplicate key value violates unique constraint "generated_links_pkey"
+DETAIL:  Key (id)=(30) already exists.
+ERROR:  duplicate key value violates unique constraint "generated_links_pkey"
+DETAIL:  Key (id)=(31) already exists.
+ERROR:  duplicate key value violates unique constraint "generated_links_pkey"
+DETAIL:  Key (id)=(32) already exists.
+ setval 
+--------
+     13
+(1 row)
+
+ setval 
+--------
+     31
+(1 row)
+
+ setval 
+--------
+      3
+(1 row)
+
+ setval 
+--------
+      4
+(1 row)
+
+ setval 
+--------
+     42
+(1 row)
+
+ setval 
+--------
+     32
+(1 row)
+
+~/workspace$ 
