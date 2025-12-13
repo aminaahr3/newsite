@@ -1016,6 +1016,14 @@
       document.getElementById('paymentPage').style.display = 'block';
       timeLeft = 600;
       startTimer();
+      
+      // Reset button state
+      const btn = document.getElementById('confirmBtn');
+      btn.disabled = false;
+      btn.textContent = 'Я оплатил(а)';
+      
+      // Reset file upload
+      removeFile();
     }
 
     function showWaitingPage() {
