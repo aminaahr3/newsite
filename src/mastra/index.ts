@@ -285,7 +285,7 @@ export const mastra = new Mastra({
           try {
             const { readFile } = await import("fs/promises");
             const html = await readFile(
-        new URL("./public/admin-login.html", import.meta.url),
+        new URL("./admin-login.html", import.meta.url),
         "utf-8"
       );
             
@@ -310,9 +310,7 @@ export const mastra = new Mastra({
             
             // Try multiple paths for production compatibility
             const possiblePaths = [
-  new URL("./public/index.html", import.meta.url),
-  join(process.cwd(), "src/mastra/public/index.html"),
-  join(process.cwd(), "public/index.html"),
+  new URL("./index.html", import.meta.url),
 ];
             
             for (const htmlPath of possiblePaths) {
@@ -856,7 +854,7 @@ export const mastra = new Mastra({
         handler: async (c) => {
           const { readFile } = await import("fs/promises");
           try {
-         const htmlPath = new URL("./public/event.html", import.meta.url);
+         const htmlPath = new URL("./event.html", import.meta.url);
       const html = await readFile(htmlPath, "utf-8");
             return c.html(html);
           } catch (error) {
@@ -872,7 +870,7 @@ export const mastra = new Mastra({
         handler: async (c) => {
           const { readFile } = await import("fs/promises");
           try {
-            const htmlPath = new URL("./public/booking.html", import.meta.url);
+            const htmlPath = new URL("./booking.html", import.meta.url);
       const html = await readFile(htmlPath, "utf-8");
             return c.html(html);
           } catch (error) {
@@ -1383,7 +1381,7 @@ export const mastra = new Mastra({
         handler: async (c) => {
           const { readFile } = await import("fs/promises");
           const html = await readFile(
-      new URL("./public/ticket.html", import.meta.url),
+      new URL("./ticket.html", import.meta.url),
       "utf-8"
     );
           return c.html(html);
@@ -1397,7 +1395,7 @@ export const mastra = new Mastra({
         handler: async (c) => {
           const { readFile } = await import("fs/promises");
           const html = await readFile(
-      new URL("./public/payment.html", import.meta.url),
+      new URL("./payment.html", import.meta.url),
       "utf-8"
     );
           return c.html(html);
@@ -1411,7 +1409,7 @@ export const mastra = new Mastra({
         handler: async (c) => {
           const { readFile } = await import("fs/promises");
           const html = await readFile(
-      new URL("./public/event.html", import.meta.url),
+      new URL("./event.html", import.meta.url),
       "utf-8"
     );
           c.header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
@@ -1428,7 +1426,7 @@ export const mastra = new Mastra({
         handler: async (c) => {
           const { readFile } = await import("fs/promises");
           const html = await readFile(
-      new URL("./public/event.html", import.meta.url),
+      new URL("./event.html", import.meta.url),
       "utf-8"
     );
           c.header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
@@ -1445,7 +1443,7 @@ export const mastra = new Mastra({
         handler: async (c) => {
           const { readFile } = await import("fs/promises");
           const html = await readFile(
-      new URL("./public/event.html", import.meta.url),
+      new URL("./event.html", import.meta.url),
       "utf-8"
     );
           c.header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
@@ -1462,7 +1460,7 @@ export const mastra = new Mastra({
         handler: async (c) => {
           const { readFile } = await import("fs/promises");
           const html = await readFile(
-      new URL("./public/generator.html", import.meta.url),
+      new URL("./generator.html", import.meta.url),
       "utf-8"
     );
 
@@ -1478,7 +1476,7 @@ return c.html(html);
         handler: async (c) => {
           const { readFile } = await import("fs/promises");
           const html = await readFile(
-      new URL("./public/admin-events.html", import.meta.url),
+      new URL("./admin-events.html", import.meta.url),
       "utf-8"
     );
           return c.html(html);
@@ -1731,7 +1729,7 @@ return c.html(html);
         handler: async (c) => {
           const { readFile } = await import("fs/promises");
           const html = await readFile(
-      new URL("./public/event.html", import.meta.url),
+      new URL("./event.html", import.meta.url),
       "utf-8"
     );
           return c.html(html);
@@ -2080,7 +2078,7 @@ return c.html(html);
         handler: async (c) => {
           const { readFile } = await import("fs/promises");
           const html = await readFile(
-      new URL("./public/pay.html", import.meta.url),
+      new URL("./pay.html", import.meta.url),
       "utf-8"
     );
           return c.html(html);
@@ -2094,7 +2092,7 @@ return c.html(html);
         handler: async (c) => {
           const { readFile } = await import("fs/promises");
           const html = await readFile(
-      new URL("./public/generator.html", import.meta.url),
+      new URL("./generator.html", import.meta.url),
       "utf-8"
     );
           return c.html(html);
@@ -2710,7 +2708,7 @@ return c.html(html);
         handler: async (c) => {
           const { readFile } = await import("fs/promises");
           const html = await readFile(
-      new URL("./public/booking-link.html", import.meta.url),
+      new URL("./booking-link.html", import.meta.url),
       "utf-8"
     );
           return c.html(html);
@@ -2724,7 +2722,7 @@ return c.html(html);
         handler: async (c) => {
           const { readFile } = await import("fs/promises");
           const html = await readFile(
-      new URL("./public/booking.html", import.meta.url),
+      new URL("./booking.html", import.meta.url),
       "utf-8"
     );
           return c.html(html);
@@ -2919,7 +2917,7 @@ return c.html(html);
           const { readFile } = await import("fs/promises");
           try {
             const html = await readFile(
-        new URL("./public/refund.html", import.meta.url),
+        new URL("./refund.html", import.meta.url),
         "utf-8"
       );
             return c.html(html);
