@@ -1,3 +1,4 @@
+
 import { Mastra } from "@mastra/core";
 import { MastraError } from "@mastra/core/error";
 import { PinoLogger } from "@mastra/loggers";
@@ -8,7 +9,7 @@ import { NonRetriableError } from "inngest";
 import { z } from "zod";
 
 import { inngest, inngestServe } from "./inngest";
-
+import { serveStatic } from "hono/serve-static";
 // Import tools for MCP server and API
 import { getEventsTool } from "./tools/getEventsTool";
 import { createOrderTool } from "./tools/createOrderTool";
@@ -143,6 +144,7 @@ class ProductionPinoLogger extends MastraLogger {
 // This allows the app to start without database connection
 
 export const mastra = new Mastra({
+  publicDir: new URL("./public", import.meta.url).pathname,
   storage: undefined, // Storage disabled to allow production startup without DB
   // No workflows or agents - using simple Telegram admin notifications
   workflows: {},
@@ -173,6 +175,15 @@ export const mastra = new Mastra({
   server: {
     host: "0.0.0.0",
     port: 5000,
+        app: (app) => {
+      app.use(
+        "/*",
+        serveStatic({
+          root: ".",
+        })
+      );
+    },
+
     middleware: [
       async (c, next) => {
         const mastra = c.get("mastra");
