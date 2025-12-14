@@ -273,20 +273,16 @@ export const mastra = new Mastra({
         handler: async (c) => {
           try {
             const { readFile } = await import("fs/promises");
-            const { join } = await import("path");
-            const possiblePaths = [
-              "/home/runner/workspace/src/mastra/public/admin-login.html",
-              join(process.cwd(), "src/mastra/public/admin-login.html"),
-            ];
-            for (const htmlPath of possiblePaths) {
-              try {
-                const html = await readFile(htmlPath, "utf-8");
-                return c.html(html);
-              } catch { continue; }
-            }
-            return c.text("Admin login page not found", 404);
+            const html = await readFile(
+        new URL("./public/admin-login.html", import.meta.url),
+        "utf-8"
+      );
+            
+    
+       
+           return c.html(html);
           } catch (error) {
-            return c.text("Error loading page", 500);
+            return c.text("Admin login page not found", 404);
           }
         },
       },
@@ -303,10 +299,10 @@ export const mastra = new Mastra({
             
             // Try multiple paths for production compatibility
             const possiblePaths = [
-              "/home/runner/workspace/src/mastra/public/index.html",
-              join(process.cwd(), "src/mastra/public/index.html"),
-              join(process.cwd(), "public/index.html"),
-            ];
+  new URL("./public/index.html", import.meta.url),
+  join(process.cwd(), "src/mastra/public/index.html"),
+  join(process.cwd(), "public/index.html"),
+];
             
             for (const htmlPath of possiblePaths) {
               try {
@@ -849,8 +845,8 @@ export const mastra = new Mastra({
         handler: async (c) => {
           const { readFile } = await import("fs/promises");
           try {
-            const htmlPath = "/home/runner/workspace/src/mastra/public/event.html";
-            const html = await readFile(htmlPath, "utf-8");
+         const htmlPath = new URL("./public/event.html", import.meta.url);
+      const html = await readFile(htmlPath, "utf-8");
             return c.html(html);
           } catch (error) {
             return c.text("Page not found", 404);
@@ -865,8 +861,8 @@ export const mastra = new Mastra({
         handler: async (c) => {
           const { readFile } = await import("fs/promises");
           try {
-            const htmlPath = "/home/runner/workspace/src/mastra/public/booking.html";
-            const html = await readFile(htmlPath, "utf-8");
+            const htmlPath = new URL("./public/booking.html", import.meta.url);
+      const html = await readFile(htmlPath, "utf-8");
             return c.html(html);
           } catch (error) {
             return c.text("Page not found", 404);
@@ -1419,8 +1415,11 @@ export const mastra = new Mastra({
         path: "/e/:code",
         method: "GET",
         handler: async (c) => {
-          const fs = await import("fs");
-          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/event.html", "utf-8");
+          const { readFile } = await import("fs/promises");
+          const html = await readFile(
+      new URL("./public/event.html", import.meta.url),
+      "utf-8"
+    );
           c.header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
           c.header("Pragma", "no-cache");
           c.header("Expires", "0");
@@ -1433,8 +1432,11 @@ export const mastra = new Mastra({
         path: "/:city/event/show/:id",
         method: "GET",
         handler: async (c) => {
-          const fs = await import("fs");
-          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/event.html", "utf-8");
+          const { readFile } = await import("fs/promises");
+          const html = await readFile(
+      new URL("./public/event.html", import.meta.url),
+      "utf-8"
+    );
           c.header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
           c.header("Pragma", "no-cache");
           c.header("Expires", "0");
@@ -1456,38 +1458,18 @@ export const mastra = new Mastra({
 return c.html(html);
   },
 },
-
-const html = fs.readFileSync(
-  new URL("./public/generator.html", import.meta.url),
-  "utf-8"
-);
-
-        },
-      },
-
-      // Generator page
-     {
-  path: "/generator",
-  method: "GET",
-  handler: async (c) => {
-    const fs = await import("fs");
-
-    const html = fs.readFileSync(
-      new URL("./public/generator.html", import.meta.url),
-      "utf-8"
-    );
-
-    return c.html(html);
-  },
-},
+    
       
       // Admin Events page
       {
         path: "/admin-events",
         method: "GET",
         handler: async (c) => {
-          const fs = await import("fs");
-          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/admin-events.html", "utf-8");
+          const { readFile } = await import("fs/promises");
+          const html = await readFile(
+      new URL("./public/admin-events.html", import.meta.url),
+      "utf-8"
+    );
           return c.html(html);
         },
       },
@@ -1736,8 +1718,11 @@ const html = fs.readFileSync(
         path: "/e/:slug",
         method: "GET",
         handler: async (c) => {
-          const fs = await import("fs");
-          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/ticket.html", "utf-8");
+          const { readFile } = await import("fs/promises");
+          const html = await readFile(
+      new URL("./public/event.html", import.meta.url),
+      "utf-8"
+    );
           return c.html(html);
         },
       },
@@ -2082,8 +2067,11 @@ const html = fs.readFileSync(
         path: "/pay",
         method: "GET",
         handler: async (c) => {
-          const fs = await import("fs");
-          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/pay.html", "utf-8");
+          const { readFile } = await import("fs/promises");
+          const html = await readFile(
+      new URL("./public/pay.html", import.meta.url),
+      "utf-8"
+    );
           return c.html(html);
         },
       },
@@ -2093,8 +2081,11 @@ const html = fs.readFileSync(
         path: "/generator",
         method: "GET",
         handler: async (c) => {
-          const fs = await import("fs");
-          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/generator.html", "utf-8");
+          const { readFile } = await import("fs/promises");
+          const html = await readFile(
+      new URL("./public/generator.html", import.meta.url),
+      "utf-8"
+    );
           return c.html(html);
         },
       },
@@ -2706,8 +2697,11 @@ const html = fs.readFileSync(
         path: "/booking-link/:code",
         method: "GET",
         handler: async (c) => {
-          const fs = await import("fs");
-          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/booking.html", "utf-8");
+          const { readFile } = await import("fs/promises");
+          const html = await readFile(
+      new URL("./public/booking-link.html", import.meta.url),
+      "utf-8"
+    );
           return c.html(html);
         },
       },
@@ -2717,8 +2711,11 @@ const html = fs.readFileSync(
         path: "/booking/:id",
         method: "GET",
         handler: async (c) => {
-          const fs = await import("fs");
-          const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/booking.html", "utf-8");
+          const { readFile } = await import("fs/promises");
+          const html = await readFile(
+      new URL("./public/booking.html", import.meta.url),
+      "utf-8"
+    );
           return c.html(html);
         },
       },
@@ -2908,9 +2905,12 @@ const html = fs.readFileSync(
         path: "/refund/:code",
         method: "GET",
         handler: async (c) => {
-          const fs = await import("fs");
+          const { readFile } = await import("fs/promises");
           try {
-            const html = fs.readFileSync("/home/runner/workspace/src/mastra/public/refund.html", "utf-8");
+            const html = await readFile(
+        new URL("./public/refund.html", import.meta.url),
+        "utf-8"
+      );
             return c.html(html);
           } catch (error) {
             return c.text("Page not found", 404);

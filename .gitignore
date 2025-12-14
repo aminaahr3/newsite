@@ -5,4 +5,9 @@ dist
 .env
 *.db
 *.db-*
+
 .DS_Store
+**/.DS_Store
+
+.local/
+
